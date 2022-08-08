@@ -19,6 +19,7 @@ namespace ALARm_Report.Forms
     {
         public override void Process(long parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
+
             List<long> admTracksId = new List<long>();
             using (var choiceForm = new ChoiseForm(0))
             {
@@ -86,7 +87,7 @@ namespace ALARm_Report.Forms
                         //kms = kms.OrderBy(o => o.Number).ToList();
 
                         List<Curve> curves = (MainTrackStructureService.GetCurves(parentId, MainTrackStructureConst.MtoCurve) as List<Curve>).Where(c => c.Radius <= 1200).OrderBy(c => c.Start_Km * 1000 + c.Start_M).ToList();
-
+                        //List<Curve> CurvesBPD = mainTrackStructureRepository.GetMtoObjectsByCoord(trip_date, Number, MainTrackStructureConst.MtoCurveBPD, Track_id) as List<Curve>;
                         XElement tripElem = new XElement("trip",
                         new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
                         new XAttribute("ps", tripProcess.Car),
@@ -164,7 +165,6 @@ namespace ALARm_Report.Forms
                                 }
                                 else if (item.Otst_r.Any())
                                 {
-
                                     dig.Ots = item.Otst_r + ".п";
                                 }
                                 else if (item.Otst_r.Any() && item.Otst_l.Any())
@@ -184,40 +184,63 @@ namespace ALARm_Report.Forms
                                 dig.Date = item.Date;
                                 dig.Directcode = item.Directcode;
                                 dig.Nput = item.Nput;
-                                if (item.Otst_l == "")
+                                switch (dig.Otkl)
                                 {
-                                    dig.Ovp = -1;
-                                    dig.Ogp = -1;
+                                    case 0:
+                                        dig.Ovp = -1;
+                                        dig.Ogp = -1;
+                                        break;
+                                    case int gap when gap > 24 && gap <= 26:
+                                        dig.Ovp = item.PassSpeed > 100 ? 100 : -1;
+                                        dig.Ogp = item.FreightSpeed > 100 ? 100 : -1;
+                                        break;
+                                    case int gap when gap > 26 && gap <= 30:
+                                        dig.Ovp = item.PassSpeed > 60 ? 60 : -1;
+                                        dig.Ogp = item.FreightSpeed > 60 ? 60 : -1;
+                                        break;
+                                    case int gap when gap > 30 && gap <= 35:
+                                        dig.Ovp = item.PassSpeed > 25 ? 25 : -1;
+                                        dig.Ogp = item.FreightSpeed > 25 ? 25 : -1;
+                                        break;
+                                    case int gap when gap > 35:
+                                        dig.Ovp = 0;
+                                        dig.Ogp = 0;
+                                        break;
                                 }
-                                else if (item.Otst_r == "")
-                                {
-                                    dig.Ovp = -1;
-                                    dig.Ogp = -1;
-                                }
+                                //if (item.Otst_l == "")
+                                //{
+                                //    dig.Ovp = -1;
+                                //    dig.Ogp = -1;
+                                //}
+                                //else if (item.Otst_r == "")
+                                //{
+                                //    dig.Ovp = -1;
+                                //    dig.Ogp = -1;
+                                //}
 
-                                else if (item.Otst_l == "З?")
-                                {
-                                    dig.Ovp = -1;
-                                    dig.Ogp = -1;
-                                }
-                                else if (item.Otst_r == "З?")
-                                {
-                                    dig.Ovp = -1;
-                                    dig.Ogp = -1;
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        dig.Ovp = int.Parse(item.Vdop.Split('/')[1]);
-                                        dig.Ogp = int.Parse(item.Vdop.Split('/')[1]);
-                                    }
-                                    catch
-                                    {
-                                        Console.WriteLine("Скорости не были получены и расчитаны");
-                                    }
+                                //else if (item.Otst_l.Contains("З?"))
+                                //{
+                                //    dig.Ovp = item.PassSpeed > 60 ? 60 : -1;
+                                //    dig.Ogp = -1;
+                                //}
+                                //else if (item.Otst_r.Contains("З?"))
+                                //{
+                                //    dig.Ovp = -1;
+                                //    dig.Ogp = -1;
+                                //}
+                                //else
+                                //{
+                                //    try
+                                //    {
+                                //        dig.Ovp = int.Parse(item.Vdop.Split('/')[1]);
+                                //        dig.Ogp = int.Parse(item.Vdop.Split('/')[1]);
+                                //    }
+                                //    catch
+                                //    {
+                                //        Console.WriteLine("Скорости не были получены и расчитаны");
+                                //    }
                                     
-                                }
+                                //}
 
                                 dig.Uv = int.Parse(item.Vpz.Split('/')[0]);
                                 dig.Uvg = int.Parse(item.Vpz.Split('/')[1]);
@@ -225,9 +248,10 @@ namespace ALARm_Report.Forms
                                 ListS3.Add(dig);
                             }
 
+                            
                             ListS3 = ListS3.OrderBy(o => o.RealCoordinate).ToList();
 
-                            var temp = ListS3.Where(o => o.Ots != "З" && o.Ots != "З?").ToList();
+                            var temp = ListS3.Where(o => o.Ots != "З.л" && o.Ots != "З?.л" && o.Ots != "З.п" && o.Ots != "З?.п").ToList();
 
                             foreach (var s3 in ListS3)
                             {
@@ -292,7 +316,7 @@ namespace ALARm_Report.Forms
 
 
                                 ////нужно изменить З на З.л /З.пр соотвественно и нормы
-                                if (s3.Ots == "З" || s3.Ots == "З?")
+                                if (s3.Ots == "З.л" || s3.Ots == "З?.л" || s3.Ots == "З.п" || s3.Ots == "З?.п")
                                 {
                                     XElement xeNote = new XElement("Note",
                                         new XAttribute("codDorogi", temp.Any() ? temp.First().Roadcode : "-"),
@@ -317,9 +341,9 @@ namespace ALARm_Report.Forms
                                         new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                         new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
 
-                                          new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
+                                          new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString()),
 
-                                        new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                        new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString()),
                                         new XAttribute("vOgrPorozh", "-"),
                                         new XAttribute("radius", "-"),
                                         new XAttribute("elevation", "-"),
@@ -369,11 +393,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
 
                                            new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                         new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                         new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис")?"ис": s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -405,11 +429,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                              new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                        new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                        new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -430,7 +454,7 @@ namespace ALARm_Report.Forms
                                             new XAttribute("km", s3.Km),
                                             new XAttribute("m", s3.Meter),
                                             new XAttribute("vidOts", s3.Ots),
-                                            new XAttribute("norma", "20"),
+                                            new XAttribute("norma", "-"),
                                             new XAttribute("velichOts", s3.Otkl),
                                             new XAttribute("len", s3.Len),
                                             new XAttribute("stepen", s3.Typ.ToString() == "5" ? "-" : s3.Typ.ToString()),
@@ -441,11 +465,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -466,7 +490,7 @@ namespace ALARm_Report.Forms
                                             new XAttribute("km", s3.Km),
                                             new XAttribute("m", s3.Meter),
                                             new XAttribute("vidOts", s3.Ots),
-                                            new XAttribute("norma", "10"),
+                                            new XAttribute("norma", "-"),
                                             new XAttribute("velichOts", s3.Otkl),
                                             new XAttribute("len", s3.Len),
                                             new XAttribute("stepen", s3.Typ.ToString() == "5" ? "-" : s3.Typ.ToString()),
@@ -477,11 +501,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -513,11 +537,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -549,11 +573,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -584,11 +608,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -620,11 +644,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -656,11 +680,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -694,11 +718,11 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                             new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                            new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                            new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
@@ -767,12 +791,12 @@ namespace ALARm_Report.Forms
                                             new XAttribute("vGruz", s3.Uvg.ToString() == "-1" ? "-" : s3.Uvg.ToString()),
                                             new XAttribute("Vogr", /*s3.Ogp.ToString().Max().ToString() == "-1" ? "-" : s3.Ogp.ToString()*/"-"),//to doo
                                              new XAttribute("vOgrPass", s3.Ovp.ToString() == "-1" ? "-" : s3.Ovp.ToString() == "0" ? "-" : s3.Ovp.ToString()),
-                                        new XAttribute("vOgrGruz", s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
+                                        new XAttribute("vOgrGruz", s3.Primech.Contains("гр") ? "60" : s3.Ogp.ToString() == "-1" ? "-" : s3.Ogp.ToString() == "0" ? "-" : s3.Ogp.ToString()),
 
                                             new XAttribute("vOgrPorozh", "-"),
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
-                                            new XAttribute("strelka", s3.Primech.Contains("Стр.;") ? 1 : s3.Strelka),
+                                            new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-"));
                                 
 

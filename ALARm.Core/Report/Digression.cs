@@ -16,7 +16,7 @@ namespace ALARm.Core.Report
         public int W { get; set; }
         public int H { get; set; }
         public int Hight { get; set; }
-
+        public long Trip_id { get; set; }
         public string Tripplan { get; set; }
         public string Vpz { get; set; }
         public int Total_NPK_l { get; set; }
@@ -195,11 +195,9 @@ namespace ALARm.Core.Report
 
             if (61 <= PassSpeed && PassSpeed <= 100)
             {
-                
                 switch (Zazor)
                 {
-
-                    case var value when 25 <= value && value <= 30 :
+                    case var value when 27 <= value && value <= 30 :
                         Kmetr = Kmetr;
                         AllowSpeed = "";
                         DigName = DigressionName.GapSimbol;
@@ -221,7 +219,7 @@ namespace ALARm.Core.Report
             {
                 switch (Zazor)
                 {
-                    case var value when 27 <= value && value <= 30:
+                    case var value when 25 <= value && value <= 30:
                         AllowSpeed = "";
                         DigName = DigressionName.GapSimbol;
                         break;

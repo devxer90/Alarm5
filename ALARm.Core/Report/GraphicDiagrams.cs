@@ -14,8 +14,10 @@ namespace ALARm.Core.Report
         public float widthImMM = 155;
         public int xBegin = 145;
         public int picketX = -735;
-        public string copyright = "ЦНТФИ";
-        public string systemName = "ALARmDK";
+        public string copyright = "unknown";
+        public string systemName = "unknown";
+        //public string copyright = "ЦНТФИ";
+        //public string systemName = "ALARmDK";
         public string diagramName = "-";
 
         public double koefUrob = 1; // 0.5; //Коефицент для уровня

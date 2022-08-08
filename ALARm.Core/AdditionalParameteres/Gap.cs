@@ -147,6 +147,7 @@ namespace ALARm.Core.AdditionalParameteres
             digression.Threat = (Threat)Threat.Left;
             digression.Velich = Zazor;
             //Zazor = Zazor < 0 ? Zabeg == 0 ? -1 : Zazor : Zazor;
+            //if (Otst_l != "" && Otst_r != "")
             switch (Zazor)
             {
                 case 0:

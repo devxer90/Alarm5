@@ -69,10 +69,10 @@
         public static DigName GapSimbolL = new DigName() { Name = "З?л", Value = 1103 };
         public static DigName GapSimbolR = new DigName() { Name = "З?п", Value = 1104 };
 
-        public static DigName GapSimbol_left = new DigName() { Name = "З?Л", Value = 1101 };
-        public static DigName GapSimbol_right = new DigName() { Name = "З?П", Value = 1102 };
-        public static DigName Gap_right = new DigName() { Name = "ЗП", Value = 1103 };
-        public static DigName Gap_left = new DigName() { Name = "ЗЛ", Value = 1104 };
+        public static DigName GapSimbol_left = new DigName() { Name = "З?.л", Value = 1101 };
+        public static DigName GapSimbol_right = new DigName() { Name = "З?.п", Value = 1102 };
+        public static DigName Gap_right = new DigName() { Name = "З.п", Value = 1103 };
+        public static DigName Gap_left = new DigName() { Name = "З.л", Value = 1104 };
         public static DigName AnomalisticGap = new DigName() { Name = "АРЗ", Value = 111 };
         public static DigName None = new DigName() { Name = "Отсут.", Value = 112 };
 

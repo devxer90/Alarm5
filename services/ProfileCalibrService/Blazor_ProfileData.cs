@@ -245,33 +245,23 @@ namespace ProfileCalibrService
             {
                 try
                 {
-                    int metr = Meters[0];
-                    int min = 1;
-                    int max = (int)((int)(in_koridor.BaseStream.Length - 8) / in_koridor_size);
-                    while (!(Kilometer == kmnum && Meter == 0))
+                    while (Kilometer != kmnum && FoundKm == false)
                     {
-                        CurrentFrameIndex = (min + max) / 2;
+                        CurrentFrameIndex++;
                         long pos = CurrentFrameIndex * ((long)in_koridor_size) + 8;
                         reader.BaseStream.Seek(pos, SeekOrigin.Begin);
                         reader.ReadBytes(32);
-                        var buf = reader.ReadBytes(4);
-                        Array.Reverse(buf);
-                        Kilometer = BitConverter.ToInt32(buf, 0);
-                        buf = reader.ReadBytes(4);
-                        Array.Reverse(buf);
-                        Meter = BitConverter.ToInt32(buf, 0);
-                        if (Kilometer * 10000 + Meter == kmnum * 10000 + metr)
-                        {
-                            break;
-                        }
-                        else if (Kilometer * 10000 + Meter < kmnum * 10000 + metr)
-                        {
-                            min = CurrentFrameIndex + 1;
-                        }
-                        else
-                        {
-                            max = CurrentFrameIndex - 1;
-                        }
+                        var data = reader.ReadBytes(4);
+                        Array.Reverse(data);
+                        Kilometer = BitConverter.ToInt32(data);
+                    }
+                    if (Kilometer == kmnum && FoundKm == false)
+                    {
+                        FoundKm = true;
+                    }
+                    if (Kilometer != kmnum && FoundKm == true)
+                    {
+                        return false;
                     }
 
                     long ll = CurrentFrameIndex * ((long)in_koridor_size) + 8;

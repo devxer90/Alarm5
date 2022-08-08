@@ -320,7 +320,7 @@ namespace ALARm.Core.Report
 
                         //макс ыздеу анп га
 
-                        for (int ii = 1; ii < vershListLVL.Count; ii = ii + 2)
+                        for (int ii = 1; ii < vershl.Count; ii = ii + 2)
                         {
                             var itemL = vershl[ii];
                             var tempM = itemL.Select(o => o.PassBoost).Max();
@@ -361,7 +361,7 @@ namespace ALARm.Core.Report
                                 Km = item.First().Km,
                                 Meter = (item.First().Km == item.Last().Km) ? (int)avgmeterbyItem : (startm + kilometer.Final_m) / 2,
                                 lvl = (int)Math.Abs(h),
-                                Alert = $"кривая факт. R:{ (17860 / Math.Abs(r)):0} H:{ Math.Abs(h):0}"
+                                Alert = $"кривая факт. R:{ (int)(17860 / Math.Abs(r)):0} H:{ (int)Math.Abs(h):0}"
                             });
                         }
 
@@ -408,6 +408,7 @@ namespace ALARm.Core.Report
                             //Passenger
                             var PassBoostAbs = item.Select(o => Math.Abs(o.PassBoost_anp)).ToList();
                             var PassboostMax = PassBoostAbs.Max();
+
                             var MaxPassboostIndex = PassBoostAbs.IndexOf(PassboostMax);
                             var AnpPassMax = PassboostMax * Math.Sign(item[MaxPassboostIndex].PassBoost_anp);
                             //Freight
@@ -601,8 +602,8 @@ namespace ALARm.Core.Report
 
                     lenPru = minH.Count;
                     lvl = (int)minOb;
-
-                    if (StrPoins.Any() && LevelPoins.Any())
+                    if (StrPoins.Count > 2 && LevelPoins.Count > 2)
+                    //if (StrPoins.Any() && LevelPoins.Any())
                     {
                         try
                         {
@@ -631,6 +632,8 @@ namespace ALARm.Core.Report
                             {
                                 str_circular.Add(StrPoins[StrPoins.Count - 1]);
                             }
+
+                           
                             //Поиск круговой кривой уровень
                             var lvl_circular = new List<RDCurve> { };
 
@@ -718,6 +721,7 @@ namespace ALARm.Core.Report
                                 }
                             }
 
+                            
                             //надо проверить на ошибки
                             var start_lvl_kmc = lvl_circular.First().Km;
                             var start_lvl_mc = lvl_circular.First().M;
@@ -1026,8 +1030,10 @@ namespace ALARm.Core.Report
 
 
                     new XAttribute("right-title",
-                        copyright + ": " + "ПО " + softVersion + "  " +
-                        systemName + ":" + trip.Car + "(" + trip.Chief.Trim() + ") (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].RoadAbbr : "НЕИЗВ") + ">" + "<" + kilometer.Passage_time.ToString("dd.MM.yyyy  HH:mm") + ">" +
+                        //copyright + ": " + "ПО " + softVersion + "  " +
+                        //systemName + ":" + trip.Car +
+                        //"(" + trip.Chief.Trim() + ")" +
+                        " (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].RoadAbbr : "НЕИЗВ") + ">" + "<" + kilometer.Passage_time.ToString("dd.MM.yyyy  HH:mm") + ">" +
                         "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(trip.Travel_Direction.ToString())) + ">" +
                         "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(trip.Car_Position.ToString())) + ">" +
                         "<" + trip.Trip_date.Month + "-" + trip.Trip_date.Year + " " + (trip.Trip_Type == TripType.Control ? "контр." : trip.Trip_Type == TripType.Work ? "раб." : "доп.") + " Проезд:" + trip.Trip_date.ToString("dd.MM.yyyy  HH:mm") + " " + diagramName + ">"

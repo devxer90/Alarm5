@@ -16,8 +16,12 @@ namespace ALARm.DataAccess
         {
             try
             {
+
                 var configBuilder = new ConfigurationBuilder();
-                var path = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "appsettings.json");
+                //System.Console.WriteLine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location));
+                //var path = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "////appsettings.json");
+                string userName = Environment.UserName;
+                var path = $@"C:\Users\{userName}\AppData\Local\Programs\alarm-p-p.-web\resources\bin\appsettings.json";
                 configBuilder.AddJsonFile(path, false);
                 var root = configBuilder.Build();
                 var appSetting = root.GetSection("ConnectionStrings:DefaultConnection");

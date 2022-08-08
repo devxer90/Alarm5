@@ -132,6 +132,9 @@ namespace ALARm_Report.Forms
                             var curve_center_ind = rdcs.Count / 2;
                             var rightCurve = new List<RDCurve>();
                             var leftCurve = new List<RDCurve>();
+                            
+                            if (curve.Start_Km == 708)
+                            { }
                             //басын аяғын тауып алу Рихтовка
                             for (int cInd = curve_center_ind; cInd < rdcs.Count; cInd++)
                             {
@@ -154,11 +157,17 @@ namespace ALARm_Report.Forms
                                 {
                                     rdcs[clearInd].Trapez_str = 0;
                                     rdcs[clearInd].Avg_str = 0;
+                                    rdcs[clearInd].Radius = 0;
+                                    rdcs[clearInd].PassBoost = 0;
+                                    rdcs[clearInd].FreightBoost = 0;
                                 }
                                 if (rdcs[clearInd].X > rightCurve.Last().X)
                                 {
                                     rdcs[clearInd].Trapez_str = 0;
                                     rdcs[clearInd].Avg_str = 0;
+                                    rdcs[clearInd].Radius = 0;
+                                    rdcs[clearInd].PassBoost = 0;
+                                    rdcs[clearInd].FreightBoost = 0;
                                 }
                             }
 

@@ -1212,11 +1212,135 @@ namespace ALARm.DataAccess
                         }
                        
                         i++;
-                        if (gap.Meter == 598)
+                        if (Dig_r != "" && Dig_l != "")
                         {
-                            gap.Meter = 598;
+                            var txt1 = $@"INSERT INTO report_gaps (
+	                                        trip_id,
+	                                        pdb_section,
+	                                        fragment,
+	                                        km,
+	                                        piket,
+	                                        M,
+	                                        vpz,
+	                                        zazor_r,
+	                                        zazor_l,
+                                            temp,
+	                                        zabeg,
+	                                        vdop,
+                                            otst_l,
+	                                        file_id,
+	                                        fnum,
+	                                        ms,
+	                                        r_file_id,
+	                                        r_fnum,
+	                                        r_ms,
+	                                        template_id ,x ,y ,h ,
+                                                         x_r ,y_r ,h_r
+                                        )
+                                        VALUES
+	                                       (
+                                            '{trip_id}', 
+                                            '{gap.Pdb_section}', 
+                                            '{gap.Fragment}',
+                                            '{gap.Km}',
+                                            '{(gap.Meter / 100 + 1)}',
+                                            '{gap.Meter}',
+                                            '{gap.FullSpeed}',
+                                            '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
+                                            '{gap.Zazor}',
+                                            '{gap.temp}',
+                                            '{zabeg}',
+                                            '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
+                                            
+                                            '{ Dig_l }',                                         
+                                            '{gap.Fileid}',
+                                            '{gap.Fnum}',
+                                            '{gap.Ms}',
+                                            '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
+                                            '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
+                                            '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
+                                            '{template_id}',
+                                            '{gap.X}',
+                                            '{gap.Y}',
+                                            '{gap.H}',
+                                            '{(r.Any() ? r.First().X.ToString() : "-999")}',
+                                            '{(r.Any() ? r.First().Y.ToString() : "-999")}',
+                                            '{(r.Any() ? r.First().H.ToString() : "-999")}');";
+
+                            try
+                            {
+                                db.Execute(txt1);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+                            }
+                            var txt2 = $@"INSERT INTO report_gaps (
+	                                        trip_id,
+	                                        pdb_section,
+	                                        fragment,
+	                                        km,
+	                                        piket,
+	                                        M,
+	                                        vpz,
+	                                        zazor_r,
+	                                        zazor_l,
+                                            temp,
+	                                        zabeg,
+	                                        vdop,
+	                                        otst_r,
+	                                        file_id,
+	                                        fnum,
+	                                        ms,
+	                                        r_file_id,
+	                                        r_fnum,
+	                                        r_ms,
+	                                        template_id ,x ,y ,h ,
+                                                         x_r ,y_r ,h_r
+                                        )
+                                        VALUES
+	                                       (
+                                            '{trip_id}', 
+                                            '{gap.Pdb_section}', 
+                                            '{gap.Fragment}',
+                                            '{gap.Km}',
+                                            '{(gap.Meter / 100 + 1)}',
+                                            '{gap.Meter}',
+                                            '{gap.FullSpeed}',
+                                            '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
+                                            '{gap.Zazor}',
+                                            '{gap.temp}',
+                                            '{zabeg}',
+                                            '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
+                                            '{ Dig_r }',                                    
+                                            '{gap.Fileid}',
+                                            '{gap.Fnum}',
+                                            '{gap.Ms}',
+                                            '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
+                                            '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
+                                            '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
+                                            '{template_id}',
+                                            '{gap.X}',
+                                            '{gap.Y}',
+                                            '{gap.H}',
+                                            '{(r.Any() ? r.First().X.ToString() : "-999")}',
+                                            '{(r.Any() ? r.First().Y.ToString() : "-999")}',
+                                            '{(r.Any() ? r.First().H.ToString() : "-999")}');";
+
+                            try
+                            {
+                                db.Execute(txt2);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+                            }
+
                         }
-                        var txt = $@"INSERT INTO report_gaps (
+                        else
+                        {
+
+                            var txt = $@"INSERT INTO report_gaps (
 	                                        trip_id,
 	                                        pdb_section,
 	                                        fragment,
@@ -1271,13 +1395,14 @@ namespace ALARm.DataAccess
                                             '{(r.Any() ? r.First().Y.ToString() : "-999")}',
                                             '{(r.Any() ? r.First().H.ToString() : "-999")}');";
 
-                        try
-                        {
-                            db.Execute(txt);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+                            try
+                            {
+                                db.Execute(txt);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+                            }
                         }
                     }
                     return "Удачно записано!";

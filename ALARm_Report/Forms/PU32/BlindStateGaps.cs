@@ -57,6 +57,20 @@ namespace ALARm_Report.Forms
                     foreach (var track_id in admTracksId)
                     {
                         var trackName = AdmStructureService.GetTrackName(track_id);
+                        var trip = RdStructureService.GetTrip(tripProcess.Id);
+                        var kms = RdStructureService.GetKilometersByTrip(trip);
+                        if (!kms.Any()) continue;
+                        {
+                            MessageBox.Show("Нет отчетных данных по выбранным параметрам");
+                            return;
+                        }
+                        kms = kms.Where(o => o.Track_id == track_id).ToList();
+
+                        trip.Track_Id = track_id;
+                        var lkm = kms.Select(o => o.Number).ToList();
+
+                        if (lkm.Count() == 0) continue;
+                       
 
                         XElement tripElem = new XElement("trip",
                             new XAttribute("date_statement", tripProcess.Date_Vrem.ToString("g", CultureInfo.CreateSpecificCulture("fr-BE"))),
@@ -112,6 +126,7 @@ namespace ALARm_Report.Forms
                             gap.PassSpeed = speed.Count > 0 ? speed[0].Passenger : -1;
                             gap.FreightSpeed = speed.Count > 0 ? speed[0].Freight : -1;
                             var dig = gap.GetDigressions();
+                            //dig.Add(gap.GetDigressions3());
 
                             XElement Notes = new XElement("Note");
 

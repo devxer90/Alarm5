@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "Deviationinsleepers": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

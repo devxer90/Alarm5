@@ -121,6 +121,7 @@ namespace ALARm_Report.Forms
                             gap.PassSpeed = speed.Count > 0 ? speed[0].Passenger : -1;
                             gap.FreightSpeed = speed.Count > 0 ? speed[0].Freight : -1;
                             addDigressions.Add(gap.GetDigressions());
+                            addDigressions.Add(gap.GetDigressions3());
                         }
 
                         addDigressions = addDigressions.OrderByDescending(o => o.Meter).ToList();

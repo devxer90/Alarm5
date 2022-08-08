@@ -2610,8 +2610,7 @@ namespace ALARm.DataAccess
                 string sqltext = @"
                 SELECT trip.*, direction.name as direction_name FROM trips as trip 
                 INNER JOIN adm_direction as direction on direction.id = trip.direction_id
-                WHERE
-                  trip.id = 242
+                WHERE trip.id = 240
                   --current = true 
                   order by id desc limit 1";
                 

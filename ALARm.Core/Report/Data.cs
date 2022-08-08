@@ -178,10 +178,21 @@ namespace ALARm.Core.Report
             //return (int)(t.Select(o => o.Radius).Max());
         }
 
+        public int GetAvgPlanMulti(List<RDCurve> t)
+        {
+            return (int)(17860 / (Math.Abs(t.Select(o => o.Trapez_str).Average())));
+            //return (int)(t.Select(o => o.Radius).Average());
+        }
+
         public int GetAvgPlan(List<RDCurve> t)
         {
-            return (int)(17860 / (Math.Abs(t.Select(o => o.Radius).Average()) + 0.000001));
+            return (int)(17860 / (Math.Abs(t.Select(o => o.Trapez_str).Max())));
             //return (int)(t.Select(o => o.Radius).Average());
+        }
+
+        public int GetVkr(List<RDCurve> t)
+        {
+            return (int)t.Select(o => Math.Sqrt((0.7 + 0.0061 * Math.Abs(o.Trapez_level)) * 13.0 * (17860 /  Math.Abs(o.Trapez_str)))).Min();
         }
 
         public int Get6mmWear()
@@ -244,6 +255,7 @@ namespace ALARm.Core.Report
             return Convert.ToInt32(t.Select(o=> Math.Abs(o.Level)).Min());
         }
 
+        
         public int GetMaxLevel(List<RDCurve> t)
         {
             return Convert.ToInt32(t.Select(o => Math.Abs(o.Level)).Max());
@@ -251,7 +263,7 @@ namespace ALARm.Core.Report
 
         public int GetAvgLevel(List<RDCurve> t)
         {
-            return (int)(t.Select(o => o.Level).Average());
+            return (int)(t.Select(o => Math.Abs(o.Trapez_level)).Max());
         }
 
         public float GetRanp { get { return Ranp; } }
@@ -515,7 +527,7 @@ namespace ALARm.Core.Report
 
         public float GetPlanAvgRetractionSlope(List<RDCurve> rdcs, double len)
         {
-            var max_rad = rdcs.Select(o => Math.Abs(o.Radius)).Max();
+            var max_rad = rdcs.Select(o => Math.Abs(o.Trapez_str)).Max() - rdcs.Select(o => Math.Abs(o.Trapez_str)).Min();
             return (float)(2 * max_rad / Math.Abs(len));
         }
 
@@ -535,7 +547,7 @@ namespace ALARm.Core.Report
 
         public float GetLvlAvgRetractionSlope(List<RDCurve> rdcs, double len)
         {
-            var max_lvl = rdcs.Select(o => Math.Abs(o.Level)).Max();
+            var max_lvl = rdcs.Select(o => Math.Abs(o.Trapez_level)).Max() - rdcs.Select(o => Math.Abs(o.Trapez_level)).Min();
             return (float)(max_lvl / Math.Abs(len));
         }
 
