@@ -440,10 +440,10 @@ namespace ALARm
             progressBar.Value = 0;
             progressBar.Step = 100 / 20;
 
-            if (fileInfo.Where(tmp => tmp.Name == "KV_PUTGL.xml").Count() > 0)
+            if (fileInfo.Where(tmp => tmp.Name == "UP.xml").Count() > 0)
             {
                 progressBar.PerformStep();
-                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "KV_STAN.xml"))
+                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "UP.xml"))
                 {
                     XmlDocument xmlDocument = new XmlDocument();
                     xmlDocument.Load(file.FullName);
@@ -451,13 +451,15 @@ namespace ALARm
 
                     foreach (XmlNode xmlNode in xmlElement)
                     {
-                        if (xmlNode.Name == "rs:data")
+                        if (xmlNode.Name == "up")
                         {
-                            foreach (XmlNode z_row in xmlNode.ChildNodes)
+
+                            foreach (XmlNode z_row in xmlNode.ParentNode)
                             {
+
                                 string name = z_row.Attributes["NAME"].Value;
-                                string code = z_row.Attributes["ST_KOD"].Value;
-                                string stantiontype = z_row.Attributes["STAN_TIP"].Value;
+                                string code = z_row.Attributes["SITEID"].Value;
+                                string stantiontype = z_row.Attributes["TYPE"].Value;
                                 int typeid = 0;
 
                                 if (stantiontype == "Станция")
@@ -466,11 +468,19 @@ namespace ALARm
                                     typeid = 4;
                                 else if (stantiontype == "Блокпост")
                                     typeid = 5;
+                                else if (stantiontype == "Направление")
+                                    typeid = 1;
+                                else if (stantiontype == "Парк")
+                                    typeid = 2;
 
                                 ImportListStationID listStationID = new ImportListStationID();
                                 listStationID.Station = name;
                                 listStationID.Code = code;
-                                listStationID.OldStationID = int.Parse(z_row.Attributes["STAN_ID"].Value);
+
+                                string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                if (s == "")
+                                    s = "0";
+                                listStationID.OldStationID = int.Parse(s);
                                 listStationID.NewStationID = ExportImportService.ImportQueryReturnLong("insert into ADM_STATION (TYPE_ID, CODE, NAME, ADM_NOD_ID) values (" + typeid.ToString() + ", " + code + ", \'" + name + "\', " + nod_id + ") returning ID");
                                 listStationIDs.Add(listStationID);
                             }
@@ -479,49 +489,71 @@ namespace ALARm
                 }
 
                 progressBar.PerformStep();
-                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "KV_PUTGL.xml"))
+                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "UP.xml"))
                 {
                     XmlDocument xmlDocument = new XmlDocument();
                     xmlDocument.Load(file.FullName);
                     XmlElement xmlElement = xmlDocument.DocumentElement;
                     foreach (XmlNode xmlNode in xmlElement)
                     {
-                        if (xmlNode.Name == "rs:data")
+                        
+                        if (xmlNode.Name == "up")
                         {
-                            foreach (XmlNode z_row in xmlNode.ChildNodes)
-                            {
+                            foreach (XmlNode z_row in xmlNode.ParentNode)
+                            {                             
+                              
+                                //string directionName= ExportImportService.ImportQueryReturnListString("Select * from ADM_Station where CODE= " + directionCode + " ").ToList().ToString();
+ 
                                 string directionName = z_row.Attributes["NAME"].Value;
-                                string directionCode = z_row.Attributes["NHAPR"].Value;
-                                string trackCode = z_row.Attributes["NPUT"].Value;
-                                if (z_row.Attributes["H_PUT_TYPE"].Value == "Главный")
+                                string directionCode = z_row.Attributes["SITEID"].Value;
+                                string trackCode = z_row.Attributes["UP_NOM"].Value;
+                           
+                                if (z_row.Attributes["TYPE"].Value == "Направление")
                                 {
-                                    if (listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UP_ID"].Value)).Count() < 1)
+                                    if (listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UPID"].Value)).Count() < 1)
                                     {
+                                        //Харанор - Приаргунск
                                         Int64 directionID = ExportImportService.ImportQueryReturnLong("insert into ADM_DIRECTION (CODE, NAME) values (\'" + directionCode + "\', \'" + directionName + "\') returning ID");
                                         Int64 trackID = ExportImportService.ImportQueryReturnLong("insert into ADM_TRACK (CODE, ADM_DIRECTION_ID) values (\'" + trackCode + "\', \'" + directionID.ToString() + "\') returning ID");
                                         ExportImportService.Execute($@"insert into road_direction (road_id, direction_id) values({road_id}, {directionID})");
                                         ImportListDirTrackID listID = new ImportListDirTrackID();
                                         listID.NewDirectionID = directionID;
                                         listID.NewTrackID = trackID;
-                                        listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                        listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                        //listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
+                                        string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                        if (s == "")
+                                            s = "0";
+                                        listID.OldDirectionID = int.Parse(s);
+
+                                        //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                       
+                                        listID.OldTrackID = int.Parse(s);
                                         listIDs.Add(listID);
                                     }
                                     else
                                     {
-                                        Int64 directionID = listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UP_ID"].Value)).First().NewDirectionID;
+                                        Int64 directionID = listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UPID"].Value)).First().NewDirectionID;
                                         Int64 trackID = ExportImportService.ImportQueryReturnLong("insert into ADM_TRACK (CODE, ADM_DIRECTION_ID) values (\'" + trackCode + "\', \'" + directionID.ToString() + "\') returning ID");
                                         ImportListDirTrackID listID = new ImportListDirTrackID();
                                         listID.NewDirectionID = directionID;
                                         listID.NewTrackID = trackID;
-                                        listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                        listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                        listID.OldDirectionID = int.Parse(z_row.Attributes["UPID"].Value);
+                                        //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                        string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                        if (s == "")
+                                            s = "0";
+                                        listID.OldTrackID = int.Parse(s);
                                         listIDs.Add(listID);
                                     }
                                 }
                                 else
                                 {
-                                    if (!directionName.Contains("/"))
+                                    if (directionName.Contains("/"))
+                                    {
+                                        continue;
+                                    }
+
+                                        if (!directionName.Contains("/"))
                                     {
                                         if (listStationIDs.Where(tmp => tmp.Station == directionName && directionCode.Contains(tmp.Code.ToString())).Count() > 0)
                                         {
@@ -531,8 +563,12 @@ namespace ALARm
                                             ImportListDirTrackID listID = new ImportListDirTrackID();
                                             listID.NewDirectionID = stationID;
                                             listID.NewTrackID = trackID;
-                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                            listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UPID"].Value);
+                                            //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                            string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                            if (s == "")
+                                                s = "0";
+                                            listID.OldTrackID = int.Parse(s);
                                             listIDs.Add(listID);
                                         }
                                         else
@@ -571,14 +607,18 @@ namespace ALARm
                                             ImportListDirTrackID listID = new ImportListDirTrackID();
                                             listID.NewDirectionID = listStationID.NewStationID;
                                             listID.NewTrackID = trackID;
-                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                            listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UPID"].Value);
+                                            //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                            string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                            if (s == "")
+                                                s = "0";
+                                            listID.OldTrackID = int.Parse(s);
                                             listIDs.Add(listID);
                                         }
                                     }
                                     else
                                     {
-                                        if (listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UP_ID"].Value)).Count() < 1)
+                                        if (listIDs.Where(tmp => tmp.OldDirectionID == int.Parse(z_row.Attributes["UPID"].Value)).Count() < 1)
                                         {
                                             string[] stations = directionName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                                             string stationID = listStationIDs.Where(tmp => tmp.Station.Contains(stations[0]) && tmp.Code.Contains(directionCode.Remove(6))).First().NewStationID.ToString();
@@ -586,7 +626,7 @@ namespace ALARm
                                             ImportListStationID listStationID = new ImportListStationID();
                                             listStationID.Station = stations[1];
                                             listStationID.Code = directionCode;
-                                            listStationID.OldStationID = int.Parse(z_row.Attributes["UP_ID"].Value);
+                                            listStationID.OldStationID = int.Parse(z_row.Attributes["UPID"].Value);
                                             listStationID.NewStationID = ExportImportService.ImportQueryReturnLong("insert into stw_park (TYPE_ID, adm_station_id, name) values (3, " + stationID + ", \'" + stations[1] + "\') returning ID");
                                             listStationIDs.Add(listStationID);
 
@@ -596,8 +636,12 @@ namespace ALARm
                                             ImportListDirTrackID listID = new ImportListDirTrackID();
                                             listID.NewDirectionID = listStationID.NewStationID;
                                             listID.NewTrackID = trackID;
-                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                            listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UPID"].Value);
+                                            //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                            string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                            if (s == "")
+                                                s = "0";
+                                            listID.OldTrackID = int.Parse(s);
                                             listIDs.Add(listID);
                                         }
                                         else
@@ -611,8 +655,12 @@ namespace ALARm
                                             ImportListDirTrackID listID = new ImportListDirTrackID();
                                             listID.NewDirectionID = Int64.Parse(parkID);
                                             listID.NewTrackID = trackID;
-                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UP_ID"].Value);
-                                            listID.OldTrackID = int.Parse(z_row.Attributes["PUTGL_ID"].Value);
+                                            listID.OldDirectionID = int.Parse(z_row.Attributes["UPID"].Value);
+                                            //listID.OldTrackID = int.Parse(z_row.Attributes["PRED_ID"].Value);
+                                            string s = (z_row.Attributes["PRED_ID"].Value.Split('_').Last());
+                                            if (s == "")
+                                                s = "0";
+                                            listID.OldTrackID = int.Parse(s);
                                             listIDs.Add(listID);
                                         }
                                     }
@@ -623,11 +671,11 @@ namespace ALARm
                 }
 
                 progressBar.PerformStep();
-                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "KV_KMNEST.xml"))
+                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "KM.xml"))
                 {
                     using (StreamWriter outputFile = new StreamWriter(logFile, true))
                     {
-                        outputFile.WriteLine("KV_KMNEST.xml");
+                        outputFile.WriteLine("KM.xml");
                     }
 
                     XmlDocument xmlDocument = new XmlDocument();
@@ -635,17 +683,17 @@ namespace ALARm
                     XmlElement xmlElement = xmlDocument.DocumentElement;
                     foreach (XmlNode xmlNode in xmlElement)
                     {
-                        if (xmlNode.Name == "rs:data")
+                        if (xmlNode.Name == "km")
                         {
-                            foreach (XmlNode z_row in xmlNode.ChildNodes)
+                            foreach (XmlNode z_row in xmlNode.ParentNode)
                             {
                                 string km = z_row.Attributes["KM"].Value;
-                                string length = z_row.Attributes["L"].Value;
-                                if (listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["PUTGL_ID"].Value)).Count() > 0)
+                                string length = z_row.Attributes["LENGTH"].Value;
+                                if (listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["UP_NOM"].Value)).Count() > 0)
                                 {
                                     try
                                     {
-                                        Int64 trackID = listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["PUTGL_ID"].Value)).First().NewTrackID;
+                                        Int64 trackID = listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["UP_NOM"].Value)).First().NewTrackID;
                                         if (ExportImportService.ImportQueryReturnListLong("select ID from TPL_PERIOD where ADM_TRACK_ID = " + trackID.ToString() + " and MTO_TYPE = 2").Count() > 0)
                                         {
                                             Int64 periodID = ExportImportService.ImportQueryReturnLong("select ID from TPL_PERIOD where ADM_TRACK_ID = " + trackID.ToString() + " and MTO_TYPE = 2");
@@ -661,7 +709,7 @@ namespace ALARm
                                     {
                                         using (StreamWriter outputFile = new StreamWriter(logFile, true))
                                         {
-                                            outputFile.WriteLine(z_row.Attributes["PUTGL_ID"].Value + ", km: " + z_row.Attributes["KM"].Value + ", len: " + z_row.Attributes["L"].Value);
+                                            outputFile.WriteLine(z_row.Attributes["UP_NOM"].Value + ", km: " + z_row.Attributes["KM"].Value + ", len: " + z_row.Attributes["LENGTH"].Value);
                                             outputFile.WriteLine(e.Message);
                                         }
                                     }
@@ -670,7 +718,7 @@ namespace ALARm
                                 {
                                     using (StreamWriter outputFile = new StreamWriter(logFile, true))
                                     {
-                                        outputFile.WriteLine(z_row.Attributes["PUTGL_ID"].Value + ", km: " + z_row.Attributes["KM"].Value + ", len: " + z_row.Attributes["L"].Value);
+                                        outputFile.WriteLine(z_row.Attributes["UP_NOM"].Value + ", km: " + z_row.Attributes["KM"].Value + ", len: " + z_row.Attributes["LENGTH"].Value);
                                         outputFile.WriteLine("Путь по ID не найден");
                                     }
                                 }
@@ -746,36 +794,42 @@ namespace ALARm
                 }
 
                 progressBar.PerformStep();
-                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "KV_VUS.xml"))
+                foreach (FileInfo file in fileInfo.Where(tmp => tmp.Name == "VUS.xml"))
                 {
                     XmlDocument xmlDocument = new XmlDocument();
                     xmlDocument.Load(file.FullName);
                     XmlElement xmlElement = xmlDocument.DocumentElement;
                     foreach (XmlNode xmlNode in xmlElement)
                     {
-                        if (xmlNode.Name == "rs:data")
+                        if (xmlNode.Name == "vus")
                         {
-                            foreach (XmlNode z_row in xmlNode.ChildNodes)
+                            foreach (XmlNode z_row in xmlNode.ParentNode)
                             {
-                                string start_km = z_row.Attributes["KMN"].Value;
-                                string start_m = z_row.Attributes["MN"].Value;
-                                string final_km = z_row.Attributes["KMK"].Value;
-                                string final_m = z_row.Attributes["MK"].Value;
-                                string passenger = z_row.Attributes["VPAS"].Value;
-                                string freight = z_row.Attributes["VGR"].Value;
-                                string empty = z_row.Attributes["VPOR"].Value;
-                                if (listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["PUTGL_ID"].Value)).Count() > 0)
+                                string start_km = z_row.Attributes["BEGIN_KM"].Value;
+                                string start_m = z_row.Attributes["BEGIN_M"].Value;
+                                string final_km = z_row.Attributes["END_KM"].Value;
+                                string final_m = z_row.Attributes["END_M"].Value;
+                                string passenger = z_row.Attributes["VPASS"].Value;//пасаэираская
+                                string freight = z_row.Attributes["VGR"].Value;//грузовая
+                                string VSAPS = z_row.Attributes["VSAPS"].Value;//сапсан
+                                string VLAST = z_row.Attributes["VLAST"].Value;//Ласточка
+                                string VSTRIJ = z_row.Attributes["VSTRIJ"].Value;//Стриж
+                                string VALLEGRO = z_row.Attributes["VALLEGRO"].Value;//Скорость для составов типа «Аллегро»
+
+                                string empty = z_row.Attributes["VPOR"].Value;//пороженная
+                                //UP_NOM или  PUT_NOM
+                                if (listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["UP_NOM"].Value)).Count() > 0)
                                 {
-                                    Int64 trackID = listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["PUTGL_ID"].Value)).First().NewTrackID;
+                                    Int64 trackID = listIDs.Where(tmp => tmp.OldTrackID == int.Parse(z_row.Attributes["UP_NOM"].Value)).First().NewTrackID;
                                     if (ExportImportService.ImportQueryReturnListLong("select ID from TPL_PERIOD where ADM_TRACK_ID = " + trackID.ToString() + " and MTO_TYPE = 6").Count() > 0)
                                     {
                                         Int64 periodID = ExportImportService.ImportQueryReturnLong("select ID from TPL_PERIOD where ADM_TRACK_ID = " + trackID.ToString() + " and MTO_TYPE = 6");
-                                        ExportImportService.Execute("insert into APR_SPEED (sapsan, lastochka, PERIOD_ID, START_KM, START_M, FINAL_KM, FINAL_M, PASSENGER, FREIGHT, EMPTY_FREIGHT) values (0, 0, " + periodID.ToString() + ", " + start_km + "," + start_m + ", " + final_km + "," + final_m + ", " + passenger + "," + freight + ", " + empty + ")");
+                                        ExportImportService.Execute("insert into APR_SPEED (sapsan, lastochka, PERIOD_ID, START_KM, START_M, FINAL_KM, FINAL_M, FREIGHT, EMPTY_FREIGHT) values (" + VSAPS+","+ VLAST+","  + periodID.ToString() + ", " + start_km + "," + start_m + ", " + final_km + "," + final_m + ", " + passenger + "," + freight + ", " + empty + ")");
                                     }
                                     else
                                     {
                                         Int64 periodID = ExportImportService.ImportQueryReturnLong("insert into TPL_PERIOD (ADM_TRACK_ID, START_DATE, FINAL_DATE, MTO_TYPE) values (" + trackID.ToString() + ", \'" + period.Start_Date.ToString("yyyy-MM-dd") + "\', \'" + period.Final_Date.ToString("yyyy-MM-dd") + "\', 6) returning ID");
-                                        ExportImportService.Execute("insert into APR_SPEED (sapsan, lastochka, PERIOD_ID, START_KM, START_M, FINAL_KM, FINAL_M, PASSENGER, FREIGHT, EMPTY_FREIGHT) values (0, 0, " + periodID.ToString() + ", " + start_km + "," + start_m + ", " + final_km + "," + final_m + ", " + passenger + "," + freight + ", " + empty + ")");
+                                        ExportImportService.Execute("insert into APR_SPEED (sapsan, lastochka, PERIOD_ID, START_KM, START_M, FINAL_KM, FINAL_M, FREIGHT, EMPTY_FREIGHT) values (" + VSAPS + "," + VLAST + "," + periodID.ToString() + ", " + start_km + "," + start_m + ", " + final_km + "," + final_m + ", " + passenger + "," + freight + ", " + empty + ")");
                                     }
                                 }
                             }

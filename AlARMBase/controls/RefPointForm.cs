@@ -39,9 +39,9 @@ namespace ALARm.controls
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            double mark = 0;
+            float mark = 0;
 
-            if (!double.TryParse(tbAbscoord.Text, out mark) || !coordControl1.CorrectFilled)
+            if (!float.TryParse(tbAbscoord.Text, out mark) || !coordControl1.CorrectFilled)
             {
                 MetroFramework.MetroMessageBox.Show(this, alerts.insert_error + " " + alerts.check_fields_filling, alerts.inserting, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;

@@ -104,7 +104,7 @@ namespace ALARm_Report.Forms
                                 Random r = new Random();
                                 bool foundgap = false;
                                 int gapRadStart = -1, gapRadFin = -1;
-                                for (int j = 0; j < rdcs.Count-1; j++)
+                                for (int j = 0; j < rdcs.Count - 1; j++)
                                 {
                                     if (rdcs[j].PassBoost != 0 && rdcs[j + 1].PassBoost == 0)
                                     {
@@ -113,21 +113,21 @@ namespace ALARm_Report.Forms
                                     }
                                     if (foundgap && rdcs[j].PassBoost == 0 && rdcs[j + 1].PassBoost != 0)
                                     {
-                                        gapRadFin = j+1;
+                                        gapRadFin = j + 1;
                                     }
                                 }
                                 if (gapRadStart != -1 && gapRadFin != -1)
                                 {
-                                    for (int j = gapRadStart+1; j < gapRadFin; j++)
+                                    for (int j = gapRadStart + 1; j < gapRadFin; j++)
                                     {
                                         float randfluc = (float)(r.NextDouble() * 0.1 - 0.05);
                                         rdcs[j].PassBoost = rdcs[gapRadStart].PassBoost + (j - gapRadStart) * (rdcs[gapRadFin].PassBoost - rdcs[gapRadStart].PassBoost) / (gapRadFin - gapRadStart) + randfluc;
                                         rdcs[j].FreightBoost = rdcs[gapRadStart].FreightBoost + (j - gapRadStart) * (rdcs[gapRadFin].FreightBoost - rdcs[gapRadStart].FreightBoost) / (gapRadFin - gapRadStart) + randfluc;
                                     }
                                 }
-                                
+
                             }
-                            
+
                             var curve_center_ind = rdcs.Count / 2;
                             var rightCurve = new List<RDCurve>();
                             var leftCurve = new List<RDCurve>();
@@ -168,10 +168,11 @@ namespace ALARm_Report.Forms
                             }
 
                             // трапециядан туынды алу
-                            for (int fi = 0; fi < strData.Count - 4; fi++)
+                            for (int fi = 0; fi < strData.Count - 24; fi++)
                             {
                                 var temp = Math.Abs(strData[fi + 4].Trapez_str - strData[fi].Trapez_str);
                                 strData[fi].FiList = temp;
+
                             }
                             //накты вершиналарды табу
                             var vershList = new List<List<RDCurve>>();
@@ -181,9 +182,9 @@ namespace ALARm_Report.Forms
                             var flagPerehod = true;
                             var flagKrug = false;
 
-                            for (int versh = 3; versh < strData.Count - 4; versh++)
+                            for (int versh = 3; versh < strData.Count - 24; versh++)
                             {
-                                if (strData[versh].FiList > 0.1 && flagPerehod)
+                                if (strData[versh + 8].FiList > 0.1 && strData[versh].FiList > 0.1 && flagPerehod)
                                 {
                                     perehod.Add(strData[versh]);
                                 }
@@ -200,7 +201,8 @@ namespace ALARm_Report.Forms
                                     }
                                 }
 
-                                if (strData[versh].FiList < 0.1 && flagKrug)
+
+                                if (strData[versh].FiList < 0.1 && strData[versh + 8].FiList < 0.1 && flagKrug)
                                 {
                                     krug.Add(strData[versh]);
                                 }
@@ -230,6 +232,20 @@ namespace ALARm_Report.Forms
                             }
                             StrPoins.Add(strData.Last());
 
+                            //var vershList0 =  new List<RDCurve>();
+                            //foreach (var item in vershList)
+                            //{
+                            //    vershList0.Add(item);
+                            //    if (item.Count() < 20)
+                            //    {
+
+                            //        foreach (var item1 in vershList)
+                            //        {
+                            //        }
+
+                            //    }
+                            //}
+
 
                             curve_center_ind = rdcs.Count / 2;
                             var rightCurveLvl = new List<RDCurve>();
@@ -258,7 +274,7 @@ namespace ALARm_Report.Forms
                                     rdcs[clearInd].Avg_level = 0;
                                     rdcs[clearInd].Level = 0;
 
-                                  
+
                                     rdcs[clearInd].PassBoost_anp = 0;
                                     rdcs[clearInd].PassBoost = 0;
                                     rdcs[clearInd].FreightBoost_anp = 0;
@@ -270,7 +286,7 @@ namespace ALARm_Report.Forms
                                     rdcs[clearInd].Avg_level = 0;
                                     rdcs[clearInd].Level = 0;
 
-                                   
+
                                     rdcs[clearInd].PassBoost = 0;
                                     rdcs[clearInd].PassBoost_anp = 0;
                                     rdcs[clearInd].FreightBoost = 0;
@@ -1022,7 +1038,7 @@ namespace ALARm_Report.Forms
 
                             var circularList = vershList.Where(o => Math.Abs(o.First().FiList) < 0.1).ToList();
 
-                            
+
                             //----------------------------------------------------------------------------
                             //----------------------------------------------------------------------------
                             //----------------------------------------------------------------------------
@@ -1032,8 +1048,8 @@ namespace ALARm_Report.Forms
                             }
 
                             double multicurveAngle = 0;
-                            
-                            for (int v=1; v< vershList.Count-1; v+=2)
+
+                            for (int v = 1; v < vershList.Count - 1; v += 2)
                             {
                                 multicurveAngle += CurveAngle(rdcsData.GetAvgPlan(vershList[v]), vershList[v].Count);
                             }
@@ -1044,8 +1060,8 @@ namespace ALARm_Report.Forms
                             {
                                 xeCurve.Add(new XAttribute("ismulti", "true"));
                                 int ind = 1;
-                                circularList = vershList.Where(o => Math.Abs(o.First().FiList) < 0.1).Concat(vershListLVL.Where(o => Math.Abs(o.First().FiList2) < 0.1)).OrderBy(o => (o.Last().Km + o.Last().M/10000)).ToList();
-                                
+                                circularList = vershList.Where(o => Math.Abs(o.First().FiList) < 0.1).Concat(vershListLVL.Where(o => Math.Abs(o.First().FiList2) < 0.1)).OrderBy(o => (o.Last().Km + o.Last().M / 10000)).ToList();
+
                                 // plan
                                 List<List<RDCurve>> elemlist = new List<List<RDCurve>> { };
                                 int elemstartkm = vershList[0].First().Km;
@@ -1062,7 +1078,8 @@ namespace ALARm_Report.Forms
 
                                 for (int j = 0; j < circularList.Count(); j++)
                                 {
-                                    if (vershList.Contains(circularList[j])){
+                                    if (vershList.Contains(circularList[j]))
+                                    {
                                         int k = vershList.IndexOf(circularList[j]);
                                         if (!ploskistr)
                                         {
@@ -1124,10 +1141,10 @@ namespace ALARm_Report.Forms
                                 lvllist = lvllist.Where(o => o.Count != 0).ToList();
                                 lvllist[lvllist.Count - 1] = rdcs.Where(o => ((o.Km + o.M / 10000.0) >= (lvllist.Last().First().Km + lvllist.Last().First().M / 10000.0) && (o.Km + o.M / 10000.0) <= (LevelPoins.Last().Km + LevelPoins.Last().M / 10000.0))).ToList();
 
-                                
-                                for (int j=0; j < elemlist.Count; j++)
+
+                                for (int j = 0; j < elemlist.Count; j++)
                                 {
-                                    
+
                                     //макс ыздеу анп га
                                     var tempM = elemlist[j].Select(o => o.PassBoost).Max();
                                     if (tempM > max)
@@ -1164,7 +1181,7 @@ namespace ALARm_Report.Forms
                                     else if (verh.Count == 1 && !circularList.Contains(verh[0]))
                                     {
                                         afterData = rdcs.Where(o => (o.Km + o.M / 1000.0) > (verh[0].First().Km + verh[0].First().M / 1000.0) && (o.Km + o.M / 1000.0) < (verh[0].Last().Km + verh[0].Last().M / 1000.0)).ToList();
-                                        
+
                                     }
 
                                     var verhlvl = vershListLVL.Where(o => (o.First().Km + o.First().M / 1000.0) >= (lvllist[j].First().Km + lvllist[j].First().M / 1000.0) && (o.First().Km + o.First().M / 1000.0) <= (lvllist[j].Last().Km + lvllist[j].Last().M / 1000.0)).ToList();
@@ -1191,7 +1208,7 @@ namespace ALARm_Report.Forms
                                     }
 
 
-                                    
+
                                     XElement xeMultiCurves = new XElement("multicurves");
 
                                     xeMultiCurves.Add(new XAttribute("order", ind),
@@ -1396,7 +1413,7 @@ namespace ALARm_Report.Forms
                                 var razn2 = (int)(((final_km + final_m / 10000.0) - (final_lvl_km + final_lvl_m / 10000.0)) * 10000) % 1000; // final
                                 var razn3 = lenKriv - lenKrivlv - 1; // общая длина нижних
 
-                                
+
 
 
                                 var razn1c = (int)(((start_kmc + start_mc / 10000.0) - (start_lvl_kmc + start_lvl_mc / 10000.0)) * 10000) % 1000; // start
@@ -1467,7 +1484,7 @@ namespace ALARm_Report.Forms
                                     new XAttribute("len_lvl", (lenKrivlv + 1)),
 
                                     // new XAttribute("angle", /*CurveAngle(rdcsData.GetAvgPlanMulti(temp_data_str), lenKriv)*/ (2 * multicurveAngle).ToString("f2", (System.Globalization.CultureInfo.InvariantCulture)))
-                                    new XAttribute("angle", /*CurveAngle(rdcsData.GetAvgPlanMulti(temp_data_str), lenKriv)*/ (2*multicurveAngle * 0.96).ToString("f2", (System.Globalization.CultureInfo.InvariantCulture)))
+                                    new XAttribute("angle", /*CurveAngle(rdcsData.GetAvgPlanMulti(temp_data_str), lenKriv)*/ (2 * multicurveAngle * 0.96).ToString("f2", (System.Globalization.CultureInfo.InvariantCulture)))
                                     );
 
                                 XElement paramCircleCurve = new XElement("param_circle_curve");
@@ -1574,17 +1591,17 @@ namespace ALARm_Report.Forms
                                 freightSpeeds[0] = rdcsData.GetKRSpeedFreig(rdcs);
                                 freightSpeeds[1] = rdcsData.GetPRSpeed(rdcs)[1];
                                 freightSpeeds[2] = rdcsData.GetIZPassSpeed();
-                                
+
                                 var PassBoostAbs = temp_data_str.Select(o => Math.Abs(o.PassBoost_anp)).ToList();
 
                                 var PassboostMax = PassBoostAbs.Max();
 
                                 var AnpPassMax = PassboostMax; ;//= (Math.Pow(passSpeed.First(), 2) / (13.0 * rad_mid)) - (0.0061 * lvl_mid);
-                              
+
 
                                 var FreihtBoostAbs = temp_data_str.Select(o => Math.Abs(o.FreightBoost)).ToList();
                                 var AnpFreigMax = FreihtBoostAbs.Max();                                      //(Math.Pow(freightSpeed.First(), 2) / (13.0 * rad_mid)) - (0.0061 * lvl_mid);
-                                
+
                                 var passmax = rdcsData.GetPassSpeed();
                                 int len_rs; //len retraction slope
                                 if (passmax > 140)

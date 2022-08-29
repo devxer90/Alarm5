@@ -235,7 +235,7 @@
             this.metroLabel2.Name = "metroLabel2";
             this.metroLabel2.Size = new System.Drawing.Size(110, 30);
             this.metroLabel2.TabIndex = 1;
-            this.metroLabel2.Text = "Грузовая прж.";
+            this.metroLabel2.Text = "Стриж";
             this.metroLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.metroLabel2.WrapToLine = true;
             // 

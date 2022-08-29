@@ -1004,7 +1004,7 @@
             // 
             this.импортXMLToolStripMenuItem.Name = "импортXMLToolStripMenuItem";
             this.импортXMLToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
-            this.импортXMLToolStripMenuItem.Text = "Импорт XML";
+            this.импортXMLToolStripMenuItem.Text = "Импорт  ЕКАСУИ XML";
             this.импортXMLToolStripMenuItem.Click += new System.EventHandler(this.импортXMLToolStripMenuItem_Click);
             // 
             // импортCSVToolStripMenuItem
@@ -4583,6 +4583,7 @@
             this.markDataGridViewTextBoxColumn.MinimumWidth = 6;
             this.markDataGridViewTextBoxColumn.Name = "markDataGridViewTextBoxColumn";
             this.markDataGridViewTextBoxColumn.Width = 125;
+          
             // 
             // rfidBindingSource
             // 
@@ -8488,7 +8489,7 @@
             // dataGridViewTextBoxColumn57
             // 
             this.dataGridViewTextBoxColumn57.DataPropertyName = "Side";
-            this.dataGridViewTextBoxColumn57.HeaderText = "Сторона";
+            this.dataGridViewTextBoxColumn57.HeaderText = "Отвод";
             this.dataGridViewTextBoxColumn57.MinimumWidth = 6;
             this.dataGridViewTextBoxColumn57.Name = "dataGridViewTextBoxColumn57";
             this.dataGridViewTextBoxColumn57.Width = 125;

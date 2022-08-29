@@ -2610,8 +2610,8 @@ namespace ALARm.DataAccess
                 string sqltext = @"
                 SELECT trip.*, direction.name as direction_name FROM trips as trip 
                 INNER JOIN adm_direction as direction on direction.id = trip.direction_id
-                WHERE trip.id = 240
-                  --current = true 
+                --WHERE trip.id = 240
+                 -- current = true 
                   order by id desc limit 1";
                 
                 try
@@ -3261,8 +3261,12 @@ namespace ALARm.DataAccess
                     db.Open();
                 try
                 {
-                    var res= db.Query<Kilometer>($@"select km as number, pch as pchcode, pchu as pchucode, pd as pdcode, pdb as pdbcode, ots_iv_st as speedlim, primech as primech, put as track_name, rating as Rating_bedomost from bedemost", commandType: CommandType.Text).ToList();
-    
+
+                    var res = db.Query<Kilometer>($@"select km as number, pch as pchcode, pchu as pchucode,
+                    pd as pdcode, pdb as pdbcode, ots_iv_st as speedlim, primech as primech,put as track_name,rating as Rating_bedomost
+                     from bedemost", commandType: CommandType.Text).ToList();
+
+
                     return res;
                 }
                 catch (Exception e)
@@ -3827,8 +3831,18 @@ namespace ALARm.DataAccess
                 if (db.State == ConnectionState.Closed)
                     db.Open();
                 return db.Query<String>($@"
-                      select file_name from trip_files where trip_id in ( {(trip_id> -1 ? trip_id.ToString() : "select id from trips where current order by id desc limit")} and description in ('Vnutr. profil, koridor_Caliblovany', 'Vnutr. profil, kupe_Caliblovany') order by id desc, threat_id asc limit 2").ToList();
+                      select file_name from trip_files where trip_id in ( {(trip_id> -1 ? trip_id.ToString() : "select id from trips where current=true order by id desc limit 1")}) and description = 'Vnutr. profil, kupe_Caliblovany' order by id desc, threat_id asc limit 2").ToList();
             }      
+        }
+        public List<string>Get_Vnutr__profil__koridor(long trip_id = -1)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                return db.Query<String>($@"
+                      select file_name from trip_files where trip_id in ( {(trip_id > -1 ? trip_id.ToString() : "select id from trips where current=true order by id desc limit 1")}) and description = 'Vnutr. profil, koridor_Caliblovany' order by id desc, threat_id asc limit 2").ToList();
+            }
         }
 
         public List<Curve> GetCurvesInTrip(long tripId)

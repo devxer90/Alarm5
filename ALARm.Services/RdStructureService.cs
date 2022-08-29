@@ -16,6 +16,10 @@ namespace ALARm.Services
         {
             return Container.Resolve<IRdStructureRepository>().GetProfileFilePath(trip_id);
         }
+        public static List<string> Get_Vnutr__profil__koridor(long trip_id = -1)
+        {
+            return Container.Resolve<IRdStructureRepository>().Get_Vnutr__profil__koridor(trip_id);
+        }
 
         public static IRdStructureRepository GetRepository()
         {

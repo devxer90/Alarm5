@@ -172,8 +172,8 @@ namespace AlarmPP.Web.Components.Diagram
                                     List<double> prevStrightAvgPart = new List<double>();
                                     List<double> nextStrightAvgPart = new List<double>();
 
-                                    int n = 200;
-                                    int prevN = 200;
+                                    int n = 350;
+                                    int prevN = 350;
                                     if (prevIndex > 0)
                                     {
                                         n = AppData.Kilometers[prevIndex - 1].LevelAvg.Count > prevN ? prevN : AppData.Kilometers[prevIndex - 1].LevelAvg.Count;

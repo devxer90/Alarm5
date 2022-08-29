@@ -1718,6 +1718,7 @@ namespace ALARm.Core.AdditionalParameteres
                     RolAver = bok_iz_Arr.GetRange(bok_iz_Arr.Count - width, width);
                     var e = Math.Exp(ExponentCoef * Math.Abs(bok_elem - RolAver.Average()));
                     bok_elem = RolAver.Average() + (bok_elem - RolAver.Average()) * e;
+                    if (bok_elem > 25) bok_elem = 0;
                 }
                 else
                 {
@@ -1760,6 +1761,7 @@ namespace ALARm.Core.AdditionalParameteres
                     RolAver = bok_iz_Arr_r.GetRange(bok_iz_Arr_r.Count - width, width);
                     var e = Math.Exp(ExponentCoef * Math.Abs(bok_elem - RolAver.Average()));
                     bok_elem = RolAver.Average() + (bok_elem - RolAver.Average()) * e;
+                    if (bok_elem > 25) bok_elem = 0;
                 }
                 else
                 {

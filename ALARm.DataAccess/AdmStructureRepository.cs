@@ -86,7 +86,7 @@ namespace ALARm.DataAccess
                     result = db.Execute("delete from road_direction where direction_id=@id", new { id }, commandType: CommandType.Text);
                     if (result != 0)
                     {
-                        result = db.Execute("delete from adm_direction where id=@id", new { id }, commandType: CommandType.Text);
+                        result = db.Execute("delete from adm_direction where id=@id and code ='94'", new { id }, commandType: CommandType.Text);
                     }
                     return result != 0;
                 }
@@ -208,6 +208,7 @@ namespace ALARm.DataAccess
 				                    left join adm_station as pstation on pstation.id = park.adm_station_id
                                     where track.ADM_DIRECTION_ID= {parentId} group by track.id, direction.code, station.code, direction.name, station.name, pstation.name,park.name, pstation.code  order by track.ID";
                         return db.Query<AdmTrack>(sqltext, commandType: CommandType.Text).ToList();
+
                     case AdmStructureConst.AdmStation:
                         if (parentId == 0)
                         {
@@ -258,6 +259,7 @@ namespace ALARm.DataAccess
                             left join tpl_pdb_section section on section.period_id = period.id
                             where stwt.stw_park_id=" + parentId.ToString() + " group by stwt.id, trackt.id, park.id, track.id, station.code, park.name order by ID";
                         return db.Query<StationTrack>(sqltext, commandType: CommandType.Text).ToList();
+
                     case AdmStructureConst.AdmStationSection:
                         sqltext = @"Select distinct tss.*, ast.NAME as station from adm_station as ast 
                             INNER JOIN CAT_STATION_TYPE as st on st.ID = ast.TYPE_ID

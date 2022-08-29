@@ -62,5 +62,15 @@ namespace ALARm.DataAccess
                 return db.Query<long>(text, commandType: CommandType.Text).ToList();
             }
         }
+        public List<String> ImportQueryReturnListString(string text)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+
+                return db.Query<String>(text, commandType: CommandType.Text).ToList();
+            }
+        }
     }
 }

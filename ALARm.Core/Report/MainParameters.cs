@@ -153,7 +153,7 @@ namespace ALARm.Core.Report
                             }
                         }
                     }
-                    if (perehod.Any())
+                    if (perehod.Any() && perehod.Count()>20)
                     {
                         vershList.Add(perehod);
                     }

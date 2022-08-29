@@ -71,9 +71,10 @@ namespace SleepersService
 
 
                 var consumer = new EventingBasicConsumer(_channel);
-                consumer.Received += async (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
+               consumer.Received += async (model, ea) =>
+               // consumer.Received +=  (model, ea) =>
+               {
+                   var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
                     message = message.Replace("\\", "\\\\");
                     _logger.LogInformation(" [x] Received {0}", message);

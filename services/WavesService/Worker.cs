@@ -71,6 +71,7 @@ namespace WavesService
 
                 var consumer = new EventingBasicConsumer(_channel);
                 consumer.Received += async (model, ea) =>
+                //consumer.Received +=  (model, ea) =>
                 {
                     var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);

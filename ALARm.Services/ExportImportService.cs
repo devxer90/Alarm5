@@ -36,5 +36,9 @@ namespace ALARm.Services
         {
             return Container.Resolve<IExportImportRepository>().ImportQueryReturnListLong(text);
         }
+        public static List<string> ImportQueryReturnListString(string text)
+        {
+            return Container.Resolve<IExportImportRepository>().ImportQueryReturnListString(text);
+        }
     }
 }

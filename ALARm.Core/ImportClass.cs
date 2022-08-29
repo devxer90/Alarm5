@@ -16,6 +16,7 @@ namespace ALARm.Core
         public string Code { get; set; }
         public Int64 NewStationID { get; set; }
         public int OldStationID { get; set; }
+        public string OldStationIDsplit { get; set; }
     }
 
     public class ImportListCurveID

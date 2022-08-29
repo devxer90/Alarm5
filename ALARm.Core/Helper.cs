@@ -94,7 +94,9 @@ namespace ALARm.Core
         {
             try
             {
-                var factory = new ConnectionFactory() { HostName = "mycomputer", UserName = "beebo", Password = "beebo" };
+                //var factory = new ConnectionFactory() { HostName = "mycomputer", UserName = "beebo", Password = "beebo" };
+                var factory = new ConnectionFactory() { HostName = "mycomputer", UserName = "alarm", Password = "alarm" };
+
                 using (var connection = factory.CreateConnection())
                 using (var channel = connection.CreateModel())
                 {
@@ -113,6 +115,7 @@ namespace ALARm.Core
                     Console.WriteLine(" [x] Sent {0}", json);
 
                 }
+              //   o59m\SKH - 1 - 1\2021_10\2021_10_18__16_43_58\242_StykiKoridorVnutr_2021_10_18_
                 return SocketState.Success;
             }
             catch (Exception e)
@@ -361,7 +364,7 @@ namespace ALARm.Core
             }
             return matrix;
         }
-            public static SocketState SendMessageFromSocket(string ip, int port, string message)
+        public static SocketState SendMessageFromSocket(string ip, int port, string message)
         {
             try
             {
@@ -374,7 +377,7 @@ namespace ALARm.Core
                 IPHostEntry ipHost = Dns.GetHostEntry(ip);
                 IPAddress ipAddr = ipHost.AddressList[0];
                 IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
-                
+
                 Socket sender = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
                 // Соединяем сокет с удаленной точкой

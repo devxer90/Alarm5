@@ -10,5 +10,6 @@ namespace ALARm.Core
         bool Execute(string text);
         long ImportQueryReturnLong(string text);
         List<long> ImportQueryReturnListLong(string text);
+        List<String> ImportQueryReturnListString(string text);
     }
 }

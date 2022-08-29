@@ -9,7 +9,7 @@ namespace RailCrossSectionService
 {
     class AppData
     {
-        public string Cs = "Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=railway_copy";
+        public string Cs = "Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=Aniyar_COpy";
         public NpgsqlConnection Conn { get; set; }
         public int CurrentFrameIndex { get; set; } = 10653; 
 

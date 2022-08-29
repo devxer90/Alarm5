@@ -1118,7 +1118,7 @@ namespace ALARm.DataAccess
                         dp.Add("periodid", ((RefPoint)mtoobject).Period_Id);
                         dp.Add("km", ((RefPoint)mtoobject).Km);
                         dp.Add("meter", ((RefPoint)mtoobject).Meter);
-                        dp.Add("mark", ((RefPoint)mtoobject).Mark);
+                        dp.Add("mark", ((RefPoint)mtoobject).Mark.ToString("0.000"));
                         break;
                     case MainTrackStructureConst.MtoRepairProject:
                         procedure = "insertrepairproject";
@@ -2625,6 +2625,7 @@ namespace ALARm.DataAccess
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
+                
                 var sqltext = $@"
                     SELECT
 	                    kms.kms AS NUMBER,

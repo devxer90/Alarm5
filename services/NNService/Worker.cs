@@ -62,9 +62,10 @@ namespace NNService
                 _channel.BasicQos(0, 1, false);
                 _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
                 var consumer = new EventingBasicConsumer(_channel);
-                consumer.Received += async (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
+               consumer.Received += async (model, ea) =>
+               // consumer.Received +=  (model, ea) =>
+               {
+                   var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body).Replace("'", "\"").Replace("\\", "\\\\");
                     JObject json = JObject.Parse(message);
                     _logger.LogInformation(" [x] Received {0}", message);

@@ -3160,7 +3160,7 @@ namespace ALARMBase
                         return;
                     var refobj = refPointForm.point;
                     int km = obj.Km, meter = obj.Meter;
-                    double mark = obj.Mark;
+                    var mark = obj.Mark;
                     obj.Km = refobj.Km;
                     obj.Meter = refobj.Meter;
                     obj.Mark = refobj.Mark;

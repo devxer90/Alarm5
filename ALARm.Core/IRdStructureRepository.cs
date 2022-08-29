@@ -16,6 +16,7 @@ namespace ALARm.Core
         List<VideoObject> GetRdObject(int object_id, int km, Int64 file_id);
         List<VideoObject> GetRdObject(string object_id, string trip_files);
         List<string> GetProfileFilePath(long trip_id = -1);
+        List<string> Get_Vnutr__profil__koridor(long trip_id = -1);
         List<VideoObject> GetRdObjectKm(string km, string trip_files);
         List<VideoObject> GetRdObjectKm(string object_id, string km, string trip_files);
         List<VideoObject> GetVideoObjects(string obj_name, MainParametersProcess process);

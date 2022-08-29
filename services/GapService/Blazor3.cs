@@ -144,6 +144,7 @@ namespace GapService
         private bool ctbl_poverh = false;
         public double ExponentCoef = -1;
         public int width = 20;
+      
         public string Vnutr__profil__koridor = @"\\DESKTOP-EMAFC5J\o59m\aALARMSVN_ballast\210_ProfilSHpalyKoridor_2020_10_25__11_43_15.s5_0003";
         public string Vnutr__profil__kupe = @"\\DESKTOP-EMAFC5J\o59m\aALARMSVN_ballast\210_ProfilSHpalyKupe_2020_10_25__11_43_15.s6_0003";
 
@@ -747,7 +748,7 @@ namespace GapService
             var threat_id = sidePoverh == "Left" ? "1" : "2";
             var trip_id = "213"; //TODO
 
-            var con = new NpgsqlConnection("Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=railway");
+            var con = new NpgsqlConnection("Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=Aniyar_COpy");
             con.Open();
 
             var cmd = new NpgsqlCommand();

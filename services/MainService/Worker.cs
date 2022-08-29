@@ -79,9 +79,10 @@ namespace MainService
                 _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
                 var consumer = new EventingBasicConsumer(_channel);
                 var processed = new List<ProcessedKm>();
-                consumer.Received += async (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
+               consumer.Received += async (model, ea) =>
+               //  consumer.Received +=  (model, ea) =>
+               {
+                   var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body).Replace("'","\"").Replace("\\", "\\\\");
                     _logger.LogInformation(" [x] Received {0}", message);
                     var file = JObject.Parse(message).ToObject<File>();

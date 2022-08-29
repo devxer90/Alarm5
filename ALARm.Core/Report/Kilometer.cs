@@ -705,8 +705,7 @@ namespace ALARm.Core
 
             //Кривой басы аягы
             var Curves = new List<NatureCurves> { };
-            if (Number == 717)
-            { }
+            
             StrightAvgTrapezoid = StrightAvg.GetTrapezoid(prevStrightAvgPart, nextStrightAvgPart, 4, ref Curves, naprav: trip.Travel_Direction, strRealData: StrightRight);
             LevelAvgTrapezoid = LevelAvg.GetTrapezoid(prev50, next50, 10, ref Curves, naprav: trip.Travel_Direction);
 
