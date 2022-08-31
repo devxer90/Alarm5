@@ -120,13 +120,16 @@ namespace ALARm_Report.Forms
                                 {
                                     for (int j = gapRadStart + 1; j < gapRadFin; j++)
                                     {
-                                        float randfluc = (float)(r.NextDouble() * 0.1 - 0.05);
+                                        float randfluc = (float)(r.NextDouble() * 0.01 - 0.005);
                                         rdcs[j].PassBoost = rdcs[gapRadStart].PassBoost + (j - gapRadStart) * (rdcs[gapRadFin].PassBoost - rdcs[gapRadStart].PassBoost) / (gapRadFin - gapRadStart) + randfluc;
                                         rdcs[j].FreightBoost = rdcs[gapRadStart].FreightBoost + (j - gapRadStart) * (rdcs[gapRadFin].FreightBoost - rdcs[gapRadStart].FreightBoost) / (gapRadFin - gapRadStart) + randfluc;
                                     }
                                 }
 
                             }
+
+                            if (curve.Start_Km == 716)
+                            { }
 
                             var curve_center_ind = rdcs.Count / 2;
                             var rightCurve = new List<RDCurve>();
@@ -168,7 +171,7 @@ namespace ALARm_Report.Forms
                             }
 
                             // трапециядан туынды алу
-                            for (int fi = 0; fi < strData.Count - 24; fi++)
+                            for (int fi = 0; fi < strData.Count - 4; fi++)
                             {
                                 var temp = Math.Abs(strData[fi + 4].Trapez_str - strData[fi].Trapez_str);
                                 strData[fi].FiList = temp;
@@ -182,7 +185,7 @@ namespace ALARm_Report.Forms
                             var flagPerehod = true;
                             var flagKrug = false;
 
-                            for (int versh = 3; versh < strData.Count - 24; versh++)
+                            for (int versh = 3; versh < strData.Count - 8; versh++)
                             {
                                 if (strData[versh + 8].FiList > 0.1 && strData[versh].FiList > 0.1 && flagPerehod)
                                 {
@@ -190,7 +193,7 @@ namespace ALARm_Report.Forms
                                 }
                                 else
                                 {
-                                    if (perehod.Any())
+                                    if (perehod.Count() > 5)
                                     {
                                         vershList.Add(perehod);
                                         perehod = new List<RDCurve>();
@@ -208,7 +211,7 @@ namespace ALARm_Report.Forms
                                 }
                                 else
                                 {
-                                    if (krug.Any())
+                                    if (krug.Count()>5)
                                     {
                                         vershList.Add(krug);
                                         perehod = new List<RDCurve>();
@@ -308,15 +311,16 @@ namespace ALARm_Report.Forms
                             var flagPerehodLVL = true;
                             var flagKrugLVL = false;
 
-                            for (int versh = 3; versh < LvlData.Count - 4; versh++)
+                            for (int versh = 3; versh < LvlData.Count - 8; versh++)
                             {
-                                if (LvlData[versh].FiList2 > 0.1 && flagPerehodLVL)
+                               //  (LvlData[versh+8].FiList2 > 0.1 && LvlData[versh].FiList2 > 0.1 && flagPerehodLVL)
+                                if ( LvlData[versh].FiList2 > 0.01 && flagPerehodLVL)
                                 {
                                     perehodLVL.Add(LvlData[versh]);
                                 }
                                 else
                                 {
-                                    if (perehodLVL.Count > 5)
+                                    if (perehodLVL.Count > 10)
                                     {
                                         vershListLVL.Add(perehodLVL);
                                         perehodLVL = new List<RDCurve>();
@@ -327,13 +331,13 @@ namespace ALARm_Report.Forms
                                     }
                                 }
 
-                                if (LvlData[versh].FiList2 < 0.1 && flagKrugLVL)
+                                if ( LvlData[versh].FiList2 <= 0.01 && flagKrugLVL)
                                 {
                                     krugLVL.Add(LvlData[versh]);
                                 }
                                 else
                                 {
-                                    if (krugLVL.Count > 5)
+                                    if (krugLVL.Count > 10)
                                     {
                                         vershListLVL.Add(krugLVL);
                                         perehodLVL = new List<RDCurve>();
@@ -344,7 +348,7 @@ namespace ALARm_Report.Forms
                                     }
                                 }
                             }
-                            if (perehodLVL.Count > 5)
+                            if (perehodLVL.Count > 0)
                             {
                                 vershListLVL.Add(perehodLVL);
                             }
@@ -363,7 +367,8 @@ namespace ALARm_Report.Forms
                                 continue;
                             if (LevelPoins.Count < 4)
                                 continue;
-
+                            if (LevelPoins.Count == 4 && StrPoins.Count == 4)
+                                continue;
                             var LevelMax = rdcs.Select(o => o.Trapez_level).ToList();
                             var StrMax = rdcs.Select(o => o.Trapez_str).ToList();
 

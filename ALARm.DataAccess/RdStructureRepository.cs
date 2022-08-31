@@ -2452,12 +2452,12 @@ namespace ALARm.DataAccess
                 if (db.State == ConnectionState.Closed)
                     db.Open();
                 var trip_id = db.QueryFirst<int>(@"
-                    INSERT INTO trips(
+                    INSERT INTO trips(id,
                         direction_id, car, chief, travel_direction, car_position, start_station, final_station, trip_type, trip_date, 
                         current, start_position, track_id, rail_profile, longitudinal_profile, short_irregularities, joint_gaps, georadar, 
                         dimensions, beacon_marks, embankment, rail_temperature, geolocation, rail_video_monitoring, video_monitoring, road_id, processed)
 
-                    VALUES(@direction_id, (select value from PARAMETER WHERE name = 'car' limit 1), @chief, @travel_direction, @car_position, @start_station, @final_station, @trip_type, @trip_date, 
+                    VALUES( (SELECT MAX(id) FROM trips)+1, @direction_id, (select value from PARAMETER WHERE name = 'car' limit 1), @chief, @travel_direction, @car_position, @start_station, @final_station, @trip_type, @trip_date, 
                         true, @start_position, @track_id, @rail_profile, @longitudinal_profile, @short_irregularities, @joint_gaps, @georadar, 
                         @dimensions, @beacon_marks, @embankment, @rail_temperature, @geolocation, @rail_video_monitoring, @video_monitoring, @road_id, @processed) RETURNING id", new
                 {
@@ -2478,6 +2478,7 @@ namespace ALARm.DataAccess
                     joint_gaps = trip.Joint_Gaps,
                     georadar = trip.Georadar,
                     dimensions = trip.Dimensions,
+               
                     beacon_marks = trip.Beacon_Marks,
                     embankment = trip.Embankment,
                     rail_temperature = trip.Rail_Temperature,
@@ -2568,6 +2569,39 @@ namespace ALARm.DataAccess
                 )
                 ");
 
+                db.Execute(@"CREATE TABLE public.outdata_" + trip_id + @"
+                (                               ID serial,
+                                                trip_id SMALLINT,
+	                                            km SMALLINT,
+	                                            meter SMALLINT,
+	                                            pu_l REAL,
+	                                            pu_r REAL,
+	                                            vert_l REAL,
+	                                            vert_r REAL,
+	                                            bok_l REAL,
+	                                            bok_r REAL,
+	                                            npk_l REAL,
+	                                            npk_r REAL,
+	                                            shortwavesLeft REAL,
+	                                            shortwavesRight REAL,
+	                                            mediumwavesLeft REAL,
+	                                            mediumwavesRight REAL,
+	                                            longwavesLeft REAL,
+	                                            longWavesRight REAL,
+	                                            iz_45_l REAL,
+                                                iz_45_r REAL,
+                                                imp_left REAL,
+                                                imp_right REAL,
+                                                implen_left REAL,
+                                                implen_right REAL,
+                                                impthreat_left VARCHAR,
+                                                impthreat_right VARCHAR,
+                                                x_big_l REAL,
+                                                x_big_r REAL,
+                                                pointsright VARCHAR (10000),
+                                                pointsleft VARCHAR (10000)
+                )
+                ");
                 foreach (var fragment in trip.Route)
                 {
 
@@ -2610,9 +2644,9 @@ namespace ALARm.DataAccess
                 string sqltext = @"
                 SELECT trip.*, direction.name as direction_name FROM trips as trip 
                 INNER JOIN adm_direction as direction on direction.id = trip.direction_id
-                --WHERE trip.id = 240
-                 -- current = true 
-                  order by id desc limit 1";
+               -- WHERE trip.id = 244
+             --  current = true 
+                 order by id desc limit 1";
                 
                 try
                 {

@@ -86,7 +86,7 @@ namespace ALARm.DataAccess
                     result = db.Execute("delete from road_direction where direction_id=@id", new { id }, commandType: CommandType.Text);
                     if (result != 0)
                     {
-                        result = db.Execute("delete from adm_direction where id=@id and code ='94'", new { id }, commandType: CommandType.Text);
+                        result = db.Execute("delete from adm_direction where id=@id ", new { id }, commandType: CommandType.Text);
                     }
                     return result != 0;
                 }

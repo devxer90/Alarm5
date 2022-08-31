@@ -56,6 +56,7 @@ namespace AlarmPP.Web.Components.Diagram
         {
             if (args.Buttons == 1)
             {
+
                 MousePressed = true;
                 object[] paramss = new object[] { "" };
                 ScrollTop = Math.Round(await JSRuntime.InvokeAsync<double>("ScrollHeadSvg", paramss));
@@ -172,8 +173,8 @@ namespace AlarmPP.Web.Components.Diagram
                                     List<double> prevStrightAvgPart = new List<double>();
                                     List<double> nextStrightAvgPart = new List<double>();
 
-                                    int n = 350;
-                                    int prevN = 350;
+                                    int n = 400;
+                                    int prevN = 400;
                                     if (prevIndex > 0)
                                     {
                                         n = AppData.Kilometers[prevIndex - 1].LevelAvg.Count > prevN ? prevN : AppData.Kilometers[prevIndex - 1].LevelAvg.Count;

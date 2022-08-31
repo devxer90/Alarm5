@@ -709,7 +709,7 @@ namespace ALARm.Core
             StrightAvgTrapezoid = StrightAvg.GetTrapezoid(prevStrightAvgPart, nextStrightAvgPart, 4, ref Curves, naprav: trip.Travel_Direction, strRealData: StrightRight);
             LevelAvgTrapezoid = LevelAvg.GetTrapezoid(prev50, next50, 10, ref Curves, naprav: trip.Travel_Direction);
 
-            int startgap=0, fingap=0; bool foundgap = false;
+            int startgap = 0, fingap = 0; bool foundgap = false;
             for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
             {
                 if (Math.Abs(LevelAvgTrapezoid[ii]) < 0.01 && Math.Abs(LevelAvgTrapezoid[ii + 20]) > 10 && Math.Abs(LevelAvgTrapezoid[ii - 20]) > 10 && !foundgap)
@@ -726,7 +726,7 @@ namespace ALARm.Core
                     LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
                 }
             }
-            
+
 
 
             //-------------------------------------------------
