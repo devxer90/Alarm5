@@ -411,4 +411,13 @@ trapecia_Matlab.txt
 services/services/
 ALARm_Report/App - Copy.config
 ALARm_Report_/
+# --- Remaining local artifacts ---
+ALARmProcees/__recovery/
+AlarmPP.Web/Components/Diagram/digressiontable.table.txt
+AlarmPP.Web/Services/*.txt
+
+# Local notes / accidental files
+ALARmProcees/*.txt
+Версия Видеора*/
+
 
