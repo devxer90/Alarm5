@@ -390,3 +390,25 @@ AlarmPP.Web/*).Last*
 AlarmPP.Web/rdc.M
 AlarmPP.Web/s.Radius*
 AlarmPP.Web/t.Id
+# --- AlarmPP.Web accidental files (created by mistake) ---
+AlarmPP.Web/[0-9]*
+AlarmPP.Web/-*
+AlarmPP.Web/o.*
+AlarmPP.Web/level*
+
+# --- Delphi/RAD Studio support/recovery (local artifacts) ---
+ALARmProcees/ModelSupport_ALARmProcess/
+ALARmProcees/__recovery__/
+ALARmProcees/funcs_proc/
+ALARmProcees/*.groupproj
+ALARmProcees/*.tvsconfig
+ALARmProcees/*.txvpck
+
+# --- Local docs / notes ---
+Queris.docx
+import.txt
+trapecia_Matlab.txt
+services/services/
+ALARm_Report/App - Copy.config
+ALARm_Report_/
+
