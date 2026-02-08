@@ -352,3 +352,41 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+# --- Project-specific (ALARm/Alarm5) ---
+# Archives / dumps
+*.rar
+*.zip
+*.7z
+*.jpg
+*.jpeg
+*.png
+
+# Reports / generated artifacts
+**/Bin_report/
+Reports_xml/
+alarmvideo_offset/
+Desktop/
+Old_video.razor/
+new_video_razor/
+
+# Delphi / RAD Studio build + recovery
+**/Win32/
+**/Win64/
+**/__recovery__/
+**/*.dproj.local
+**/*.identcache
+**/*.local
+
+# Strange accidental files in AlarmPP.Web (keep folder clean)
+AlarmPP.Web/Math.Abs*
+AlarmPP.Web/((*
+AlarmPP.Web/(o.*
+AlarmPP.Web/leftCurve*
+AlarmPP.Web/*).ToList*
+AlarmPP.Web/*).Average*
+AlarmPP.Web/*).Max*
+AlarmPP.Web/*).IndexOf*
+AlarmPP.Web/*).Last*
+AlarmPP.Web/rdc.M
+AlarmPP.Web/s.Radius*
+AlarmPP.Web/t.Id
