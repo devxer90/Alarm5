@@ -17,6 +17,45 @@ namespace AlarmPP.Web.Services
 {
     public class AppData
     {
+        // === Буфер выбора для Video ===
+        public struct VideoSelection
+        {
+            public int Km { get; set; }
+            public int Meter { get; set; }
+
+        }
+
+        private VideoSelection? _pendingVideoSelection;
+
+        public void SetVideoSelection(int km, int meter)
+        {
+            _pendingVideoSelection = new VideoSelection
+            {
+                Km = km,
+                Meter = meter
+                
+            };
+        }
+        // аккуратно “забрать и обнулить”
+        public bool TryConsumeVideoSelection(out int km, out int meter)
+        {
+            if (_pendingVideoSelection != null)
+            {
+                km = _pendingVideoSelection.Value.Km;
+                meter = _pendingVideoSelection.Value.Meter;
+                _pendingVideoSelection = null; // consume
+                return true;
+            }
+            km = 0; meter = 0;
+            return false;
+        }
+        /// <summary>Забрать и очистить отложенный выбор (1 раз).</summary>
+        public VideoSelection? ConsumeVideoSelection(bool clear = true)
+        {
+            var sel = _pendingVideoSelection;
+            if (clear) _pendingVideoSelection = null;
+            return sel;
+        }
         public IMainTrackStructureRepository MainTrackStructureRepository { get; set; }
         public IRdStructureRepository RdStructureRepository { get; set; }
         public IAdditionalParametersRepository AdditionalParametersRepository { get; set; }
@@ -48,6 +87,8 @@ namespace AlarmPP.Web.Services
 
             return koef * value;
         }
+        public float[] FrameBrightness { get; set; } = new float[] { 1f, 1f, 1f, 1f, 1f }; //освещение кадров
+        
 
         public bool Loading { get; set; } = false;
         public string LoadingText { get; set; } = "Загрузка...";
@@ -487,7 +528,7 @@ namespace AlarmPP.Web.Services
         {
             if (Kilometers == null)
                 Kilometers = new List<Kilometer>();
-            BedKilometers = RdStructureRepository.GetBedemostKilometers();
+            BedKilometers = RdStructureRepository.GetBedemostKilometers(Trip.Id);
             foreach (var fragment in Trip.Route)
             {
                 var kms = MainTrackStructureRepository.GetKilometersOfFragment(fragment, DateTime.Today, fragment.Direction, Trip.Id);
@@ -510,7 +551,7 @@ namespace AlarmPP.Web.Services
                 foreach (var km in kms)
                 {
                     var coord = km.Final_m;
-                    if (km.Number == 711)
+                    if (km.Number == 6913)
                     {
                         km.Number = km.Number;
                     }
@@ -1130,5 +1171,6 @@ namespace AlarmPP.Web.Services
     public enum WorkMode { 
         NotSet = -1, Postprocessing = 0, Online = 1
     }
+
     }
 

@@ -10,6 +10,6 @@ namespace ALARm.Core
     {
         public int Km { get; set; }
         public int Meter { get; set; }
-        public float Mark { get; set; }
+        public double Mark { get; set; }
     }
 }

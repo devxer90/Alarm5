@@ -1,486 +1,327 @@
 using ALARm.Core;
-using ALARm.Core.AdditionalParameteres;
 using ALARm.Core.Report;
 using ALARm.Services;
 using ALARm_Report.controls;
-using MetroFramework;
 using MetroFramework.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Xsl;
-using ElCurve = ALARm.Core.ElCurve;
-
 
 namespace ALARm_Report.Forms
 {
+    /// <summary>
+    /// Отступления 2 степени, близкие к 3 (логика как в Ф.О3):
+    /// - ГЛАВНОЕ: строим отчет ОТ ВЫБОРА в форме (направление+путь),
+    ///   а не от списка проездов. Тогда выбранное направление никогда не "пропадет".
+    /// Структура XML:
+    /// report -> trip -> directions(direction,directioncode) -> tracks(track,countbyput,nodata) -> note(...)
+    /// </summary>
     public class DeviationOf2CloseTo3 : Report
     {
         public override void Process(long parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
-            //Сделать выбор периода
-            //List<long> admTracksId = new List<long>();
-            //using (var choiceForm = new ChoiseForm(0))
-            //{
-            //    choiceForm.SetTripsDataSource(parentId, period);
-            //    choiceForm.ShowDialog();
-            //    if (choiceForm.dialogResult == DialogResult.Cancel)
-            //        return;
-            //    admTracksId = choiceForm.admTracksIDs;
-            //}
+            // ===== 1) Выбор путей/направлений =====
+            List<ChoiseForm.TrackChoice> selectedTracks;
+            using (var choiceForm = new ChoiseForm(0))
+            {
+                choiceForm.SetTripsDataSource(parentId, period);
+                choiceForm.ShowDialog();
 
+                if (choiceForm.dialogResult == DialogResult.Cancel)
+                    return;
+
+                selectedTracks = choiceForm.SelectedTracks ?? new List<ChoiseForm.TrackChoice>();
+            }
+
+            if (selectedTracks == null || selectedTracks.Count == 0)
+                return;
+
+            // Уникализируем (чтобы не было дублей из грида)
+            selectedTracks = selectedTracks
+                .Where(x => x != null)
+                .GroupBy(x => new
+                {
+                    x.TrackId,
+                    x.DirectionId,
+                    DirName = (x.DirectionName ?? "").Trim(),
+                    TrName = (x.TrackName ?? "").Trim()
+                })
+                .Select(g => g.First())
+                .ToList();
+
+            // Группы выбора по направлению (ключ: CODE:13863 или NAME:Лесная-Голубичная)
+            var selectedGroups = selectedTracks
+                .GroupBy(x =>
+                {
+                    var code = NormalizeDirectionCode(ExtractDirectionCode(x.DirectionName));
+                    var name = StripDirectionCode(x.DirectionName ?? "").Trim();
+                    return !string.IsNullOrWhiteSpace(code) ? $"CODE:{code}" : $"NAME:{name}";
+                })
+                .ToList();
+
+            // ===== 2) Справочники =====
+            var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
+            if (distance == null)
+            {
+                MessageBox.Show("Не удалось определить ПЧ (distance).");
+                return;
+            }
+
+            var roadName = AdmStructureService.GetRoadName(distance.Id, AdmStructureConst.AdmDistance, true);
+            distance.Name = (distance.Name ?? "").Replace("ПЧ-", "");
+
+            // ===== 3) Проезды по ПЧ/периоду (как PRU) =====
+            var tripProcesses = RdStructureService.GetTripsOnDistance(parentId, period);
+            if (tripProcesses == null)
+                tripProcesses = new List<ALARm.Core.Trips>();
+
+
+            // ===== 4) Формирование HTML =====
             XDocument htReport = new XDocument();
             using (XmlWriter writer = htReport.CreateWriter())
             {
-                List<Curve> curves = (MainTrackStructureService.GetCurves(parentId, MainTrackStructureConst.MtoCurve) as List<Curve>).Where(c => c.Radius <= 1200).OrderBy(c => c.Start_Km * 1000 + c.Start_M).ToList();
-                XDocument xdReport = new XDocument();
+                var xdReport = new XDocument(new XElement("report"));
 
-                var distance =
-                    AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
-                var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
+                bool addedAnyTrip = false;
 
-
-                var tripProcesses = RdStructureService.GetMainParametersProcess(period, distance.Name);
-                if (tripProcesses.Count == 0)
+                // ===== ГЛАВНЫЙ ЦИКЛ: ИДЕМ ПО ВЫБОРУ (направлениям), а не по tripProcesses =====
+                foreach (var g in selectedGroups)
                 {
-                    MessageBox.Show(Properties.Resources.paramDataMissing);
-                    return;
-                }
+                    var firstSel = g.First();
 
-                XElement report = new XElement("report");
-                foreach (var tripProcess in tripProcesses)
-                {
+                    string dirNameRaw = firstSel.DirectionName ?? "";
+                    string dirCode = NormalizeDirectionCode(ExtractDirectionCode(dirNameRaw));
+                    string dirName = StripDirectionCode(dirNameRaw);
 
-                  
-                        //var trackName = AdmStructureService.GetTrackName(track_id);
+                    // Находим все проезды по этому направлению
+                    var tpsForDir = tripProcesses.Where(tp =>
+                    {
+                        // tp.DirectionCode / tp.Direction_Name / tp.Direction в разных местах — нормализуем
+                        string tpCode = NormalizeDirectionCode((tp.DirectionCode ?? "").Trim());
+                        if (string.IsNullOrWhiteSpace(tpCode))
+                            tpCode = NormalizeDirectionCode(ExtractDirectionCode(tp.Direction_Name ?? tp.Direction ?? ""));
 
-                        List<Digression> notes = RdStructureService.GetDigressions(tripProcess.Trip_id, distance.Code, new int[] { 2 });
+                        if (!string.IsNullOrWhiteSpace(dirCode))
+                            return string.Equals(tpCode, dirCode, StringComparison.OrdinalIgnoreCase);
 
-                        List<Gap> check_gap_state = AdditionalParametersService.Check_gap_state(tripProcess.Trip_id, template.ID);
+                        // fallback по имени
+                        var tpName = StripDirectionCode(tp.Direction_Name ?? tp.Direction ?? "").Trim();
+                        return string.Equals(tpName, (dirName ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+                    }).ToList();
 
+                    // Если проездов нет — печатаем "пустую ведомость" по выбранным путям (направление не пропадает)
+                    if (tpsForDir.Count == 0)
+                    {
+                        AppendEmptyTripForDirection(xdReport, g.ToList(), distance, roadName, period);
+                        addedAnyTrip = true;
+                        continue;
+                    }
 
+                    // Есть проезды по направлению — печатаем каждый
+                    foreach (var tp in tpsForDir)
+                    {
+                        var trip = RdStructureService.GetTrip(tp.Id);
+                        if (trip == null)
+                            continue;
 
-                        var curvesAdmUnits = AdmStructureService.GetCurvesAdmUnits(curves[0].Id) as List<CurvesAdmUnits>;
+                        var allKilometers = RdStructureService.GetKilometersByTrip(trip) ?? new List<Kilometer>();
 
-                        CurvesAdmUnits curvesAdmUnit = curvesAdmUnits.Any() ? curvesAdmUnits[0] : null;
-
-                        var kms = RdStructureService.GetKilometerTrip(tripProcess.Trip_id);
-                        if (kms.Count() == 0) continue;
-                        var directName = AdditionalParametersService.DirectName(tripProcess.Id, (int)tripProcess.Direction);
-
-                        XElement tripElem = new XElement("trip",
-                            new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
-                            new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
-                            new XAttribute("direction", tripProcess.DirectionName),
-                            new XAttribute("track", curvesAdmUnits[0].Track),
-                            new XAttribute("check", tripProcess.GetProcessTypeName), //ToDo
-                            new XAttribute("road", roadName),
-                            new XAttribute("distance", distance.Code),
-                            new XAttribute("periodDate", period.Period),
-                            new XAttribute("chief", tripProcess.Chief),
-                            new XAttribute("ps", tripProcess.Car)
+                        // ===== trip header (под наш XSL: trip_id / trip_date) =====
+                        var tripElem = new XElement("trip",
+                            new XAttribute("version", $"{DateTime.Now:dd.MM.yyyy HH:mm:ss} v{Assembly.GetExecutingAssembly().GetName().Version}"),
+                            new XAttribute("trip_id", trip.Id),
+                            new XAttribute("trip_date", trip.Trip_date.ToString("dd.MM.yyyy HH:mm")),
+                            new XAttribute("check", tp.GetProcessTypeName ?? ""),
+                            new XAttribute("road", roadName ?? ""),
+                            new XAttribute("distance", distance.Code ?? ""),
+                            new XAttribute("periodDate", period?.Period ?? ""),
+                            new XAttribute("chief", tp.Chief ?? ""),
+                            new XAttribute("ps", tp.Car ?? ""),
+                            new XAttribute("countDistance", 0)
                         );
 
+                        // ===== Отступления 2 степени =====
+                        var notesAll = RdStructureService.GetDigressions(trip.Id, distance.Code, new int[] { 2 }) ?? new List<Digression>();
 
-                        //notes = notes.Where(o => o.Km >= 129 && o.Km <= 147).ToList();
-
-
-                        //Участки дист коррекция
+                        // Проставим ПЧУ/ПД/ПДБ
                         var dist_section = MainTrackStructureService.GetDistSectionByDistId(distance.Id);
-
-
-
-                        foreach (var item in notes)
+                        if (dist_section != null && dist_section.Count > 0)
                         {
+                            foreach (var n in notesAll)
+                            {
+                                try
+                                {
+                                    var sect = dist_section.FirstOrDefault(o =>
+                                        n.Km * 1000 + n.Meter >= o.Start_Km * 1000 + o.Start_M &&
+                                        n.Km * 1000 + n.Meter <= o.Final_Km * 1000 + o.Final_M);
 
-                            var ds = dist_section.Where(
-                                o => item.Km * 1000 + item.Meter >= o.Start_Km * 1000 + o.Start_M && item.Km * 1000 + item.Meter <= o.Final_Km * 1000 + o.Final_M).ToList();
-
-
-                            item.PCHU = ds.First().Pchu.ToString();
-                            item.PD = ds.First().Pd.ToString();
-                            item.PDB = ds.First().Pdb.ToString();
-                            //item.Primech = ds.First().P.ToString();
+                                    if (sect != null)
+                                    {
+                                        n.PCHU = sect.Pchu.ToString();
+                                        n.PD = sect.Pd.ToString();
+                                        n.PDB = sect.Pdb.ToString();
+                                    }
+                                }
+                                catch { }
+                            }
                         }
 
-                        string previousDirectionName = string.Empty;
-                        string previousTrackName = string.Empty;
-                        string previousPCHUName = string.Empty;
-                        string previousPDName = string.Empty;
-                        string previousPDBName = string.Empty;
+                        // ===== directions элемент (один на направление) =====
+                        var xeDirections = new XElement("directions",
+                            new XAttribute("direction", dirName),
+                            new XAttribute("directioncode", dirCode)
+                        );
 
-                        XElement directionElement = new XElement("direction");
-                        XElement tracklElement = new XElement("track");
-                        XElement PCHUElement = new XElement("PCHU");
-                        XElement PDElement = new XElement("PD");
-                        XElement PDBElement = new XElement("PDB");
+                        int countDistance = 0;
 
-                        int totalwayCount = 0;
-                        int directionRecordCount = 0;
-                        int trackCount = 0;
-                        int totaltrackCount = 0;
-                        int PCHUCount = 0;
-                        int PDCount = 0;
-                        int PDBCount = 0;
+                        // "В том числе" — как у тебя
+                        int drawdownCount = 0;      // Пр
+                        int levelCount = 0;         // У
+                        int skewnessCount = 0;      // П
+                        int straighteningCount = 0; // Р
 
-                        int totalCount = 0;
-                        int constrictionCount = 0;
-                        int broadeningCount = 0;
-                        int levelCount = 0;
-                        int skewnessCount = 0;
-                        int drawdownCount = 0;
-                        int straighteningCount = 0;
+                        // Печатаем пути ровно из выбранной группы g
+                        var tracksDistinct = g
+                            .GroupBy(t => new { t.TrackId, Name = (t.TrackName ?? "").Trim() })
+                            .Select(gr => gr.First())
+                            .ToList();
 
-
-                        var prev_km = -1;
-                        var Artificials = new List<ArtificialConstruction> { };
-
-                        foreach (var note in notes)
+                        foreach (var tr in tracksDistinct)
                         {
-                            //Исскуст соорр - мосты
-                            if (note.Km != prev_km)
+                            long trackId = tr.TrackId;
+
+                            string trackName = (tr.TrackName ?? "").Trim();
+                            if (string.IsNullOrWhiteSpace(trackName))
+                                trackName = (AdmStructureService.GetTrackName(trackId)?.ToString() ?? trackId.ToString()).Trim();
+
+                            var xeTracks = new XElement("tracks",
+                                new XAttribute("direction", dirName),
+                                new XAttribute("directioncode", dirCode),
+                                new XAttribute("track", trackName),
+                                new XAttribute("countbyput", 0),
+                                new XAttribute("nodata", 1)
+                            );
+
+                            // километры по пути
+                            var kmsByTrack = (allKilometers ?? new List<Kilometer>())
+                                .Where(k => k.Track_id == trackId)
+                                .ToList();
+
+                            if (kmsByTrack.Count == 0)
                             {
-                                Artificials = MainTrackStructureService.GetMtoObjectsByCoord(tripProcess.Date_Vrem, note.Km,
-                                    MainTrackStructureConst.MtoArtificialConstruction, tripProcess.TrackID) as List<ArtificialConstruction>;
-                            }
-                            var temp_bridge = Artificials.Where(o => o.Start_Km * 1000 + o.Start_M <= note.Km * 1000 + note.Meter &&
-                                                                     o.Final_Km * 1000 + o.Final_M >= note.Km * 1000 + note.Meter).ToList();
-                            if (temp_bridge.Any())
-                            {
-                                note.Primech += "мост";
-                            }
-                            prev_km = note.Km;
-
-                            //стыки
-                            // запрос списка Изостыков с БПД
-                            var IzoGaps = MainTrackStructureService.GetIzoGaps(curvesAdmUnits[0].Track, tripProcess.DirectionID);
-                            var temp_gap = IzoGaps.Where(o => o.Km * 1000 + o.Meter == note.Km * 1000 + note.Meter).ToList();
-                            if (temp_gap.Any())
-                            {
-                                note.Primech += "из.стык";
-                            }
-
-
-                            if (previousDirectionName.Equals(string.Empty))
-                                previousDirectionName = note.Direction;
-
-                            if (previousTrackName.Equals(string.Empty))
-                                previousTrackName = note.Track;
-
-                            if (previousPCHUName.Equals(string.Empty))
-                                previousPCHUName = note.Pchu;
-
-                            if (previousPDName.Equals(string.Empty))
-                                previousPDName = note.PD;
-
-                            if (previousPDBName.Equals(string.Empty))
-                                previousPDBName = note.PDB;
-
-                            if (!previousDirectionName.Equals(note.Direction))
-                            {
-                                directionElement.Add(new XAttribute("recordCount", directionRecordCount));
-                                directionElement.Add(new XAttribute("name", previousDirectionName));
-                                directionElement.Add(new XAttribute("totalwayCount", totalwayCount));
-                                directionElement.Add(
-                                    new XAttribute("direction", tripProcess.DirectionName),
-                                      new XAttribute("directioncode", note.Direction));
-
-                                tracklElement.Add(new XAttribute("name", previousTrackName));
-                                tracklElement.Add(new XAttribute("recordCount", trackCount));
-                                tracklElement.Add(new XAttribute("totaltrackCount", totaltrackCount));
-
-                                PCHUElement.Add(new XAttribute("number", previousPCHUName));
-                                PCHUElement.Add(new XAttribute("recordCount", PCHUCount));
-
-                                PDElement.Add(new XAttribute("number", previousPDName));
-                                PDElement.Add(new XAttribute("recordCount", PDCount));
-
-                                PDBElement.Add(new XAttribute("number", previousPDBName));
-                                PDBElement.Add(new XAttribute("recordCount", PDBCount));
-
-                                PDElement.Add(PDBElement);
-                                PCHUElement.Add(PDElement);
-                                tracklElement.Add(PCHUElement);
-                                directionElement.Add(tracklElement);
-                                tripElem.Add(directionElement);
-
-                                totalwayCount = 0;
-                                directionRecordCount = 0;
-                                trackCount = 0;
-                                totaltrackCount = 0;
-                                PCHUCount = 0;
-                                PDCount = 0;
-                                PDBCount = 0;
-
-                                previousTrackName = string.Empty;
-                                previousPCHUName = string.Empty;
-                                previousPDName = string.Empty;
-                                previousPDBName = string.Empty;
-
-                                directionElement = new XElement("direction");
-                                tracklElement = new XElement("track");
-                                PCHUElement = new XElement("PCHU");
-                                PDElement = new XElement("PD");
-                                PDBElement = new XElement("PDB");
-
-                                previousDirectionName = note.Direction;
+                                // нет км -> нет данных
+                                xeDirections.Add(xeTracks);
+                                continue;
                             }
 
-                            if (!previousTrackName.Equals(note.Track) && !previousTrackName.Equals(string.Empty))
+                            var kmSet = new HashSet<int>(kmsByTrack.Select(k => k.Number));
+
+                            var trackNotes = notesAll
+                                .Where(n => kmSet.Contains(n.Km))
+                                .OrderBy(n => n.Km * 1000 + n.Meter)
+                                .ToList();
+
+                            if (trackNotes.Count == 0)
                             {
-                                tracklElement.Add(new XAttribute("name", previousTrackName));
-                                tracklElement.Add(new XAttribute("recordCount", trackCount));
-                                tracklElement.Add(new XAttribute("totaltrackCount", totaltrackCount));
-                                tracklElement.Add(
-                                  new XAttribute("direction", tripProcess.DirectionName),
-                                    new XAttribute("directioncode", note.Direction));
-
-                                PCHUElement.Add(new XAttribute("number", previousPCHUName));
-                                PCHUElement.Add(new XAttribute("recordCount", PCHUCount));
-
-                                PDElement.Add(new XAttribute("number", previousPDName));
-                                PDElement.Add(new XAttribute("recordCount", PDCount));
-
-                                PDBElement.Add(new XAttribute("number", previousPDBName));
-                                PDBElement.Add(new XAttribute("recordCount", PDBCount));
-
-                                PDElement.Add(PDBElement);
-                                PCHUElement.Add(PDElement);
-                                tracklElement.Add(PCHUElement);
-                                directionElement.Add(tracklElement);
-                                totaltrackCount = 0;
-                                trackCount = 0;
-                                PCHUCount = 0;
-                                PDCount = 0;
-                                PDBCount = 0;
-
-                                previousPCHUName = string.Empty;
-                                previousPDName = string.Empty;
-                                previousPDBName = string.Empty;
-
-                                tracklElement = new XElement("track");
-                                PCHUElement = new XElement("PCHU");
-                                PDElement = new XElement("PD");
-                                PDBElement = new XElement("PDB");
-
-                                previousTrackName = note.Track;
-
+                                // нет записей -> нет данных
+                                xeDirections.Add(xeTracks);
+                                continue;
                             }
 
-                            if (!previousPCHUName.Equals(note.Pchu) && !previousPCHUName.Equals(string.Empty))
+                            xeTracks.SetAttributeValue("nodata", null);
+
+                            int countByPut = 0;
+
+                            foreach (var note in trackNotes)
                             {
-                                PCHUElement.Add(new XAttribute("number", previousPCHUName));
-                                PCHUElement.Add(new XAttribute("recordCount", PCHUCount));
-
-                                PCHUElement.Add(
-                                  new XAttribute("direction", tripProcess.DirectionName),
-                                    new XAttribute("directioncode", note.Direction));
-
-                                PDElement.Add(new XAttribute("number", previousPDName));
-                                PDElement.Add(new XAttribute("recordCount", PDCount));
-
-                                PDBElement.Add(new XAttribute("number", previousPDBName));
-                                PDBElement.Add(new XAttribute("recordCount", PDBCount));
-
-                                PDElement.Add(PDBElement);
-                                PCHUElement.Add(PDElement);
-                                tracklElement.Add(PCHUElement);
-
-                                PCHUCount = 0;
-                                PDCount = 0;
-                                PDBCount = 0;
-
-                                previousPDName = string.Empty;
-                                previousPDBName = string.Empty;
-
-                                PCHUElement = new XElement("PCHU");
-                                PDElement = new XElement("PD");
-                                PDBElement = new XElement("PDB");
-
-                                previousPCHUName = note.PCHU;
-                            }
-
-                            if (!previousPDName.Equals(note.PD) && !previousPDName.Equals(string.Empty))
-                            {
-                                PDElement.Add(new XAttribute("number", previousPDName));
-                                PDElement.Add(new XAttribute("recordCount", PDCount));
-
-                                PDBElement.Add(new XAttribute("number", previousPDBName));
-                                PDBElement.Add(new XAttribute("recordCount", PDBCount));
-
-                                PDElement.Add(PDBElement);
-                                PCHUElement.Add(PDElement);
-
-                                PDCount = 0;
-                                PDBCount = 0;
-
-
-                                previousPDBName = string.Empty;
-
-                                PDBElement = new XElement("PDB");
-                                PDElement = new XElement("PD");
-
-                                previousPDName = note.PD;
-                            }
-
-                            if (!previousPDBName.Equals(note.PDB) && !previousPDBName.Equals(string.Empty))
-                            {
-                                PDBElement.Add(new XAttribute("number", previousPDBName));
-                                PDBElement.Add(new XAttribute("recordCount", PDBCount));
-                                PDElement.Add(PDBElement);
-
-                                PDBCount = 0;
-
-                                PDBElement = new XElement("PDB");
-
-                                previousPDBName = note.PDB;
-                            }
-
-                            int count = 0;
-                            switch (note.Name)
-                            {
-                                case "Пр.п":
-                                case "Пр.л":
-                                    drawdownCount += note.Count;
-                                    break;
-                                case "Суж":
-
-
+                                // пропуски как у тебя
+                                if (note.Name == "Суж" || note.Name == "Уш")
                                     continue;
-                                case "Уш":
 
-                                    continue;
-                                case "У":
-                                    note.Count = note.Length / 10 + (note.Length % 10 + 1 > 1 ? 1 : 0);
-                                    levelCount += note.Count;
-                                    break;
-                                case "П":
-                                    skewnessCount += note.Count;
-                                    break;
-                                case "Р":
-                                    straighteningCount += note.Count;
-                                    break;
-                            }
+                                // пересчет для "У" как у тебя
+                                if (note.Name == "У")
+                                    note.Count = note.Length / 10 + ((note.Length % 10 + 1 > 1) ? 1 : 0);
 
+                                // счетчики "в том числе"
+                                switch (note.Name)
+                                {
+                                    case "Пр.п":
+                                    case "Пр.л":
+                                        drawdownCount += note.Count;
+                                        break;
+                                    case "У":
+                                        levelCount += note.Count;
+                                        break;
+                                    case "П":
+                                        skewnessCount += note.Count;
+                                        break;
+                                    case "Р":
+                                        straighteningCount += note.Count;
+                                        break;
+                                }
 
-                            PDBElement.Add(new XElement("NOTE",
-                                new XAttribute("founddate", note.FoundDate.ToString("dd.MM.yyyy")),
-                                new XAttribute("km", note.Km),
-                                new XAttribute("meter", note.Meter),
-                                new XAttribute("digression", note.Name),
-                                new XAttribute("value", note.Value),
-                                new XAttribute("length", note.Length),
-                                new XAttribute("count", note.Count),
-                                new XAttribute("primech", note.Primech)
-                                //new XAttribute("primech", ((item.Km == note.Km ? item.Meter <= note.Meter) ? (note.Meter < (item.Length + item.Meter))) ? item.Zazor.ToString() : "стык"),
-                                //new XAttribute("primech", (item.Km == note.Km && note.Meter <= item.Meter && item.Meter <= (note.Meter + note.Length)) ? item.Zazor.ToString() : "стык")
+                                countByPut += note.Count;
+
+                                xeTracks.Add(new XElement("note",
+                                    new XAttribute("pchu", (note.PCHU ?? note.Pchu ?? "").Trim()),
+                                    new XAttribute("pd", (note.PD ?? "").Trim()),
+                                    new XAttribute("pdb", (note.PDB ?? "").Trim()),
+                                    new XAttribute("km", note.Km),
+                                    new XAttribute("m", note.Meter),
+                                    new XAttribute("found_date", note.FoundDate.ToString("dd.MM.yyyy")),
+                                    new XAttribute("deviation", note.Name ?? ""),
+                                    new XAttribute("digression", note.Value),
+                                    new XAttribute("len", note.Length),
+                                    new XAttribute("count", note.Count),
+                                    new XAttribute("primech", note.Primech ?? "")
                                 ));
+                            }
 
-                            directionRecordCount += 1;
-                            totalwayCount += note.Count;
-                            trackCount += 1;
-                            totaltrackCount += note.Count;
-                            PCHUCount += 1;
-                            PDCount += 1;
-                            PDBCount += 1;
+                            xeTracks.SetAttributeValue("countbyput", countByPut);
+                            countDistance += countByPut;
 
-                            totalCount += 1;
-
-                        }
-                        directionElement.Add(new XAttribute("name", previousDirectionName + previousTrackName));
-                        directionElement.Add(new XAttribute("recordCount", directionRecordCount));
-                        directionElement.Add(new XAttribute("totalwayCount", totalwayCount));
-
-                         directionElement.Add(
-                           new XAttribute("direction", tripProcess.DirectionName),
-                           new XAttribute("directioncode", tripProcess.DirectionCode),
-                           new XAttribute("track", previousTrackName)
-                         );
-                    
-
-                        tracklElement.Add(new XAttribute("name", previousTrackName));
-                        tracklElement.Add(new XAttribute("recordCount", trackCount));
-                        tracklElement.Add(new XAttribute("totaltrackCount", totaltrackCount));
-                          tracklElement.Add(
-                             new XAttribute("direction", tripProcess.DirectionName),
-                             new XAttribute("directioncode", tripProcess.DirectionCode),
-                              new XAttribute("track", previousTrackName));
-
-                    PCHUElement.Add(new XAttribute("number", previousPCHUName));
-                        PCHUElement.Add(new XAttribute("recordCount", PCHUCount));
-
-                        PDElement.Add(new XAttribute("number", previousPDName));
-                        PDElement.Add(new XAttribute("recordCount", PDCount));
-
-                        PDBElement.Add(new XAttribute("number", previousPDBName));
-                        PDBElement.Add(new XAttribute("recordCount", PDBCount));
-
-                        PDElement.Add(PDBElement);
-                        PCHUElement.Add(PDElement);
-                        tracklElement.Add(PCHUElement);
-                        directionElement.Add(tracklElement);
-                        tripElem.Add(directionElement);
-
-
-                        tripElem.Add(new XAttribute("drawdownCount", drawdownCount));
-
-                        tripElem.Add(new XAttribute("levelCount", levelCount));
-                        tripElem.Add(new XAttribute("skewnessCount", skewnessCount));
-                        tripElem.Add(new XAttribute("straighteningCount", straighteningCount));
-                        tracklElement.Add(new XAttribute("totalCount", drawdownCount + levelCount + skewnessCount + straighteningCount));
-
-
-                        //В том числе:
-                        if (drawdownCount > 0)
-                        {
-                            tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Пр - " + drawdownCount)));
+                            xeDirections.Add(xeTracks);
                         }
 
-                        if (levelCount > 0)
-                        {
-                            tripElem.Add(new XElement("total", new XAttribute("totalinfo", "У - " + levelCount)));
-                        }
-                        if (skewnessCount > 0)
-                        {
-                            tripElem.Add(new XElement("total", new XAttribute("totalinfo", "П - " + skewnessCount)));
-                        }
-                        if (straighteningCount > 0)
-                        {
-                            tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Р - " + straighteningCount)));
-                        }
+                        tripElem.Add(xeDirections);
 
-                        
-                      directionElement.Add(new XAttribute("countDistance", directionRecordCount));
-                   
+                        // totals
+                        if (drawdownCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Пр - " + drawdownCount)));
+                        if (levelCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "У - " + levelCount)));
+                        if (skewnessCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "П - " + skewnessCount)));
+                        if (straighteningCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Р - " + straighteningCount)));
 
+                        tripElem.SetAttributeValue("countDistance", countDistance);
 
-                        directionElement.Add(new XAttribute("distance", distance.Code));
-
-
-
-
-                        report.Add(tripElem);
-
-                    
+                        xdReport.Root.Add(tripElem);
+                        addedAnyTrip = true;
+                    }
                 }
 
+                // На всякий случай: если вообще ничего не добавили — печатаем полностью пустой отчет по выбору
+                if (!addedAnyTrip)
+                {
+                    foreach (var g in selectedGroups)
+                        AppendEmptyTripForDirection(xdReport, g.ToList(), distance, roadName, period);
+                }
 
-                xdReport.Add(report);
-                XslCompiledTransform transform = new XslCompiledTransform();
+                // ===== XSL Transform =====
+                var transform = new XslCompiledTransform();
                 transform.Load(XmlReader.Create(new StringReader(template.Xsl)));
                 transform.Transform(xdReport.CreateReader(), writer);
             }
+
+            // ===== Сохранить и открыть =====
             try
             {
-                htReport.Save(Path.GetTempPath() + "/report.html");
-                //htReport.Save($@"G:\form\6.Выходные формы Основные параметры\Отступления 2 степени, близкие к 3.html");
+                var outPath = Path.Combine(Path.GetTempPath(), "report.html");
+                htReport.Save(outPath);
             }
             catch
             {
@@ -488,14 +329,106 @@ namespace ALARm_Report.Forms
             }
             finally
             {
-                System.Diagnostics.Process.Start(Path.GetTempPath() + "/report.html");
+                System.Diagnostics.Process.Start(Path.Combine(Path.GetTempPath(), "report.html"));
             }
+        }
+
+        /// <summary>
+        /// Печатает пустой trip (направление+пути) с nodata=1,
+        /// чтобы выбранное направление не "пропадало", даже если проездов нет.
+        /// </summary>
+        private static void AppendEmptyTripForDirection(
+            XDocument xdReport,
+            List<ChoiseForm.TrackChoice> tracks,
+            AdmUnit distance,
+            string roadName,
+            ReportPeriod period)
+        {
+            if (xdReport?.Root == null || tracks == null || tracks.Count == 0) return;
+
+            var first = tracks.First();
+
+            string dirNameRaw = first.DirectionName ?? "";
+            string dirCode = NormalizeDirectionCode(ExtractDirectionCode(dirNameRaw));
+            string dirName = StripDirectionCode(dirNameRaw);
+
+            var tripElem = new XElement("trip",
+                new XAttribute("version", $"{DateTime.Now:dd.MM.yyyy HH:mm:ss}"),
+                new XAttribute("trip_id", ""),
+                new XAttribute("trip_date", ""),
+                new XAttribute("check", ""),
+                new XAttribute("road", roadName ?? ""),
+                new XAttribute("distance", distance?.Code ?? ""),
+                new XAttribute("periodDate", period?.Period ?? ""),
+                new XAttribute("chief", ""),
+                new XAttribute("ps", ""),
+                new XAttribute("countDistance", 0)
+            );
+
+            var xeDirections = new XElement("directions",
+                new XAttribute("direction", dirName),
+                new XAttribute("directioncode", dirCode)
+            );
+
+            var tracksDistinct = tracks
+                .GroupBy(t => new { t.TrackId, Name = (t.TrackName ?? "").Trim() })
+                .Select(g => g.First())
+                .ToList();
+
+            foreach (var tr in tracksDistinct)
+            {
+                string trackName = (tr.TrackName ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(trackName))
+                    trackName = tr.TrackId.ToString();
+
+                xeDirections.Add(new XElement("tracks",
+                    new XAttribute("direction", dirName),
+                    new XAttribute("directioncode", dirCode),
+                    new XAttribute("track", trackName),
+                    new XAttribute("countbyput", 0),
+                    new XAttribute("nodata", 1)
+                ));
+            }
+
+            tripElem.Add(xeDirections);
+            xdReport.Root.Add(tripElem);
+        }
+
+        private static string ExtractDirectionCode(string directionName)
+        {
+            if (string.IsNullOrWhiteSpace(directionName)) return "";
+            int i1 = directionName.LastIndexOf('(');
+            int i2 = directionName.LastIndexOf(')');
+            if (i1 >= 0 && i2 > i1)
+            {
+                var inside = directionName.Substring(i1 + 1, i2 - i1 - 1).Trim();
+                var digits = new string(inside.Where(char.IsDigit).ToArray());
+                return string.IsNullOrWhiteSpace(digits) ? inside : digits;
+            }
+            return "";
+        }
+
+        private static string StripDirectionCode(string directionName)
+        {
+            if (string.IsNullOrWhiteSpace(directionName)) return "";
+            int i = directionName.LastIndexOf('(');
+            if (i > 0) return directionName.Substring(0, i).Trim();
+            return directionName.Trim();
+        }
+
+        /// <summary>
+        /// Нормализует код направления: оставляет только цифры (на случай " 13863 " / "013863" / "13863)")
+        /// </summary>
+        private static string NormalizeDirectionCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return "";
+            var digits = new string(code.Where(char.IsDigit).ToArray());
+            return digits.TrimStart('0'); // если у вас коды могут идти с ведущими нулями
         }
 
         public override string ToString()
         {
             return "Отступления 2 степени, близкие к 3";
         }
-
     }
 }

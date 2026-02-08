@@ -136,7 +136,8 @@ namespace AlarmPP.Web.Services
             catch (Exception e)
             {
                 
-                Console.WriteLine(e.Message);
+                //Console.WriteLine(e.Message);
+                Console.WriteLine("Online Moda" + e.Message);
                 return null;
             }
         }

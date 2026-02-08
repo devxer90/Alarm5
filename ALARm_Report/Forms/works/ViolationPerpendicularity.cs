@@ -59,15 +59,16 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(mainProcess.Id);
                         var kms = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (!kms.Any()) continue;
 
                         kms = kms.Where(o => o.Track_id == track_id).ToList();
-                      
+
                         trip.Track_Id = track_id;
-                        var lkm = kms.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
-                     
+
                         //var trackName = AdmStructureService.GetTrackName(track_id);
 
                         xePages = new XElement("pages",
@@ -107,10 +108,10 @@ namespace ALARm_Report.Forms
                         xePages.Add(xeTracks);
                         report.Add(xePages);
                     }
-                   
+
                 }
-             
-              
+
+
                 xdReport.Add(report);
 
                 XslCompiledTransform transform = new XslCompiledTransform();

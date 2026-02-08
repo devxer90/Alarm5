@@ -20,7 +20,7 @@ namespace ALARm.controls
         public StationSectionForm()
         {
             InitializeComponent();
-            catalogListPoint.SetDataSource(MainTrackStructureService.GetCatalog(MainTrackStructureConst.MtoStationSection));
+            //catalogListPoint.SetDataSource(MainTrackStructureService.GetCatalog(MainTrackStructureConst.MtoStationSection));
         }
         public void SetStationSectionForm(StationSection obj)
         {
@@ -31,7 +31,7 @@ namespace ALARm.controls
             coordControl.SetValue(obj.Start_Km, obj.Start_M, obj.Final_Km, obj.Final_M);
             tbAxisKm.Text = obj.Axis_Km.ToString();
             tbAxisM.Text = obj.Axis_M.ToString();
-            catalogListPoint.CurrentId = obj.Point_Id;
+            //catalogListPoint.CurrentId = obj.Point_Id;
         }
         public void ClearForm()
         {
@@ -43,7 +43,8 @@ namespace ALARm.controls
         private void btnSave_Click(object sender, EventArgs e)
         {
 
-            if (admRoadListBox.CurrentId == -1 || admNodListBox.CurrentId == -1 || admStationListBox.CurrentId == -1 || catalogListPoint.CurrentId == -1 ||
+            if (admRoadListBox.CurrentId == -1 || admNodListBox.CurrentId == -1 || admStationListBox.CurrentId == -1 ||
+                //catalogListPoint.CurrentId == -1 ||
                 tbAxisKm.Text.Equals(String.Empty) || tbAxisM.Equals(String.Empty) || coordControl.CorrectFilled == false)
             {
                 MetroFramework.MetroMessageBox.Show(this, alerts.insert_error + " " + alerts.check_fields_filling, alerts.inserting, MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -62,9 +63,9 @@ namespace ALARm.controls
                 Station_Id = admStationListBox.CurrentId,
                 Road = admRoadListBox.CurrentValue,
                 Axis_Km = int.Parse(tbAxisKm.Text),
-                Axis_M = int.Parse(tbAxisM.Text),
-                Point = catalogListPoint.CurrentValue,
-                Point_Id = catalogListPoint.CurrentId
+                Axis_M = int.Parse(tbAxisM.Text)
+                //Point = catalogListPoint.CurrentValue,
+                //Point_Id = catalogListPoint.CurrentId
             };
             result = DialogResult.OK;
             Close();

@@ -37,7 +37,6 @@
             this.metroPanel2 = new MetroFramework.Controls.MetroPanel();
             this.btnSave = new MetroFramework.Controls.MetroButton();
             this.btnCancel = new MetroFramework.Controls.MetroButton();
-            this.catalogListPoint = new ALARm.controls.CatalogListBox();
             this.coordControl = new ALARm.controls.CoordControl();
             this.admStationListBox = new ALARm.controls.AdmListBox();
             this.admNodListBox = new ALARm.controls.AdmListBox();
@@ -211,19 +210,6 @@
             this.btnCancel.Text = global::ALARm.alerts.btn_cancel;
             this.btnCancel.UseSelectable = true;
             // 
-            // catalogListPoint
-            // 
-            this.catalogListPoint.CurrentId = -1;
-            this.catalogListPoint.Dock = System.Windows.Forms.DockStyle.Top;
-            this.catalogListPoint.Location = new System.Drawing.Point(20, 396);
-            this.catalogListPoint.Margin = new System.Windows.Forms.Padding(1);
-            this.catalogListPoint.Name = "catalogListPoint";
-            this.catalogListPoint.Size = new System.Drawing.Size(531, 34);
-            this.catalogListPoint.TabIndex = 18;
-            this.catalogListPoint.Title = "Отображать как";
-            this.catalogListPoint.TitleWidth = 165;
-            this.catalogListPoint.UseSelectable = true;
-            // 
             // coordControl
             // 
             this.coordControl.AutoSize = true;
@@ -348,7 +334,6 @@
             this.Controls.Add(this.directionListBox);
             this.Controls.Add(this.metroPanel1);
             this.Controls.Add(this.metroPanel2);
-            this.Controls.Add(this.catalogListPoint);
             this.Controls.Add(this.coordControl);
             this.Controls.Add(this.mpFinalM);
             this.Controls.Add(this.mpFinalKm);
@@ -378,7 +363,6 @@
         private MetroFramework.Controls.MetroPanel mpFinalKm;
         private MetroFramework.Controls.MetroTextBox tbAxisKm;
         private MetroFramework.Controls.MetroLabel metroLabel3;
-        private CatalogListBox catalogListPoint;
         private MetroFramework.Controls.MetroPanel metroPanel2;
         private MetroFramework.Controls.MetroButton btnSave;
         private MetroFramework.Controls.MetroButton btnCancel;

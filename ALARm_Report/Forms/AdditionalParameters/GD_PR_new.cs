@@ -93,7 +93,7 @@ namespace ALARm_Report.Forms
 
                         trip.Track_Id = track_id;
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
-
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
 
                         if (kilometers.Count == 0)
@@ -103,7 +103,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -257,7 +257,7 @@ namespace ALARm_Report.Forms
                                 }
                                 else
                                 {
-                                    treadTiltLeft += MMToPixelChartString(NPKLeftPosition + GetDIstanceFrom1div60(1.0f /(3.0f/45.0f))) + "," + metre + " ";
+                                    treadTiltLeft += MMToPixelChartString(NPKLeftPosition + GetDIstanceFrom1div60(1.0f / (3.0f / 45.0f))) + "," + metre + " ";
                                     treadTiltRight += MMToPixelChartString(NPKRightPosition + GetDIstanceFrom1div60(1 / (3.0f / 45.0f))) + "," + metre + " ";
                                     //пу
                                     downhillLeft += MMToPixelChartString(PULeftPosition + GetDIstanceFrom1div60(1 / 0.05f)) + "," + metre + " ";
@@ -382,7 +382,7 @@ namespace ALARm_Report.Forms
             }
             try
             {
-               // htReport.Save($@"G:\form\5.Графические диаграммы ГД\ГД-ПР - подуклонка рельсов, наклон поверхности катания.html");
+                // htReport.Save($@"G:\form\5.Графические диаграммы ГД\ГД-ПР - подуклонка рельсов, наклон поверхности катания.html");
                 htReport.Save(Path.GetTempPath() + "/report.html");
 
             }

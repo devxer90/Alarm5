@@ -44,10 +44,12 @@ namespace ALARm_Report.Forms
         /// </summary>
         /// <param name="interval">Координата в виде км*1000 + метр</param>
         /// <returns>Метр</returns>
-        private int GetMeter(int interval, Curve curve)
-        {
-            return MainTrackStructureService.GetCoordByLen(curve.Start_Km, curve.Start_M, interval, curve.Track_Id, curve.Start_Date).Meter;
-        }
+        /// 
+
+        //private int GetMeter(int interval, Curve curve)
+        //{
+        //    return MainTrackStructureService.GetCoordByLen(curve.Start_Km, curve.Start_M, interval, curve.Track_Id, curve.Start_Date).Meter;
+        //}
 
         public override void Process(Int64 parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {

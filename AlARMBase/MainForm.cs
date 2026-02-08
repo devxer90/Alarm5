@@ -1762,8 +1762,9 @@ namespace ALARMBase
                         return;
                     var section = stationSectionForm.section as StationSection;
                     Int64 nodId = obj.Nod_Id, stId = obj.Station_Id;
-                    int s_km = obj.Start_Km, s_m = obj.Start_M, f_km = obj.Final_Km, f_m = obj.Final_M, akm = obj.Axis_Km, am = obj.Axis_M, poId = obj.Point_Id;
+                    int s_km = obj.Start_Km, s_m = obj.Start_M, f_km = obj.Final_Km, f_m = obj.Final_M, akm = obj.Axis_Km, am = obj.Axis_M;
                     string nod = obj.Nod, station = obj.Station, road = obj.Road, point = obj.Point;
+                    long poId = obj.Point_Id;
                     obj.Start_Km = section.Start_Km;
                     obj.Start_M = section.Start_M;
                     obj.Final_Km = section.Final_Km;
@@ -3160,7 +3161,7 @@ namespace ALARMBase
                         return;
                     var refobj = refPointForm.point;
                     int km = obj.Km, meter = obj.Meter;
-                    var mark = obj.Mark;
+                    double mark = obj.Mark;
                     obj.Km = refobj.Km;
                     obj.Meter = refobj.Meter;
                     obj.Mark = refobj.Mark;

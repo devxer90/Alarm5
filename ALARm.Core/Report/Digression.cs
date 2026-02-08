@@ -297,6 +297,9 @@ namespace ALARm.Core.Report
             //return $"{Meter} {DigName} {Comment} {Degree} {Value} {Length} ";
         }
         public bool NotMoveAlert { get; set; } = false;
+        public bool NotMoveAlertReparirprogect { get; set; } = false;
+        public bool NotMoveAlertStation { get; set; } = false;
+        public bool NotMoveAlertBinding { get; set; } = false;
 
         public int GetCurvePoint(Kilometer km)
         {
@@ -314,6 +317,8 @@ namespace ALARm.Core.Report
         }
 
         public string Alert { get; set; } = string.Empty;
+        public bool NotMoveAlertKU{ get; set; } = false;
+        public string Radiusr { get; set; }
         public int DeltaM { get; set; }
         public int DeltaKM { get; set; }
 
@@ -428,6 +433,8 @@ namespace ALARm.Core.Report
         }
         public int Speed { get; set; }
         public int Norma { get; set; } = 1520;
+        public int NormaConstrisction { get; set; } = 1520;
+
         public int Width { get; set; }
         public bool InArtificialSection { get; set; } = false;
         public DigressionType Digtype { get; set; } = DigressionType.Main;
@@ -451,20 +458,32 @@ namespace ALARm.Core.Report
                 if (norma.RealStartCoordinate <= noteCoord && noteCoord <= norma.RealFinalCoordinate)
                 {
                     Norma = norma.Norma_Width;
+
                     break;
                 }
             }
             foreach (var curve in kilometer.Curves)
+            {
                 foreach (var stright in curve.Straightenings)
                 {
                     if (stright.RealStartCoordinate <= noteCoord && noteCoord <= stright.RealFinalCoordinate)
                     {
-                        Norma = stright.Width;
+                        Norma= stright.Width;
+                        Radius = stright.Radius;
+                        break;
+                    }
+                }
+                foreach (var stright in curve.Straightenings)
+                {
+                    if (stright.RealStartCoordinate +50<= noteCoord && noteCoord <= stright.RealFinalCoordinate-50)
+                    {
+                        NormaConstrisction = stright.Width;
                         Radius = stright.Radius;
                         break;
                     }
                 }
 
+            }
             foreach (var tie in kilometer.CrossTies)
             {
                 if (tie.RealStartCoordinate <= noteCoord && noteCoord <= tie.RealFinalCoordinate)
@@ -473,15 +492,21 @@ namespace ALARm.Core.Report
                 }
             }
 
+            if (kilometer.Number == 7078 || kilometer.Number == 7083)
+            { 
+            }
             foreach (var arr in kilometer.Artificials)
                 if (noteCoord.Between(arr.Entrance_Start_km.ToDoubleCoordinate(arr.Entrance_Start_m), arr.Entrance_Final_km.ToDoubleCoordinate(arr.Entrance_Final_m)))
                 {
-                    InArtificialSection = true;
+                    if (-arr.Entrance_Start_km*1000+arr.Entrance_Final_m + arr.Entrance_Final_km*1000-arr.Entrance_Start_m > 26)
+                    {
+                        InArtificialSection = true;
+                    }
                 }
             var point = 0;
             Digression = (DigName)DigName;
 
-            
+           
             switch (Digression.Value)
             {
                 case int v when v == DigressionName.Broadening.Value: point = GetBroadeningPoint(); break;
@@ -844,7 +869,7 @@ namespace ALARm.Core.Report
         {
             int point = 0;
             //Величина балла за единичное отступление длиной до 4 м
-            switch (Norma)
+            switch (NormaConstrisction)
             {
                 case 1520:
                     switch (Speed)
@@ -919,7 +944,7 @@ namespace ALARm.Core.Report
                                     case 1512: point = 5; break;
                                     case 1511: point = 18; break;
                                     case 1510: point = 24; break;
-                                    case int n when n <= 1509: point = 100; break;
+                                      case int n when n <= 1509: point = 100; break;
                                 }
                             break;
                     }
@@ -1093,12 +1118,20 @@ namespace ALARm.Core.Report
         /// Балловая оценка перекоса
         /// </summary>
         /// <returns></returns>
+        /// 
+
+
         public int GetSagPoint() {
             int[] to10 = { 1, 2, 3, 4, 6, 22, 22, 28, 40, 60, 100 };
             int[] to20 = { 1, 2, 3, 4, 6, 19, 22, 26, 36, 55, 100 };
             var point = 0;
             int index = -1;
             //table 8.4 
+            if (Value==23)
+            { 
+            
+            
+            }
             if (InArtificialSection)
             {
                 if (Speed > 120 && Value > 12)
@@ -1111,6 +1144,7 @@ namespace ALARm.Core.Report
                     index = 10;
                 if (Value > 34)
                     index = 10;
+           
             }
             if (index<0)
             switch (Speed)

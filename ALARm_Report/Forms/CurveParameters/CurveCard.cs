@@ -52,6 +52,7 @@ namespace ALARm_Report.Forms
                 XDocument xdReport = new XDocument();
                 XElement report = new XElement("report", new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
                                                          new XAttribute("distance", ((AdmUnit)AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId)).Code));
+                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
                 int i = 0;
                 foreach (var tripProcess in tripProcesses)
                 {
@@ -61,12 +62,15 @@ namespace ALARm_Report.Forms
                         var trips = RdStructureService.GetTrips();
                         var tr = trips.Where(t => t.Id == tripProcess.Trip_id).ToList().First();
 
-
+                        var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
-
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
-                        var trackName = AdmStructureService.GetTrackName(track_id);
+
+                     
+
+                       
                         string[] subs = tripProcess.DirectionName.Split('(');
 
                         if (kilometers.Count == 0) continue;
@@ -75,7 +79,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -132,7 +136,7 @@ namespace ALARm_Report.Forms
                             var curve_center_ind = rdcs.Count / 2;
                             var rightCurve = new List<RDCurve>();
                             var leftCurve = new List<RDCurve>();
-                            
+
                             if (curve.Start_Km == 708)
                             { }
                             //басын аяғын тауып алу Рихтовка
@@ -344,9 +348,9 @@ namespace ALARm_Report.Forms
 
 
 
-                            if (StrPoins.Count < 4)
+                            if (StrPoins.Count !=4)
                                 continue;
-                            if (LevelPoins.Count < 4)
+                            if (LevelPoins.Count != 4)
                                 continue;
 
                             var LevelMax = rdcs.Select(o => o.Trapez_level).ToList();
@@ -434,7 +438,7 @@ namespace ALARm_Report.Forms
                             {
                                 x1R = MainTrackStructureService.GetDistanceBetween2Coord(curve.Start_Km, curve.Start_M, stCurve.Start_Km, stCurve.Start_M, curve.Track_Id, curve.Start_Date) + 50;
                                 x2R = x1R + stCurve.Transition_1;
-                                int rH = Convert.ToInt32(17860 / stCurve.Radius);
+                                int rH = Convert.ToInt32(17860 / (stCurve.Radius + 0.00001));
 
                                 if (stCurve.Radius > 1000 && stCurve.Radius < 1500)
                                 {
@@ -586,7 +590,7 @@ namespace ALARm_Report.Forms
 
 
                             if (curve.Straightenings.Count > 0)
-                                radiusH = Convert.ToInt32(17860 / curve.Straightenings.Min(s => s.Radius));
+                                radiusH = Convert.ToInt32(17860 / (curve.Straightenings.Min(s => s.Radius) + 0.0001));
 
                             if (curve.Elevations.Count > 0)
                                 levelH = Convert.ToInt32(curve.Elevations.Max(e => Math.Abs(e.Lvl)));
@@ -778,7 +782,7 @@ namespace ALARm_Report.Forms
 
 
                             if (curve.Straightenings.Count > 0)
-                                radiusH = Convert.ToInt32(17860 / curve.Straightenings.Min(s => s.Radius));
+                                radiusH = Convert.ToInt32(17860 / (curve.Straightenings.Min(s => s.Radius) + 0.0001));
 
                             if (curve.Elevations.Count > 0)
                                 levelH = Convert.ToInt32(curve.Elevations.Max(e => Math.Abs(e.Lvl)));
@@ -1480,6 +1484,22 @@ namespace ALARm_Report.Forms
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

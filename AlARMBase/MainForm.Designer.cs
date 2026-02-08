@@ -227,7 +227,6 @@
             this.Axis_M = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn31 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn32 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Point = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.stationSectionBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.toolStrip8 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel10 = new System.Windows.Forms.ToolStripLabel();
@@ -1004,7 +1003,7 @@
             // 
             this.импортXMLToolStripMenuItem.Name = "импортXMLToolStripMenuItem";
             this.импортXMLToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
-            this.импортXMLToolStripMenuItem.Text = "Импорт  ЕКАСУИ XML";
+            this.импортXMLToolStripMenuItem.Text = "Импорт XML";
             this.импортXMLToolStripMenuItem.Click += new System.EventHandler(this.импортXMLToolStripMenuItem_Click);
             // 
             // импортCSVToolStripMenuItem
@@ -1472,7 +1471,7 @@
             this.metroTabControl1.Location = new System.Drawing.Point(0, 0);
             this.metroTabControl1.Multiline = true;
             this.metroTabControl1.Name = "metroTabControl1";
-            this.metroTabControl1.SelectedIndex = 13;
+            this.metroTabControl1.SelectedIndex = 2;
             this.metroTabControl1.Size = new System.Drawing.Size(1142, 595);
             this.metroTabControl1.SizeMode = System.Windows.Forms.TabSizeMode.FillToRight;
             this.metroTabControl1.Style = MetroFramework.MetroColorStyle.Teal;
@@ -2005,8 +2004,7 @@
             this.Axis_Km,
             this.Axis_M,
             this.dataGridViewTextBoxColumn31,
-            this.dataGridViewTextBoxColumn32,
-            this.Point});
+            this.dataGridViewTextBoxColumn32});
             this.mgStationSections.Cursor = System.Windows.Forms.Cursors.Default;
             this.mgStationSections.DataSource = this.stationSectionBindingSource;
             dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -2112,14 +2110,6 @@
             this.dataGridViewTextBoxColumn32.MinimumWidth = 6;
             this.dataGridViewTextBoxColumn32.Name = "dataGridViewTextBoxColumn32";
             this.dataGridViewTextBoxColumn32.Width = 80;
-            // 
-            // Point
-            // 
-            this.Point.DataPropertyName = "Point";
-            this.Point.HeaderText = "Отображать как";
-            this.Point.MinimumWidth = 6;
-            this.Point.Name = "Point";
-            this.Point.Width = 125;
             // 
             // stationSectionBindingSource
             // 
@@ -4583,7 +4573,6 @@
             this.markDataGridViewTextBoxColumn.MinimumWidth = 6;
             this.markDataGridViewTextBoxColumn.Name = "markDataGridViewTextBoxColumn";
             this.markDataGridViewTextBoxColumn.Width = 125;
-          
             // 
             // rfidBindingSource
             // 
@@ -8489,7 +8478,7 @@
             // dataGridViewTextBoxColumn57
             // 
             this.dataGridViewTextBoxColumn57.DataPropertyName = "Side";
-            this.dataGridViewTextBoxColumn57.HeaderText = "Отвод";
+            this.dataGridViewTextBoxColumn57.HeaderText = "Нить оценки";
             this.dataGridViewTextBoxColumn57.MinimumWidth = 6;
             this.dataGridViewTextBoxColumn57.Name = "dataGridViewTextBoxColumn57";
             this.dataGridViewTextBoxColumn57.Width = 125;
@@ -9497,14 +9486,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn66;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn67;
         private System.Windows.Forms.DataGridViewTextBoxColumn longrails_type_column;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Num;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn54;
-        private System.Windows.Forms.DataGridViewTextBoxColumn switchMeter;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn56;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn57;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn58;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn59;
-        private System.Windows.Forms.DataGridViewTextBoxColumn StationSwitch;
         private System.Windows.Forms.DataGridViewTextBoxColumn kmDataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn meterDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn markDataGridViewTextBoxColumn;
@@ -9654,16 +9635,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn startMDataGridViewTextBoxColumn8;
         private System.Windows.Forms.DataGridViewTextBoxColumn finalKmDataGridViewTextBoxColumn8;
         private System.Windows.Forms.DataGridViewTextBoxColumn finalMDataGridViewTextBoxColumn8;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn26;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn28;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Station;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn29;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn30;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Axis_Km;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Axis_M;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn31;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn32;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Point;
         private MetroFramework.Controls.MetroPanel metroPanel34;
         private ALARm.controls.AdmUnitControls ucStationsDirections;
         private System.Windows.Forms.ToolStripMenuItem импортXMLToolStripMenuItem;
@@ -9699,6 +9670,23 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn lenDataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn53;
         private System.Windows.Forms.DataGridViewTextBoxColumn Speed;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Num;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn54;
+        private System.Windows.Forms.DataGridViewTextBoxColumn switchMeter;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn56;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn57;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn58;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn59;
+        private System.Windows.Forms.DataGridViewTextBoxColumn StationSwitch;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn26;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn28;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Station;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn29;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn30;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Axis_Km;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Axis_M;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn31;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn32;
     }
 }
 

@@ -78,7 +78,7 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
 
                         var kilometers = RdStructureService.GetKilometerTrip(tripProcess.Trip_id);
-
+                        //var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(tripProcess.Id, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (kilometers.Count() == 0) continue;
 
                         ////Выбор километров по проезду-----------------

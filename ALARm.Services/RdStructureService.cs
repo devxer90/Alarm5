@@ -16,9 +16,15 @@ namespace ALARm.Services
         {
             return Container.Resolve<IRdStructureRepository>().GetProfileFilePath(trip_id);
         }
-        public static List<string> Get_Vnutr__profil__koridor(long trip_id = -1)
+
+        public static List<string> GetProfileFilePathKoridor(long trip_id = -1)
         {
-            return Container.Resolve<IRdStructureRepository>().Get_Vnutr__profil__koridor(trip_id);
+            return Container.Resolve<IRdStructureRepository>().GetProfileFilePathKoridor(trip_id);
+        }
+
+        public static object DropTable(int startNumber, int endNumber)
+        {
+            return Container.Resolve<IRdStructureRepository>().DropTable(startNumber,endNumber);
         }
 
         public static IRdStructureRepository GetRepository()
@@ -36,12 +42,28 @@ namespace ALARm.Services
         {
             return Container.Resolve<IRdStructureRepository>().GetAdmDirectionIDs(distance_id);
         }
+        //GetKilometersByTrip(Trips trip, string direction_code, string track_name)
+        public static List<Kilometer> GetKilometersByTrip(Trips trip,string direction_code,string track_name)
 
+        {
+            return Container.Resolve<IRdStructureRepository>().GetKilometersByTrip(trip,direction_code,track_name);
+        }
         public static List<Kilometer> GetKilometersByTrip(Trips trip)
+
         {
             return Container.Resolve<IRdStructureRepository>().GetKilometersByTrip(trip);
         }
-       
+        public static List<Kilometer> GetKilometersByTripdistanceperiod(Trips trip, Int64 distance, Int64 trackname)
+        {
+            return Container.Resolve<IRdStructureRepository>().GetKilometersByTripdistanceperiod(trip, distance, trackname);
+        }
+        public static List<Kilometer> GetKilometersByTripdistanceperiodstring(Trips trip, Int64 distance, string trackname)
+        {
+            return Container.Resolve<IRdStructureRepository>().GetKilometersByTripdistanceperiodstring(trip, distance, trackname);
+        }
+        
+
+
 
 
         public static List<VideoObject> GetRdObject()
@@ -418,6 +440,7 @@ namespace ALARm.Services
         {
             return Container.Resolve<IRdStructureRepository>().GetTripsOnDistance(distanceId, period);
         }
+      
 
         public static List<Curve> GetCurvesAsTripElems(long trackId, DateTime date, int start_km, int start_m, int final_km, int final_m)
         {
@@ -507,6 +530,11 @@ namespace ALARm.Services
         public static int InsertRating(int km, string rating, string put)
         {
             return Container.Resolve<IRdStructureRepository>().InsertRating(km, rating, put);
+        }
+
+        public static List<ImportListCurveID> Get_list_St_IDs_Curves(string startKM, string startM, string finalKM, string finalM, int oldDirectionID, string oldTrackID, int first_len, int last_len, int t)
+        {
+            return Container.Resolve<IRdStructureRepository>().Get_list_St_IDs_Curves(startKM, startM, finalKM, finalM, oldDirectionID, oldTrackID, first_len, last_len, t);
         }
     }
 }

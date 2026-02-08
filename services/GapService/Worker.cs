@@ -6,6 +6,7 @@ using ALARm.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -44,163 +45,166 @@ namespace GapService
                 Port = options.Value.Port,
             };
         }
-
         public override Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
                 _logger.LogInformation($"Connection try [{tryCount++}].");
+
                 _connection = _connectionFactory.CreateConnection();
                 _channel = _connection.CreateModel();
-                //_channel.QueueDeclarePassive(QueueName);
+
                 _channel.QueueDeclare(queue: QueueName,
                                     durable: false,
                                     exclusive: false,
                                     autoDelete: false,
                                     arguments: null);
+
                 _channel.QueueBind(queue: QueueName,
                                    exchange: "alarm",
                                    routingKey: "");
+
                 _channel.BasicQos(0, 1, false);
                 _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
 
-
-
                 var consumer = new EventingBasicConsumer(_channel);
+
                 consumer.Received += async (model, ea) =>
                 {
                     var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
-                    message = message.Replace("\\", "\\\\");
-                    _logger.LogInformation(" [x] Received {0}", message);
-
-                    JObject json = JObject.Parse(message);
-                    var kmIndex = (int)json["Km"];
-                    var kmId = (int)json["FileId"];
-                    var path = (string)json["Path"];
-                    path = "\\" + path;
-
-                    //{ 'FileId':18318, 'Km':709, 'Path': '\DESKTOP-EMAFC5J\common\video_objects\desktop\242_18318_km_709.csv'}
-
-
-
-                    //var queruString = string.Join(",", fileId);
-
-                    //if (queruString.Length == 0) 
-                    //    return;
-
-                    //var trip = RdStructureService.GetTripFromFileId((int)fileId.First()).Last();
-                    //var kilometers = RdStructureService.GetKilometersByTrip(trip);
-                    //var km = kilometers.Where(km => km.Number == kmIndex).ToList().First();
-                    //this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
-
-                    //var outData = (List<OutData>)RdStructureService.GetNextOutDatas(km.Start_Index - 1, km.GetLength() - 1, trip.Id);
-                    //km.AddDataRange(outData, km);
-                    //km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
-
-                    ////�������������
-                    //// todo distanse id
-                    //string p = GetGaps(trip, km, 53, queruString); //�����
-
-
-                    Trips trip = RdStructureService.GetTripFromFileId(kmId)[0];
-                    int TripId = (int)trip.Id;
-
-                    var kilometers = RdStructureService.GetKilometersByTrip(trip);
-                    var km = kilometers.Where(km => km.Number == kmIndex).ToList().First();
-                    this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
-
-                    var outData = (List<OutData>)RdStructureService.GetNextOutDatas(km.Start_Index - 1, km.GetLength() - 1, TripId);
-                    km.AddDataRange(outData, km);
-
-                    km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
-
-                    //bool found_next_km = false;
-                    //while (!found_next_km)
-                    //{
-                    //    found_next_km = AdditionalParametersService.CheckRdVideoKmExists(km.Number-1, TripId);
-                    //    System.Threading.Thread.Sleep(1000);
-                    //}
+                    _logger.LogInformation("📨 Входящее сообщение: {0}", message);
 
                     try
                     {
-                        GetGaps(trip, km); //�����
-                        _logger.LogInformation("GAPS OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("GAPS ERROR! " + e.Message);
-                    }
+                        JObject json = JObject.Parse(message);
 
-                    try
-                    {
-                        GetBolt(trip, km); //�����
-                        _logger.LogInformation("BOLT OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("BOLT ERROR! " + e.Message);
-                    }
+                        // Безопасное извлечение параметров из JSON
+                        if (!json.TryGetValue("Km", out var kmToken) || !int.TryParse(kmToken.ToString(), out var kmIndex))
+                        {
+                            _logger.LogError("❌ Поле 'Km' отсутствует или не число.");
+                            return;
+                        }
 
-                    try
-                    {
-                        GetBalast(trip, km); //������
-                        _logger.LogInformation("BALLAST OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("BALLAST ERROR! " + e.Message);
-                    }
+                        if (!json.TryGetValue("FileId", out var fileIdToken) || !int.TryParse(fileIdToken.ToString(), out var kmId))
+                        {
+                            _logger.LogError("❌ Поле 'FileId' отсутствует или не число.");
+                            return;
+                        }
 
-                    try
-                    {
-                        GetPerpen(trip, km);
-                        _logger.LogInformation("Perpen OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("Perpen ERROR! " + e.Message);
-                    }
+                        string path = json["Path"]?.ToString();
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            _logger.LogError("❌ Поле 'Path' отсутствует.");
+                            return;
+                        }
+                        path = "\\" + path;
 
-                    try
-                    {
-                        GetSleepers(trip, km);
-                        _logger.LogInformation("SLEEPERS OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("SLEEPERS ERROR! " + e.Message);
-                    }
+                        // { 'FileId':18318, 'Km':709, 'Path': '\DESKTOP-EMAFC5J\common\video_objects\desktop\242_18318_km_709.csv'}
 
-                    try
-                    {
-                        GetdeviationsinSleepers(trip, km); //��� �����
-                        _logger.LogInformation("DEVIATION SLEEPER OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("DEVIATION SLEEPERS ERROR! " + e.Message);
-                    }
+                        Trips trip = RdStructureService.GetTripFromFileId(kmId)[0];
+                        int TripId = (int)trip.Id;
 
-                    try
-                    {
-                        Getbadfasteners(trip, km); //����������
-                        _logger.LogInformation("BADFASTENER OK!");
+                        var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var km = kilometers.Where(km => km.Number == kmIndex).ToList().First();
+                        this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
+
+                        var outData = (List<OutData>)RdStructureService.GetNextOutDatas(km.Start_Index - 1, km.GetLength() - 1, TripId);
+                        km.AddDataRange(outData, km);
+
+                        km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
+
+                        // Обработка
+                        try
+                        {
+                            GetGaps(trip, km); // Пустоты
+                            _logger.LogInformation("GAPS OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("GAPS ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            GetBolt(trip, km); // Болты
+                            _logger.LogInformation("BOLT OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("BOLT ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            GetBalast(trip, km); // Балласт
+                            _logger.LogInformation("BALLAST OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("BALLAST ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            GetPerpen(trip, km); // Перпендикуляры
+                            _logger.LogInformation("Perpen OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("Perpen ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            GetSleepers(trip, km); // Шпалы
+                            _logger.LogInformation("SLEEPERS OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("SLEEPERS ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            GetdeviationsinSleepers(trip, km); // Отклонения в шпалах
+                            _logger.LogInformation("DEVIATION SLEEPER OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("DEVIATION SLEEPERS ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            Getbadfasteners(trip, km); // Плохие скрепления
+                            _logger.LogInformation("BADFASTENER OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("BADFASTENER ERROR! " + e.Message);
+                        }
+
+                        try
+                        {
+                            Getdeviationsinfastening(trip, km); // Отклонения в скреплениях
+                            _logger.LogInformation("deviationsinfastening OK!");
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogInformation("deviationsinfastening ERROR! " + e.Message);
+                        }
                     }
-                    catch (Exception e)
+                    catch (JsonReaderException jsonEx)
                     {
-                        _logger.LogInformation("BADFASTENER ERROR! " + e.Message);
+                        _logger.LogError("❌ Ошибка парсинга JSON: " + jsonEx.Message);
                     }
-                    try
+                    catch (Exception ex)
                     {
-                        Getdeviationsinfastening(trip, km); //��� � �����
-                        _logger.LogInformation("deviationsinfastening OK!");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogInformation("deviationsinfastening ERROR! " + e.Message);
+                        _logger.LogError("❌ Общая ошибка при обработке сообщения: " + ex.Message);
                     }
                 };
+
                 _channel.BasicConsume(queue: QueueName,
                                       autoAck: true,
                                       consumer: consumer);
@@ -209,10 +213,179 @@ namespace GapService
             }
             catch (Exception e)
             {
-                StartAsync(cancellationToken);
+                _logger.LogError("❌ Ошибка при запуске StartAsync: " + e.Message);
                 return base.StartAsync(cancellationToken);
             }
         }
+
+        //public override Task StartAsync(CancellationToken cancellationToken)
+        //{
+        //    try
+        //    {
+        //        _logger.LogInformation($"Connection try [{tryCount++}].");
+        //        _connection = _connectionFactory.CreateConnection();
+        //        _channel = _connection.CreateModel();
+        //        //_channel.QueueDeclarePassive(QueueName);
+        //        _channel.QueueDeclare(queue: QueueName,
+        //                            durable: false,
+        //                            exclusive: false,
+        //                            autoDelete: false,
+        //                            arguments: null);
+        //        _channel.QueueBind(queue: QueueName,
+        //                           exchange: "alarm",
+        //                           routingKey: "");
+        //        _channel.BasicQos(0, 1, false);
+        //        _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
+
+
+
+        //        var consumer = new EventingBasicConsumer(_channel);
+        //        consumer.Received += async (model, ea) =>
+        //        {
+        //            var body = ea.Body.ToArray();
+        //            var message = Encoding.UTF8.GetString(body);
+        //            message = message.Replace("\\", "\\\\");
+        //            _logger.LogInformation(" [x] Received {0}", message);
+
+        //            JObject json = JObject.Parse(message);
+        //            var kmIndex = (int)json["Km"];
+        //            var kmId = (int)json["FileId"];
+        //            var path = (string)json["Path"];
+        //            path = "\\" + path;
+
+        //            //{ 'FileId':18318, 'Km':709, 'Path': '\DESKTOP-EMAFC5J\common\video_objects\desktop\242_18318_km_709.csv'}
+
+
+
+        //            //var queruString = string.Join(",", fileId);
+
+        //            //if (queruString.Length == 0) 
+        //            //    return;
+
+        //            //var trip = RdStructureService.GetTripFromFileId((int)fileId.First()).Last();
+        //            //var kilometers = RdStructureService.GetKilometersByTrip(trip);
+        //            //var km = kilometers.Where(km => km.Number == kmIndex).ToList().First();
+        //            //this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
+
+        //            //var outData = (List<OutData>)RdStructureService.GetNextOutDatas(km.Start_Index - 1, km.GetLength() - 1, trip.Id);
+        //            //km.AddDataRange(outData, km);
+        //            //km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
+
+        //            ////�������������
+        //            //// todo distanse id
+        //            //string p = GetGaps(trip, km, 53, queruString); //�����
+
+
+        //            Trips trip = RdStructureService.GetTripFromFileId(kmId)[0];
+        //            int TripId = (int)trip.Id;
+
+        //            var kilometers = RdStructureService.GetKilometersByTrip(trip);
+        //            var km = kilometers.Where(km => km.Number == kmIndex).ToList().First();
+        //            this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
+
+        //            var outData = (List<OutData>)RdStructureService.GetNextOutDatas(km.Start_Index - 1, km.GetLength() - 1, TripId);
+        //            km.AddDataRange(outData, km);
+
+        //            km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
+
+        //            //bool found_next_km = false;
+        //            //while (!found_next_km)
+        //            //{
+        //            //    found_next_km = AdditionalParametersService.CheckRdVideoKmExists(km.Number-1, TripId);
+        //            //    System.Threading.Thread.Sleep(1000);
+        //            //}
+
+        //            try
+        //            {
+        //                GetGaps(trip, km); //�����
+        //                _logger.LogInformation("GAPS OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("GAPS ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                GetBolt(trip, km); //�����
+        //                _logger.LogInformation("BOLT OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("BOLT ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                GetBalast(trip, km); //������
+        //                _logger.LogInformation("BALLAST OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("BALLAST ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                GetPerpen(trip, km);
+        //                _logger.LogInformation("Perpen OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("Perpen ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                GetSleepers(trip, km);
+        //                _logger.LogInformation("SLEEPERS OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("SLEEPERS ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                GetdeviationsinSleepers(trip, km); //��� �����
+        //                _logger.LogInformation("DEVIATION SLEEPER OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("DEVIATION SLEEPERS ERROR! " + e.Message);
+        //            }
+
+        //            try
+        //            {
+        //                Getbadfasteners(trip, km); //����������
+        //                _logger.LogInformation("BADFASTENER OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("BADFASTENER ERROR! " + e.Message);
+        //            }
+        //            try
+        //            {
+        //                Getdeviationsinfastening(trip, km); //��� � �����
+        //                _logger.LogInformation("deviationsinfastening OK!");
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                _logger.LogInformation("deviationsinfastening ERROR! " + e.Message);
+        //            }
+        //        };
+        //        _channel.BasicConsume(queue: QueueName,
+        //                              autoAck: true,
+        //                              consumer: consumer);
+
+        //        return base.StartAsync(cancellationToken);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        StartAsync(cancellationToken);
+        //        return base.StartAsync(cancellationToken);
+        //    }
+        //}
 
 
 

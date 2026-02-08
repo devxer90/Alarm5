@@ -50,6 +50,11 @@ namespace ALARm.Core
         public bool Corrected { get; set; }
 
         public int Meter = 0;
+        public int Start_km { get; set; }
+
+        public int Final_km { get; set; }
+        public int Ph { get; set; }
+        public int Track { get; set; }
         public int RealMeterInOnline => Meter + Start_m;
         public int Correction = 0;
         public List<float> piketSpeeds;
@@ -69,7 +74,7 @@ namespace ALARm.Core
         /// административное деление
         /// </summary>
         public List<PdbSection> PdbSection;
-        
+
 
         public List<RepairProject> RepairProjects { get; private set; }
 
@@ -78,7 +83,7 @@ namespace ALARm.Core
         /// </summary>
         public List<CrossTie> CrossTies;
         public List<Dateremont> Dateremont;
-        
+
         /// <summary>
         /// стрелочные переводы
         /// </summary>
@@ -153,12 +158,13 @@ namespace ALARm.Core
 
 
         public float Lkm { get; set; }
-        public int GetLength() {
-           // if ((Final_Index > -1) && (Start_Index > -1))
-                //return Math.Abs(Start_Index - Final_Index) + 1;
+        public int GetLength()
+        {
+            // if ((Final_Index > -1) && (Start_Index > -1))
+            //return Math.Abs(Start_Index - Final_Index) + 1;
             //else
-                return Math.Abs(Start_m - Final_m) + 1;
-            
+            return Math.Abs(Start_m - Final_m) + 1;
+
         }
         public int Track_id { get; set; }
         public string Track_name { get; set; }
@@ -169,7 +175,7 @@ namespace ALARm.Core
         public string PasportLevel { get; set; } = "";
         public string SignalLevel { get; set; } = "";
         public string SpeedSeries { get; set; } = "";
-       // public float StrightKoef = 3.5f;
+        // public float StrightKoef = 3.5f;
         public float StrightKoef = 1f;
         public float GaugeKoef = 2;
         public float WearKoef = 5;
@@ -230,16 +236,16 @@ namespace ALARm.Core
                     kilometer.LongWavesRight.Add(LongWavesRight[i]);
 
 
-                    kilometer.SignalLevel += (-1 * Level[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.ZeroLevel += (-1 * LevelAvg[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.SignalStraightLeft += (-1 * StrightLeft[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.SignalStraightRight += (-1 * StrightRight[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.SignalLevel += (-0 * Level[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.ZeroLevel += (-0 * LevelAvg[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.SignalStraightLeft += (-0 * StrightLeft[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.SignalStraightRight += (-0 * StrightRight[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
                     //kilometer.LevelAvg += (-1 * LevelAvg[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " "; 
 
-                    kilometer.ZeroStraightLeft += (-1 * StrightAvg[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.ZeroStraightRight += (-1 * StrightAvg[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.SignalDrawdownLeft += (-1 * DrawdownLeft[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
-                    kilometer.SignalDrawdownRight += (-1 * DrawdownRight[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.ZeroStraightLeft += (-0 * StrightAvg[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.ZeroStraightRight += (-0 * StrightAvg[i] * kilometer.StrightKoef).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.SignalDrawdownLeft += (-0 * DrawdownLeft[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
+                    kilometer.SignalDrawdownRight += (-0 * DrawdownRight[i]).ToString().Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
                     kilometer.SignalGauge += ((Gauge[i] - 1520) * kilometer.GaugeKoef).ToString("0.00").Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
                     kilometer.Kupe += ((Gauge[i] - 1520) * kilometer.GaugeKoef).ToString("0.00").Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
                     kilometer.Koridor += ((Gauge[i] - 1520) * kilometer.GaugeKoef).ToString("0.00").Replace(",", ".") + "," + kilometer.Meter.ToString() + " ";
@@ -324,7 +330,7 @@ namespace ALARm.Core
                 XCamRight.RemoveRange(clearIndex, clearCount);
                 SwitchesReal.RemoveRange(clearIndex, clearCount);
                 LevelCorrection.RemoveRange(clearIndex, clearCount);
-                GaugeCorrection.RemoveRange( clearIndex, clearCount);
+                GaugeCorrection.RemoveRange(clearIndex, clearCount);
                 Corrections.RemoveRange(clearIndex, clearCount);
                 ShortWavesRight.RemoveRange(clearIndex, clearCount);
                 ShortWavesLeft.RemoveRange(clearIndex, clearCount);
@@ -340,7 +346,8 @@ namespace ALARm.Core
             if (districtedCount > 0)
                 return Rating.Н;
             AllowedSpeed = Speeds.Count > 0 ? Speeds.Last().Passenger : DefaultSpeed;
-            if (AllowedSpeed.Between(61, 250)) {
+            if (AllowedSpeed.Between(61, 250))
+            {
                 if (mainParamPointSum <= 5)
                     return Rating.О;
                 if (mainParamPointSum.Between(6, 25))
@@ -349,7 +356,8 @@ namespace ALARm.Core
                     return Rating.У;
                 if (mainParamPointSum >= 101)
                     return Rating.Н;
-            } else
+            }
+            else
            if (AllowedSpeed <= 60)
             {
                 if (mainParamPointSum <= 10)
@@ -608,21 +616,21 @@ namespace ALARm.Core
         public List<Gap> Gaps { get; set; } = new List<Gap>();
 
         public List<CrosProf> Impuls { get; set; } = new List<CrosProf>();
-        
+
 
         public List<Digression> Bolts { get; set; } = new List<Digression>();
         public List<Digression> Fasteners { get; set; } = new List<Digression>();
         public List<Digression> DefShpals { get; set; } = new List<Digression>();
         public List<Digression> PerShpals { get; set; } = new List<Digression>();
         public List<Heat> Heats { get; set; }
-        
-    
+
+
         private bool ShifrovkaGenerated { get; set; } = false;
         public bool IsPrinted { get; set; } = false;
 
         public CrossRailProfile CrossRailProfile { get; set; } = new CrossRailProfile();
 
-        
+
 
         public bool WriteCurrentData(Trips trip, List<double> prev50, List<double> next50, List<double> prevStrightAvgPart, List<double> nextStrightAvgPart, IMainTrackStructureRepository mainTrackStructureRepository, IRdStructureRepository rdStructureRepository)
         {
@@ -637,33 +645,33 @@ namespace ALARm.Core
 
             //Кривой басы аягы
             var Curves = new List<NatureCurves> { };
-            if (Number == 717)
-            { }
+
+
             StrightAvgTrapezoid = StrightAvg.GetTrapezoid(prevStrightAvgPart, nextStrightAvgPart, 4, ref Curves);
             LevelAvgTrapezoid = LevelAvg.GetTrapezoid(prev50, next50, 10, ref Curves);
-            int startgap = 0, fingap = 0; bool foundgap = false;
-            for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
-            {
-                if (Math.Abs(LevelAvgTrapezoid[ii]) < 0.01 && Math.Abs(LevelAvgTrapezoid[ii + 20]) > 10 && Math.Abs(LevelAvgTrapezoid[ii - 20]) > 10 && !foundgap)
-                {
-                    startgap = ii - 20;
-                    fingap = ii + 20;
-                    foundgap = true;
-                }
-            }
-            if (foundgap)
-            {
-                for (int ii = startgap; ii < fingap; ii++)
-                {
-                    LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
-                }
-            }
+            //int startgap = 0, fingap = 0; bool foundgap = false;
+            //for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
+            //{
+            //    if (Math.Abs(LevelAvgTrapezoid[ii]) < 0.01 && Math.Abs(LevelAvgTrapezoid[ii + 20]) > 10 && Math.Abs(LevelAvgTrapezoid[ii - 20]) > 10 && !foundgap)
+            //    {
+            //        startgap = ii - 20;
+            //        fingap = ii + 20;
+            //        foundgap = true;
+            //    }
+            //}
+            //if (foundgap)
+            //{
+            //    for (int ii = startgap; ii < fingap; ii++)
+            //    {
+            //        LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
+            //    }
+            //}
             return ShifrovkaGenerated;
         }
 
         public bool WriteData(
-            Trips trip, 
-            List<double> prev50, List<double> next50, List<double> prevStrightAvgPart, List<double> nextStrightAvgPart, 
+            Trips trip,
+            List<double> prev50, List<double> next50, List<double> prevStrightAvgPart, List<double> nextStrightAvgPart,
             IMainTrackStructureRepository mainTrackStructureRepository, IRdStructureRepository rdStructureRepository,
             List<Kilometer> KMS = null)
         {
@@ -698,34 +706,66 @@ namespace ALARm.Core
             }
             else
             {
-                GetZeroLinesTrapez(outDataTrapezPassport, Trip, mainTrackStructureRepository, prevCount, nextCount, KMS:KMS);
+                GetZeroLinesTrapez(outDataTrapezPassport, Trip, mainTrackStructureRepository, prevCount, nextCount, KMS: KMS);
             }
-            
 
 
+            if (Number == 6345)
+            {
+
+            }
             //Кривой басы аягы
             var Curves = new List<NatureCurves> { };
-            
-            StrightAvgTrapezoid = StrightAvg.GetTrapezoid(prevStrightAvgPart, nextStrightAvgPart, 4, ref Curves, naprav: trip.Travel_Direction, strRealData: StrightRight);
-            LevelAvgTrapezoid = LevelAvg.GetTrapezoid(prev50, next50, 10, ref Curves, naprav: trip.Travel_Direction);
 
-            int startgap = 0, fingap = 0; bool foundgap = false;
-            for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
+            if (Number == 7110)
             {
-                if (Math.Abs(LevelAvgTrapezoid[ii]) < 0.01 && Math.Abs(LevelAvgTrapezoid[ii + 20]) > 10 && Math.Abs(LevelAvgTrapezoid[ii - 20]) > 10 && !foundgap)
-                {
-                    startgap = ii - 20;
-                    fingap = ii + 20;
-                    foundgap = true;
-                }
+
             }
-            if (foundgap)
-            {
-                for (int ii = startgap; ii < fingap; ii++)
-                {
-                    LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
-                }
-            }
+
+            StrightAvgTrapezoid = StrightAvg.GetTrapezoid(prevStrightAvgPart, nextStrightAvgPart, 4, ref Curves, naprav: trip.Travel_Direction, strRealData: StrightAvg);
+
+            LevelAvgTrapezoid = LevelAvg.GetTrapezoid(prev50, next50, 10, ref Curves, naprav: trip.Travel_Direction, strRealData: StrightAvg);
+
+            //int startgap = 0, fingap = 0; bool foundgap = false;
+            //for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
+            //{
+            //    if (Math.Abs(LevelAvgTrapezoid[ii]) < 0.01 && Math.Abs(LevelAvgTrapezoid[ii + 20]) > 10 && Math.Abs(LevelAvgTrapezoid[ii - 20]) > 10 && !foundgap)
+            //    {
+            //        startgap = ii - 20;
+            //        fingap = ii + 20;
+            //        foundgap = true;
+            //    }
+            //}
+
+            //if (foundgap)
+            //{
+            //    for (int ii = startgap; ii < fingap; ii++)
+            //    {
+            //        LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
+            //    }
+            //}
+
+            //startgap = 0; fingap = 0; foundgap = false;
+
+
+            //for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
+            //{
+            //    if (Math.Abs(LevelAvgTrapezoid[ii]) < 2 && Math.Abs(LevelAvgTrapezoid[ii + 5]) > 20 && !foundgap)
+            //    {
+            //        startgap = ii - 20;
+            //        fingap = ii + 20;
+            //        foundgap = true;
+            //    }
+            //}
+            //if (foundgap)
+            //{
+            //    for (int ii = startgap; ii < fingap; ii++)
+            //    {
+            //        LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgap] + (LevelAvgTrapezoid[fingap] - LevelAvgTrapezoid[startgap]) / (fingap - startgap) * (ii - startgap);
+            //    }
+            //}
+
+
 
 
 
@@ -734,9 +774,9 @@ namespace ALARm.Core
             //-------------------------------------------------
             for (int i = 0; i < StrightAvgTrapezoid.Count; i++)
             {
-                if(StrightAvgTrapezoid[i] != 0)
+                if (StrightAvgTrapezoid[i] != 0)
                 {
-                    if(i < signTrapez.Count)
+                    if (i < signTrapez.Count)
                     {
                         signTrapez[i] = Math.Sign(StrightAvgTrapezoid[i]);
                     }
@@ -746,14 +786,22 @@ namespace ALARm.Core
             //-------------------------------------------------
             //-------------------------------------------------
 
+            try
+            {
 
-            CurvesNature.AddRange(Curves);
+
+                CurvesNature.AddRange(Curves);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(" CurvesNature: " + e.Message);
+            }
 
             var fileName = $@"G:\work_shifrovka\km_{Number}_{Track_id}.svgpdat";
 
             try
             {
-                if (Number == 727)
+                if (Number == 6346)
                 {
 
                 }
@@ -772,9 +820,51 @@ namespace ALARm.Core
                 writetext.WriteLine(trip.Trip_date.ToString("dd.MM.yyyy  HH:mm"));
                 writetext.WriteLine(trip.Car);
                 writetext.WriteLine();
+                int startgapl = 0, fingapl = 0; bool foundgapl = false;
+
+
+
+                //    for (int ii = 20; ii < LevelAvgTrapezoid.Count - 20; ii++)
+                //    {
+                //        if (Math.Abs(LevelAvgTrapezoid[ii]) < 5 && Math.Abs(LevelAvgTrapezoid[ii + 5]) > 15 && !foundgapl)
+                //        {
+                //            startgapl = ii +5;
+                //            fingapl = ii + 20;
+                //            foundgapl = true;
+                //        }
+                //    }
+                //    if (foundgapl)
+                //    {
+                //        for (int ii = startgapl-25; ii < fingapl; ii++)
+                //        {
+                //            LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgapl] + (LevelAvgTrapezoid[fingapl] - LevelAvgTrapezoid[startgapl]) / (fingapl - startgapl) * (ii - startgapl);
+                //        }
+                //    }
+
+                //startgapl = 0; fingapl = 0; foundgapl = false;
+
+
+
+                //    for (int ii = 25; ii < LevelAvgTrapezoid.Count - 25; ii++)
+                //    {
+                //        if (Math.Abs(LevelAvgTrapezoid[ii]) > 15 && Math.Abs(LevelAvgTrapezoid[ii + 2]) < 5 && !foundgapl)
+                //        {
+                //            startgapl = ii - 20;
+                //            fingapl = ii - 5;
+                //            foundgapl = true;
+                //        }
+                //    }
+                //    if (foundgapl)
+                //    {
+                //        for (int ii = startgapl - 5; ii < fingapl+30; ii++)
+                //        {
+                //            LevelAvgTrapezoid[ii] = LevelAvgTrapezoid[startgapl] + (LevelAvgTrapezoid[fingapl] - LevelAvgTrapezoid[startgapl]) / (fingapl - startgapl) * (ii - startgapl);
+                //        }
+                //    }
                 int j = 0;
                 int i = 0;
-                for (i = trip.Travel_Direction == Direction.Direct ? Start_m : Final_m; i != (trip.Travel_Direction == Direction.Direct ? Final_m : Start_m); i += (int)trip.Travel_Direction)
+                for (i = trip.Travel_Direction == Direction.Direct ? Start_m :
+                    Final_m; i != (trip.Travel_Direction == Direction.Direct ? Final_m : Start_m); i += (int)trip.Travel_Direction)
                 {
                     if ((j < Speed.Count) && (j >= 0))
                     {
@@ -792,22 +882,31 @@ namespace ALARm.Core
                                 pointSTR = 1;
                         }
 
-                        //                      0       1                2              3                   4                         5                  6                 7                             8                  9          |                                      10                                        |                                                  11                       |          12        |                                                   13                            |               14                 15                    16                        17                          18                 19        20            21                  22                      23               24           25                               26                          27                         
-                        writetext.WriteLine($@"{j}{_}{Speed[j]}{_}{(i / 100) + 1}{_}{i % 100}{_}{DrawdownRight[j]:0.00}{_}{DrawdownLeft[j]:0.00}{_}{Gauge[j]:0.00}{_}{StrightRight[j]:0.00}{_}{StrightLeft[j]:0.00}{_}{Level[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{(j < LevelAvgTrapezoid.Count ? LevelAvgTrapezoid[j] : LevelAvg[j]):0.00}{_}{LevelAvg[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{Latitude[j]:0.00}{_}{Longitude[j]:0.00}{_}{SwitchesReal[j]}{_}{LevelCorrection[j]:0.00}{_}{GaugeCorrection[j]:0.00}{_}{0:0.00}{_}{0:0.00}{_}{Corrections[j]}{_}{StrightAvg[j]:0.00}{_}{LevelAvg[j]:0.00}{_}{pointLVL}{_}{pointSTR}{_}{signTrapez[j]}");
-                        //writetext.WriteLine($@"{j}{_}{Speed[j]}{_}{(i / 100) + 1}{_}{i % 100}{_}{DrawdownRight[j]:0.00}{_}{DrawdownLeft[j]:0.00}{_}{Gauge[j]:0.00}{_}{StrightRight[j]:0.00}{_}{StrightLeft[j]:0.00}{_}{Level[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{(j < LevelAvgTrapezoid.Count ? LevelAvgTrapezoid[j] : LevelAvg[j]):0.00}{_}{LevelAvg[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{Latitude[j]:0.00}{_}{Longitude[j]:0.00}{_}{SwitchesReal[j]}{_}{LevelCorrection[j]:0.00}{_}{GaugeCorrection[j]:0.00}{_}{0:0.00}{_}{0:0.00}{_}{Corrections[j]}{_}{StrightAvg[j]:0.00}{_}{LevelAvg[j]:0.00}{_}{pointLVL}{_}{pointSTR}{_}{signTrapez[j]}{_}{PasportStraightLeft[j]:0.00}{_}{PasportLevel[j]:0.00}");
+                        //                      0       1                2              3                   4                         5                  6                 7                             8                  9          |                                      10                                        |                                                  11                       |          12        |                                                   13                            |               14                 15                    16                        17                          18                 19        20            21                  22                      23               24           25                               26                          27            28  fsh0             
+                        writetext.WriteLine($@"{j}{_}{Speed[j]}{_}{(i / 100) + 1}{_}{i % 100}{_}{DrawdownRight[j]:0.00}{_}{DrawdownLeft[j]:0.00}{_}{Gauge[j]:0.00}{_}{StrightRight[j]:0.00}{_}{StrightLeft[j]:0.00}{_}{Level[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{(j < LevelAvgTrapezoid.Count ? LevelAvgTrapezoid[j] : LevelAvg[j]):0.00}{_}{LevelAvg[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{Latitude[j]:0.00}{_}{Longitude[j]:0.00}{_}{SwitchesReal[j]}{_}{LevelCorrection[j]:0.00}{_}{GaugeCorrection[j]:0.00}{_}{0:0.00}{_}{0:0.00}{_}{Corrections[j]}{_}{StrightAvg[j]:0.00}{_}{LevelAvg[j]:0.00}{_}{pointLVL}{_}{pointSTR}{_}{signTrapez[j]}{_}{ fsh0[j]:0.00}");
+                        //writetext.WriteLine($@"{j}{_}{Speed[j]}{_}{(i / 100) + 1}{_}{i % 100}{_}{DrawdownRight[j]:0.00}{_}{DrawdownLeft[j]:0.00}{_}{Gauge[j]:0.00}{_}{StrightRight[j]:0.00}{_}{StrightLeft[j]:0.00}{_}{Level[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{(j < LevelAvgTrapezoid.Count ? LevelAvgTrapezoid[j] : LevelAvg[j]):0.00}{_}{LevelAvg[j]:0.00}{_}{(j < StrightAvgTrapezoid.Count ? StrightAvgTrapezoid[j] : StrightAvg[j]):0.00}{_}{Latitude[j]:0.00}{_}{Longitude[j]:0.00}{_}{SwitchesReal[j]}{_}{LevelCorrection[j]:0.00}{_}{GaugeCorrection[j]:0.00}{_}{0:0.00}{_}{0:0.00}{_}{Corrections[j]}{_}{StrightAvg[j]:0.00}{_}{LevelAvg[j]:0.00}{_}{pointLVL}{_}{pointSTR}{_}{signTrapez[j]}{_}{PasportStraightLeft[j]:0.00}{_}{PasportLevel[j]:0.00} {_}{ fsh0 [j]:0.00}  "  );
 
                         j++;
                     }
                 }
             }
             catch (Exception e)
+
+
+
+
+
+
             {
                 Console.WriteLine("Ошибка при формировании уоркшифровки: " + e.Message);
             }
             ShifrovkaGenerated = true;
 
-            var process = System.Diagnostics.Process.Start(@"C:\sntfi\ALARm5\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
-            //var process = System.Diagnostics.Process.Start(@"D:\aALARMSVN\ALARm\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
+            //var process = System.Diagnostics.Process.Start(@"F:\sntfi\Alarm5\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
+            //var process = System.Diagnostics.Process.Start(@"C:\SNTFI\Alarm5\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
+            var process = System.Diagnostics.Process.Start(@"E:\Alarm5\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
+        
+            //var process = System.Diagnostics.Process.Start(@"C:\aALARMSVN\ALARm\ALARmProcees\Win32\Debug\ALARmProcess.exe", $"{fileName} {Correction}");
             process.WaitForExit();
 
             return ShifrovkaGenerated;
@@ -834,7 +933,7 @@ namespace ALARm.Core
 
                 int index = CrossRailProfile.Meters.IndexOf(meter);
                 var cmeter = trip.Travel_Direction == Direction.Reverse ? meter : Length - meter;
-               
+
 
                 shortwavesLeft.Append((CrossRailProfile.Shortwavesleft[index] * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
                 shortwavesRight.Append((CrossRailProfile.Shortwavesright[index] * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
@@ -842,8 +941,8 @@ namespace ALARm.Core
                 mediumwavesRight.Append((CrossRailProfile.Mediumwavesright[index] * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
                 longwavesLeft.Append((CrossRailProfile.Longwavesleft[index] * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
                 longwavesRight.Append((CrossRailProfile.Longwavesright[index] * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
-                
-            
+
+
                 x_big.Append(((CrossRailProfile.Xbig[index]) * WavesKoef).ToString().Replace(",", ".") + "," + cmeter.ToString().Replace(",", ".") + " ");
 
             }
@@ -854,19 +953,19 @@ namespace ALARm.Core
 
             MediumwavesLeft = mediumwavesLeft.ToString();
             MediumwavesRight = mediumwavesRight.ToString();
-         
+
             LongwavesLeft = longwavesLeft.ToString();
             LongwavesRight = longwavesRight.ToString();
 
-            X_big= x_big.ToString();
-        
+            X_big = x_big.ToString();
+
 
 
 
         }
 
         public string GetdigressionsCount =>
-            $"2:{ SecondDegreeCountDrawdown + SecondDegreeCountGauge + SecondDegreeCountLevel + SecondDegreeCountSag + SecondDegreeCountStrightening}; 3:{ThirdDegreeCountDrawdown + ThirdDegreeCountGauge + ThirdDegreeCountLevel + ThirdDegreeCountSag + ThirdDegreeCountStrightening}; 4:{FourthDegreeCountDrawdown + FourthDegreeCountGauge+ FourthDegreeCountLevel + FourthDegreeCountSag + FourthDegreeCountStrightening};";
+            $"2:{ SecondDegreeCountDrawdown + SecondDegreeCountGauge + SecondDegreeCountLevel + SecondDegreeCountSag + SecondDegreeCountStrightening}; 3:{ThirdDegreeCountDrawdown + ThirdDegreeCountGauge + ThirdDegreeCountLevel + ThirdDegreeCountSag + ThirdDegreeCountStrightening}; 4:{FourthDegreeCountDrawdown + FourthDegreeCountGauge + FourthDegreeCountLevel + FourthDegreeCountSag + FourthDegreeCountStrightening};";
         public string CalcMainPoint()
         {
             int MainParamPointSum = 0, CurvePointSum = 0;
@@ -883,7 +982,12 @@ namespace ALARm.Core
                 {
                     MainParamPointSum += digression.GetPoint(this);
                     //ToDo - ағамен ақылдасу керек
-                    CurvePointSum += digression.GetCurvePoint(this);
+                    //  if (digression.GetCurvePoint(this) > 0 && CurvePointSum == 0)
+                    if (digression.GetCurvePoint(this) > 0)
+                    {
+
+                        CurvePointSum += digression.GetCurvePoint(this);
+                    }
                 }
             }
             return $"Балл - {MainParamPointSum + CurvePointSum} / кривые {CurvePointSum} /";
@@ -896,7 +1000,7 @@ namespace ALARm.Core
             PdbSection = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoPdbSection, Direction_name, Track_name) as List<PdbSection>;
             CrossTies = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoCrossTie, Direction_name, Track_name) as List<CrossTie>;
             Switches = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoSwitch, Direction_name, Track_name) as List<Switch>;
-            StraighteningThreads = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoStraighteningThread, Direction_name, Track_name) as List<StraighteningThread>;
+            //StraighteningThreads = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoStraighteningThread, Direction_name, Track_name) as List<StraighteningThread>;
             LongRailses = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoLongRails, Direction_name, Track_name) as List<LongRails>;
             CheckSections = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoCheckSection, Direction_name, Track_name) as List<CheckSection>;
             Depths = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoDeep, Direction_name, Track_name) as List<Deep>;
@@ -906,9 +1010,9 @@ namespace ALARm.Core
             IsoJoints = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoProfileObject, Direction_name, Track_name) as List<ProfileObject>;
             RailsBrace = mainTrackStructureRepository.GetMtoObjectsByCoord(Passage_time, Number, MainTrackStructureConst.MtoRailsBrace, Direction_name, Track_name) as List<RailsBrace>;
         }
-        public void LoadPasportKmMeterPRUSpeeds(IMainTrackStructureRepository mainTrackStructureRepository, DateTime trip_date, int km,int Meter )
+        public void LoadPasportKmMeterPRUSpeeds(IMainTrackStructureRepository mainTrackStructureRepository, DateTime trip_date, int km, int Meter)
         {
-            Speeds = mainTrackStructureRepository.GetMtoObjectsByCoordSpeeds(trip_date, Number, MainTrackStructureConst.MtoSpeed,  Track_id, Meter) as List<Speed>;
+            Speeds = mainTrackStructureRepository.GetMtoObjectsByCoordSpeeds(trip_date, Number, MainTrackStructureConst.MtoSpeed, Track_id, Meter) as List<Speed>;
         }
 
         public void LoadTrackPasport(IMainTrackStructureRepository mainTrackStructureRepository, DateTime trip_date)
@@ -924,7 +1028,7 @@ namespace ALARm.Core
                 CrossTies.Add(new CrossTie { Crosstie_type_id = (int)CrosTieType.Woody, Start_Km = Number, Start_M = 1, Final_Km = Number, Final_M = Final_m });
             }
             //Dateremont = mainTrackStructureRepository.GetMtoObjectsByCoord(trip_date, Number, MainTrackStructureConst.MtoRepairProject, Track_id) as List<Dateremont>;
-            
+
             Switches = mainTrackStructureRepository.GetMtoObjectsByCoord(trip_date, Number, MainTrackStructureConst.MtoSwitch, Track_id) as List<Switch>;
             StraighteningThreads = mainTrackStructureRepository.GetMtoObjectsByCoord(trip_date, Number, MainTrackStructureConst.MtoStraighteningThread, Track_id) as List<StraighteningThread>;
             LongRailses = mainTrackStructureRepository.GetMtoObjectsByCoord(trip_date, Number, MainTrackStructureConst.MtoLongRails, Track_id) as List<LongRails>;
@@ -986,10 +1090,6 @@ namespace ALARm.Core
                 Pickets.Add(new Picket() { Number = p, Start = (Start_m / 100) + 1 == p ? Start_m.RoundTo10() : (p - 1) * 100 });
             }
 
-            if (Number == 727)
-            {
-
-            }
 
 
         }
@@ -1004,7 +1104,7 @@ namespace ALARm.Core
             {
                 foreach (var sw in Switches)
                 {
-                    
+
                     if ((sw.Km == Number)/* && (sw.Final_Km == Number)*/ && (sw.Start_Km == Number))
                         Digressions.Add(new DigressionMark()
                         {
@@ -1013,7 +1113,7 @@ namespace ALARm.Core
                             $" {(sw.Side_Id == Side.Left ? "Лев." : (sw.Side_Id == Side.Right) ? "Прав." : "?") } {sw.Mark}"
                         });
 
-                    if ((sw.Km == Number)/* && (sw.Final_Km == Number)*/ && (sw.Start_Km+1 == Number))
+                    if ((sw.Km == Number)/* && (sw.Final_Km == Number)*/ && (sw.Start_Km + 1 == Number))
                         Digressions.Add(new DigressionMark()
                         {
                             Meter = 10,
@@ -1026,7 +1126,7 @@ namespace ALARm.Core
 
                 }
 
-               
+
                 Digressions.AddRange((
                        from vpicket in VPickets
                        select new DigressionMark()
@@ -1037,19 +1137,19 @@ namespace ALARm.Core
 
                 if (CorrectionMeter > -1)
                 {
-                    var tempKms= rdStructureRepository.GetKilometersByTrip(trip);
+                    var tempKms = rdStructureRepository.GetKilometersByTrip(trip);
                     var currentKm = tempKms.Where(o => o.Number == Number).ToList();
-                    var prevKm = tempKms.Where(o => o.Number == Number -1).ToList();
+                    var prevKm = tempKms.Where(o => o.Number == Number - 1).ToList();
                     var count = tempKms.Count;
 
                     var coord = Final_m;
-                    if(trip.Travel_Direction == Direction.Reverse)
+                    if (trip.Travel_Direction == Direction.Reverse)
                     {
                         coord = Start_m;
                         prevKm = tempKms.Where(o => o.Number == Number + 1).ToList();
                     }
 
-                    if ((currentKm.Any() &&  prevKm.Any()) ||( count==1)) ///&& prevKm.Any()
+                    if ((currentKm.Any() && prevKm.Any()) || (count == 1)) ///&& prevKm.Any()
                     {
                         var currentOutData = (List<OutData>)rdStructureRepository.GetNextOutDatas(currentKm.First().Start_Index - 1, currentKm.First().GetLength() - 1, currentKm.First().Trip.Id);
                         var prevOutData = (List<OutData>)rdStructureRepository.GetNextOutDatas(prevKm.First().Start_Index - 1, prevKm.First().GetLength() - 1, prevKm.First().Trip.Id);
@@ -1066,71 +1166,83 @@ namespace ALARm.Core
 
                         var valuecurrent = currentMeterNature - currentMeterPassport;
                         var valueprev = PrevMeterNature - PrevMeterPassport;
-                    
+
+
+
+
+                        var Sign_Prv = 1;
+                        Sign_Prv = trip.Travel_Direction == Direction.Direct ? 1 : -3;
 
                         Digressions.Add(
                            new DigressionMark()
                            {
-                               NotMoveAlert = true,
-                               Meter = coord,
-                               Alert = $"{coord} Привязка координат: {(CorrectionType == CorrectionType.Manual ? "РП" : "АП")} коррекция;  привязка на {CorrectionValue}   м."
-                           }) ;
+                               NotMoveAlertBinding = true,
+                               Meter = coord + Sign_Prv * 10,
+
+                               Alert = $"{coord} Привязка коор-т.: {(CorrectionType == CorrectionType.Manual ? "РП" : "АП")} кор-ия;  привязка на {CorrectionValue} м."
+                           }); ;
+
+
+
+
+
+
                         var ANIAYRAMOLODEC = rdStructureRepository.InsertCorrection(trip.Id, Track_id, Number, coord, CorrectionValue);
 
                     }
                 }
-                
+
                 if (StationSection.Count > 0)
                 {
                     if (StationSection[0].Start_Km == Number)
                     {
                         Sector = mainTrackStructureRepository.GetSector(Track_id, Number - 1, trip.Trip_date) ?? "";
-                        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = StationSection[0].Start_M, Alert = $"{StationSection[0].Start_M} Станция: {StationSection[0].Station};        {Sector}" });
+                        Digressions.Add(new DigressionMark() { NotMoveAlertStation = true, Meter = StationSection[0].Start_M, Alert = $"{StationSection[0].Start_M} Станция: {StationSection[0].Station};        {Sector}" });
                     }
                     else
                     if (StationSection[0].Final_Km == Number)
                     {
                         Sector = mainTrackStructureRepository.GetSector(Track_id, Number + 1, trip.Trip_date) ?? "";
-                        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = StationSection[0].Final_M, Alert = $"       {Sector};{StationSection[0].Final_M} Станция: {StationSection[0].Station}" });
+                        Digressions.Add(new DigressionMark() { NotMoveAlertStation = true, Meter = StationSection[0].Final_M, Alert = $"       {Sector};{StationSection[0].Final_M} Станция: {StationSection[0].Station}" });
                     }
                 }
                 if (RepairProjects.Count > 0)
                 {
-                    for (int i = 0; i < RepairProjects.Count(); i++ )
+                    for (int i = 0; i < RepairProjects.Count(); i++)
                     {
                         if (RepairProjects[i].Start_Km == Number)
                         {
                             Sector = mainTrackStructureRepository.GetSector(Track_id, Number - 1, trip.Trip_date) ?? "";
-                            Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = RepairProjects[i].Start_M, Alert = $"{"↑"} {RepairProjects[i].Start_M}  {RepairProjects[i].Name + " ремонт" }  {RepairProjects[i].Repair_date.ToString("MM.yyyy")} ;" });
+                            Digressions.Add(new DigressionMark() { NotMoveAlertReparirprogect = true, Meter = RepairProjects[i].Start_M, Alert = $"{"↑"} {RepairProjects[i].Start_M}  {RepairProjects[i].Name + " ремонт" }  {RepairProjects[i].Repair_date.ToString("MM.yyyy")} ;" });
                         }
                         else if (RepairProjects[i].Final_Km == Number)
                         {
                             Sector = mainTrackStructureRepository.GetSector(Track_id, Number + 1, trip.Trip_date) ?? "";
-                            Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = RepairProjects[i].Final_M, Alert = $"{"↓"} {RepairProjects[i].Final_M}  {RepairProjects[i].Name + " ремонт" }  {RepairProjects[i].Repair_date.ToString("MM.yyyy")} ;" });
+                            Digressions.Add(new DigressionMark() { NotMoveAlertReparirprogect = true, Meter = RepairProjects[i].Final_M, Alert = $"{"↓"} {RepairProjects[i].Final_M}  {RepairProjects[i].Name + " ремонт" }  {RepairProjects[i].Repair_date.ToString("MM.yyyy")} ;" });
                         }
                         else if (RepairProjects[i].Start_Km < Number && RepairProjects[i].Final_Km > Number)
                         {
                             Sector = mainTrackStructureRepository.GetSector(Track_id, Number - 1, trip.Trip_date) ?? "";
-                            Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = Start_m, Alert = $"{"↑"} {Start_m} {RepairProjects[0].Name + " ремонт" }  {RepairProjects[0].Repair_date.ToString("MM.yyyy")} ;" });
+                            Digressions.Add(new DigressionMark() { NotMoveAlertReparirprogect = true, Meter = Start_m, Alert = $"{"↑"} {Start_m} {RepairProjects[0].Name + " ремонт" }  {RepairProjects[0].Repair_date.ToString("MM.yyyy")} ;" });
                         }
                     }
                 }
-                //if (Runninin.Count > 0)
-                //{
-                    
+                if (Runninin.Count > 0)
+                {
 
-                //    if (Runninin[0].Start_Km == Number)
-                //    {
-                //        Sector = mainTrackStructureRepository.GetSector(Track_id, Number - 1, trip.Trip_date) ?? "";
-                //        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = Runninin[0].Start_M, Alert = $"{Runninin[0].Reason} V : {Runninin[0].Passenger }  ;{Runninin[0].Start_M} ПК:{((Runninin[0].Start_M +1)/100)+1} ;" });
-                //    }
-                //    else
-                //    if (Runninin[0].Final_Km == Number)
-                //    {
-                //        Sector = mainTrackStructureRepository.GetSector(Track_id, Number + 1, trip.Trip_date) ?? "";
-                //        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = Runninin[0].Final_M, Alert = $"{Runninin[0].Reason} V : {Runninin[0].Passenger } ;{Runninin[0].Start_M} ПК: {((Runninin[0].Start_M + 1) / 100) + 1} ;" });
-                //    }
-                //}
+
+                    if (Runninin[0].Start_Km == Number)
+                    {
+                        Sector = mainTrackStructureRepository.GetSector(Track_id, Number - 1, trip.Trip_date) ?? "";
+                        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = Runninin[0].Start_M, Alert = $"{Runninin[0].Reason} V : {Runninin[0].Passenger }  ;{Runninin[0].Start_M} ПК:{((Runninin[0].Start_M + 1) / 100) + 1} ;" });
+                    }
+                    else
+                    if (Runninin[0].Final_Km == Number)
+                    {
+                        Sector = mainTrackStructureRepository.GetSector(Track_id, Number + 1, trip.Trip_date) ?? "";
+                        Digressions.Add(new DigressionMark() { NotMoveAlert = true, Meter = Runninin[0].Final_M, Alert = $"{Runninin[0].Reason} V : {Runninin[0].Passenger } ;{Runninin[0].Start_M} ПК: {((Runninin[0].Start_M + 1) / 100) + 1} ;" });
+                    }
+                }
 
                 Digressions.AddRange(rdStructureRepository.GetDigressionMarks(trip.Id, Track_id, Number));
             }
@@ -1138,13 +1250,18 @@ namespace ALARm.Core
             {
                 foreach (var curve in Curves)
                 {
-                    
-                    if (curve.Start_Km == Number && curve.Final_Km == Number)
-                        Digressions.Add(new DigressionMark() { Meter = curve.Start_M, Alert = $"{curve.Start_M} R:{curve.Straightenings[0].Radius} h:{curve.Elevations[0].Lvl} Ш:{curve.Straightenings[0].Width} И:{curve.Straightenings[0].Wear}" });
+                    if (!curve.Elevations.Any() || !curve.Straightenings.Any())
+                    {
+                        continue;
+                    }
+
+                    if (curve.Start_Km == Number && curve.Final_Km == Number && curve.Straightenings[0].Radius > 10)
+                        Digressions.Add(new DigressionMark()
+                        { Meter = curve.Start_M, Alert = $"{curve.Start_M} R:{curve.Straightenings[0].Radius} h:{curve.Elevations[0].Lvl} Ш:{curve.Straightenings[0].Width} И:{curve.Straightenings[0].Wear}" });
                 }
 
                 int pas = 999, gruz = 999;
-            
+
 
                 foreach (var item in Digressions)
                 {
@@ -1165,7 +1282,8 @@ namespace ALARm.Core
                                 gruz = item.FreightSpeedLimit;
                             }
                         }
-                    } else if (item.Digression == DigressionName.Gap)
+                    }
+                    else if (item.Digression == DigressionName.Gap)
                     {
                         if (item.PassengerSpeedLimit != -1 && item.PassengerSpeedLimit < pas)
                         {
@@ -1188,7 +1306,7 @@ namespace ALARm.Core
                            Alert = $"{vpicket.Meter2} Уст.ск:{vpicket.Picket2PassengerSpeed}/{vpicket.Picket2FreightSpeed} Уст.ск:{vpicket.Picket1PassengerSpeed}/{vpicket.Picket1FreightSpeed}"
                        }).ToList());
             }
-            //Digressions = rdStructureRepository.GetDigressionMarks(Trip.Id, km.Number, km.Track_id, new int[] { 2, 3, 4 });
+            //Digress   ions = rdStructureRepository.GetDigressionMarks(Trip.Id, km.Number, km.Track_id, new int[] { 2, 3, 4 });
             //Gaps = mainTrackStructureRepository.GetGaps(Trip.Id, GapSource.Laser, km.Number);
 
             //Убираем дублирование отступлении
@@ -1254,7 +1372,7 @@ namespace ALARm.Core
         public string DownHillLeft { get; set; } = "";
         public string DownHillRight { get; set; } = "";
         public string HeadWear45Left { get; set; } = "";
-           
+
         public string HeadWear45Right { get; set; } = "";
         public string MediumwavesLeft { get; set; } = "";
         public string MediumwavesRight { get; set; } = "";
@@ -1283,12 +1401,15 @@ namespace ALARm.Core
         public string Stright5 { get; set; } = "";
         public bool Rep_type_cni { get; set; } = false;
         public string SpeedLimit { get; private set; }
-        
+
         public int GlobPassSpeed { get; set; } = -1;
         public int GlobFreightSpeed { get; set; } = -1;
         public int AllowedSpeed { get; private set; }
         public Trips Trip { get; set; }
-        public bool IsLowActivity { get {
+        public bool IsLowActivity
+        {
+            get
+            {
                 if (Speeds != null)
                     foreach (var speed in Speeds)
                     {
@@ -1299,15 +1420,16 @@ namespace ALARm.Core
 
                     }
                 return false;
-            } }
+            }
+        }
 
         public Direction Direction { get; set; }
-       
+
 
         public static readonly int DefaultSpeed = 40;
         public static bool RepairProjectFlag = false;
         public static bool GlbSpeedLimited = false;
-        
+
 
         public void CalcGlobalSpeed()
         {
@@ -1381,13 +1503,13 @@ namespace ALARm.Core
                 _ => "",
             };
         }
-       /// <summary>
-       /// паспорттық сызықтар сызу
-       /// </summary>
-       /// <param name="outdatas"></param>
-       /// <param name="trip"></param>
-       /// <param name="mainTrackStructureRepository"></param>
-       /// <param name="direction">әзірге 1 деп алдық , негізі ойластыру керек</param>
+        /// <summary>
+        /// паспорттық сызықтар сызу
+        /// </summary>
+        /// <param name="outdatas"></param>
+        /// <param name="trip"></param>
+        /// <param name="mainTrackStructureRepository"></param>
+        /// <param name="direction">әзірге 1 деп алдық , негізі ойластыру керек</param>
         public void GetZeroLines(List<OutData> outdatas, Trips trip, IMainTrackStructureRepository mainTrackStructureRepository, int direction = 1)
         {
             if ((outdatas == null) || (outdatas.Count < 1))
@@ -1406,7 +1528,7 @@ namespace ALARm.Core
             signTrapez = new List<int>(new int[size]);
             meter = new List<int>(new int[size]);
             int j = 0;
-            var distanceFrom = 0.0021;
+            var distanceFrom = -0.0021;
 
             LoadTrackPasport(mainTrackStructureRepository, trip.Trip_date);
             for (int i = trip.Travel_Direction == Direction.Direct ? Start_m : Final_m; i != (trip.Travel_Direction == Direction.Direct ? Final_m : Start_m); i += (int)trip.Travel_Direction)
@@ -1415,23 +1537,24 @@ namespace ALARm.Core
                 var utem = 0;
                 var yxr01 = 0.0;
                 var yxu = 0.0;
-                meter[j] = i;
+                if (j == size) break;
+
                 int lvlsign = 1;
 
                 try
                 {
+                    meter[j] = i;
 
-                    outdatas[j] = outdatas[j];
                     fsh0[j] = 1520;
                     snorm[j] = 1520;
                     fnorm[j] = 1520;
-                    sign[j] = -1;
-                    signTrapez[j] = -1;
-
+                    sign[j] = 1;
+                    signTrapez[j] = 1;
+                    if (j >= size) break;
                     var currentCoordReal = Number.ToDoubleCoordinate(i);
                     foreach (var stritheningThread in StraighteningThreads)
                     {
-                        if (stritheningThread.RealStartCoordinate <= currentCoordReal && currentCoordReal <= stritheningThread.RealFinalCoordinate)
+                        if (stritheningThread.RealStartCoordinate < currentCoordReal && currentCoordReal < stritheningThread.RealFinalCoordinate)
                         {
                             sign[j] = stritheningThread.Side_Id == (int)Side.Right ? 1 : -1;
                             signTrapez[j] = stritheningThread.Side_Id == (int)Side.Right ? 1 : -1;
@@ -1440,7 +1563,7 @@ namespace ALARm.Core
 
                     foreach (var norma in Normas)
                     {
-                        if ((currentCoordReal >= norma.RealStartCoordinate) && (currentCoordReal <= norma.RealFinalCoordinate))
+                        if ((currentCoordReal > norma.RealStartCoordinate) && (currentCoordReal < norma.RealFinalCoordinate))
                         {
                             fnorm[j] = norma.Norma_Width;
                             snorm[j] = norma.Norma_Width;
@@ -1459,118 +1582,126 @@ namespace ALARm.Core
                         foreach (var stright in curve.Straightenings)
                         {
 
-                            if (stright.Transition_2 == 0)
-                            {
-                                var ssss = 1;
-                            }
+
                             if (currentCoordReal.Between(stright.RealStartCoordinate, stright.RealFinalCoordinate))
                             {
                                 fnorm[j] = stright.Width;
                                 rad = stright.Radius;
+                                //sign[j] = Math.Sign(StrightAvg[j]);
+                                //signTrapez[j] = Math.Sign(StrightAvg[j]);
+                                //  sign[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
+                                //  signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
+                                sign[j] = curve.Side_id == (int)Side.Right ? 1 : -1;
+                                signTrapez[j] = curve.Side_id == (int)Side.Right ? 1 : -1;
+
                             }
 
-                            if (currentCoordReal.Between(stright.RealStartCoordinate - distanceFrom, stright.RealFinalCoordinate + distanceFrom))
-                            {
-                                utem = 1;
-                            }
-                            if (currentCoordReal.Between(stright.RealStartCoordinate, stright.FirstTransitionEnd))
-                            {
+                            //if (currentCoordReal.Between(stright.RealStartCoordinate - distanceFrom, stright.RealFinalCoordinate + distanceFrom))
+                            //{
+                            //    utem = 1;
+                            //}
+
+                            ////if (curve.Straightenings.Select( o=> o.Width).Distinct().Count() == 1)
+                            ////{
+                            ////    yxr01 = stright.Radius.RadiusToAvg();
+                            ////    zxu = 1530;
+                            ////}
+                            ////else
+                            //if (currentCoordReal.Between(stright.RealStartCoordinate, stright.FirstTransitionEnd))
+                            //{
+                            //    var KmMeter = stright.RealStartCoordinate.RealCoordinateToKmMeter();
+                            //    var len1 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, KmMeter[0], KmMeter[1], Track_id, trip.Trip_date));
+
+                            //    var gg1 = stright.Transition_1 != 0 ? stright.Transition_1 + 0.0 : 30.0;
+                            //    var oldYxr = yxr01;
+                            //    yxr01 = (stright.Radius.RadiusToAvg() / gg1) * len1;
+                            //    var ist = curve.Straightenings.IndexOf(stright);
+                            //    if (ist > 0)
+                            //    {
+                            //        if ((curve.Straightenings[ist - 1].Transition_2 == 0) && (stright.Radius.RadiusToAvg() > curve.Straightenings[ist - 1].Radius.RadiusToAvg()))
+                            //        {
+                            //            yxr01 = ((stright.Radius.RadiusToAvg() - curve.Straightenings[ist - 1].Radius.RadiusToAvg()) / gg1) * len1;
+                            //            yxr01 += curve.Straightenings[ist - 1].Radius.RadiusToAvg();
+                            //        }
+                            //    }
+
+                            //    var fsrs = Math.Abs(stright.Width - snorm[j]);
 
 
-                                var KmMeter = stright.RealStartCoordinate.RealCoordinateToKmMeter();
-
-                                var len1 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, KmMeter[0], KmMeter[1], Track_id, trip.Trip_date));
-                              //  sign[j] = curve.Side_id == 2 ? 1 : -1;
-                               // sign[j] = curve.Side_id ==2 1 : -1;
-                               sign[j] =StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-                                signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-
-                                var gg1 = stright.Transition_1 != 0 ? stright.Transition_1 + 0.0 : 30.0;
-                                var oldYxr = yxr01;
-                                yxr01 = (stright.Radius.RadiusToAvg() / gg1) * len1;
-                                var ist = curve.Straightenings.IndexOf(stright);
-                                if (ist > 0)
-                                {
-                                    if ((curve.Straightenings[ist - 1].Transition_2 == 0) && (stright.Radius.RadiusToAvg() > curve.Straightenings[ist - 1].Radius.RadiusToAvg()))
-                                    {
-                                        yxr01 = ((stright.Radius.RadiusToAvg() - curve.Straightenings[ist - 1].Radius.RadiusToAvg()) / gg1) * len1;
-                                        yxr01 += curve.Straightenings[ist - 1].Radius.RadiusToAvg();
-                                    }
-                                }
-
-                                var fsrs = Math.Abs(stright.Width - snorm[j]);
-                                zxu = snorm[j] + (fsrs / gg1) * len1;
-                            }
-                            else
-                            if (currentCoordReal.Between(stright.FirstTransitionEnd, stright.SecondTransitionStart))
-                            {
-                                //sign[j] = curve.Side_id == 2 ? -1 : 1;
-                                sign[j] =StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-                                //signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-
-                                yxr01 = stright.Radius.RadiusToAvg();
-                                zxu = stright.Width;
-                            }
-                            else
-                            if (currentCoordReal.Between(stright.SecondTransitionStart, stright.RealFinalCoordinate))
-                            {
-                                //sign[j] = curve.Side_id == 2 ? -1 : 1;
-
-                                sign[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-                                signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
-
-                                var gg2 = stright.Transition_2 != 0 ? stright.Transition_2 + 0.0 : 30.0;
 
 
-                                var len2 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, stright.Final_Km, stright.Final_M, Track_id, trip.Trip_date));
-                                yxr01 = (stright.Radius.RadiusToAvg() / gg2) * len2;
+                            //    zxu = snorm[j] + (fsrs / gg1) * len1;
+                            //}
+                            //else
+                            //if (currentCoordReal.Between(stright.FirstTransitionEnd, stright.SecondTransitionStart))
+                            //{
+                            //    //sign[j] = curve.Side_id == 2 ? -1 : 1;
+                            //    //sign[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
+                            //    //signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
 
-                                var fsrs = Math.Abs(stright.Width - snorm[j]);
-                                zxu = snorm[j] + (fsrs / gg2) * len2;
-                            }
+                            //    yxr01 = stright.Radius.RadiusToAvg();
+                            //    zxu = stright.Width;
+                            //}
+                            //else
+                            //if (currentCoordReal.Between(stright.SecondTransitionStart, stright.RealFinalCoordinate))
+                            //{
+                            //    //sign[j] = curve.Side_id == 2 ? -1 : 1;
+
+                            //    //  sign[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
+                            //    //  signTrapez[j] = StrightAvg.GetSign(Number, this.Meters, stright.RealStartCoordinate, stright.RealFinalCoordinate);
+
+                            //    var gg2 = stright.Transition_2 != 0 ? stright.Transition_2 + 0.0 : 30.0;
+
+
+                            //    var len2 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, stright.Final_Km, stright.Final_M, Track_id, trip.Trip_date));
+                            //    yxr01 = (stright.Radius.RadiusToAvg() / gg2) * len2;
+
+                            //    var fsrs = Math.Abs(stright.Width - snorm[j]);
+                            //    zxu = snorm[j] + (fsrs / gg2) * len2;
+                            //}
                         }
 
-                        foreach (var elevation in curve.Elevations)
-                        {
-                            if (currentCoordReal.Between(elevation.RealStartCoordinate - distanceFrom, elevation.RealFinalCoordinate + distanceFrom))
-                            {
-                                utem = 1;
-                            }
+                        //foreach (var elevation in curve.Elevations)
+                        //{
+                        //    if (currentCoordReal.Between(elevation.RealStartCoordinate - distanceFrom, elevation.RealFinalCoordinate + distanceFrom))
+                        //    {
+                        //        utem = 1;
+                        //    }
 
-                            //бірінші өту қиысығы
-                            if (currentCoordReal.Between(elevation.RealStartCoordinate, elevation.FirstTransitionEnd))
-                            {
-                                var KmMeter = elevation.RealStartCoordinate.RealCoordinateToKmMeter();
-                                var len1 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, KmMeter[0], KmMeter[1], Track_id, trip.Trip_date));
-                                lvlsign = StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
-                                var gg1 = elevation.Transition_1 != 0 ? elevation.Transition_1 + 0.0 : 30.0;
-                                yxu = (elevation.Lvl / gg1) * len1;
-                                var ist = curve.Elevations.IndexOf(elevation);
-                                if (ist > 0)
-                                {
-                                    if ((curve.Elevations[ist - 1].Transition_2 == 0) && (elevation.Lvl > curve.Elevations[ist - 1].Lvl))
-                                    {
-                                        yxu = ((elevation.Lvl - curve.Elevations[ist - 1].Lvl) / gg1) * len1;
-                                        yxu += curve.Elevations[ist - 1].Lvl;
-                                    }
-                                }
-                            }
-                            else
-                            if (currentCoordReal.Between(elevation.FirstTransitionEnd, elevation.SecondTransitionStart))
-                            {
-                                lvlsign =StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
-                                yxu = elevation.Lvl;
-                            }
-                            else
-                            if (currentCoordReal.Between(elevation.SecondTransitionStart, elevation.RealFinalCoordinate))
-                            {
-                                lvlsign = StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
-                                var gg2 = elevation.Transition_2 != 0 ? elevation.Transition_2 + 0.0 : 30.0;
-                                var len2 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, elevation.Final_Km, elevation.Final_M, Track_id, trip.Trip_date));
-                                yxu = (elevation.Lvl / gg2) * len2;
+                        //    //бірінші өту қиысығы
+                        //    if (currentCoordReal.Between(elevation.RealStartCoordinate, elevation.FirstTransitionEnd))
+                        //    {
+                        //        var KmMeter = elevation.RealStartCoordinate.RealCoordinateToKmMeter();
+                        //        var len1 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, KmMeter[0], KmMeter[1], Track_id, trip.Trip_date));
+                        //        lvlsign = StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
+                        //        var gg1 = elevation.Transition_1 != 0 ? elevation.Transition_1 + 0.0 : 30.0;
+                        //        yxu = (elevation.Lvl / gg1) * len1;
+                        //        var ist = curve.Elevations.IndexOf(elevation);
+                        //        if (ist > 0)
+                        //        {
+                        //            if ((curve.Elevations[ist - 1].Transition_2 == 0) && (elevation.Lvl > curve.Elevations[ist - 1].Lvl))
+                        //            {
+                        //                yxu = ((elevation.Lvl - curve.Elevations[ist - 1].Lvl) / gg1) * len1;
+                        //                yxu += curve.Elevations[ist - 1].Lvl;
+                        //            }
+                        //        }
+                        //    }
+                        //    else
+                        //    if (currentCoordReal.Between(elevation.FirstTransitionEnd, elevation.SecondTransitionStart))
+                        //    {
+                        //        lvlsign = StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
+                        //        yxu = elevation.Lvl;
+                        //    }
+                        //    else
+                        //    if (currentCoordReal.Between(elevation.SecondTransitionStart, elevation.RealFinalCoordinate))
+                        //    {
+                        //        lvlsign = StrightAvg.GetSign(Number, this.Meters, elevation.RealStartCoordinate, elevation.RealFinalCoordinate);
+                        //        var gg2 = elevation.Transition_2 != 0 ? elevation.Transition_2 + 0.0 : 30.0;
+                        //        var len2 = Math.Abs(mainTrackStructureRepository.GetDistanceBetween2Coord(Number, i, elevation.Final_Km, elevation.Final_M, Track_id, trip.Trip_date));
+                        //        yxu = (elevation.Lvl / gg2) * len2;
 
-                            }
-                        }
+                        //    }
+                        //}
                     }
                     foreach (var sw in Switches)
                     {
@@ -1589,97 +1720,84 @@ namespace ALARm.Core
                             }
                             if (!inCurve)
                             {
-                                sign[j] = sw.Side_Id == Side.Right ? 1 : -1;
-                                signTrapez[j] = sw.Side_Id == Side.Right ? 1 : -1;
+                                // sign[j] = sw.Side_Id == Side.Right ? 1 : -1;
+                                //signTrapez[j] = sw.Side_Id == Side.Right ? 1 : -1;
                             }
 
                         }
                     }
 
-                   flvl[j] = utem;
-                   flvl0[j] = lvlsign * yxu;
-                    //flvl0[j] = 0;
-                    fZeroStright[j] = sign[j] * yxr01;
-                    fsh0[j] = zxu;
+                    //flvl[j] = utem;
+                    ///   flvl0[j] = sign[j] * yxu;
+                    //  fZeroStright[j] = sign[j] * yxr01;
+                    //   flvl[j] = utem;
+                    //flvl0[j] = lvlsign ;
+                    //fZeroStright[j] = sign[j] ;
+
+                    ///   fsh0[j] = zxu;
                     frad[j] = Math.Round(rad);
                     //    var tempSign = StrightAvg[j] / Math.Abs(StrightAvg[j]) * direction;
                     //PasportLevel += $"{-1 * Math.Abs(yxu) * tempSign:0.00},{j} ";
 
-                    PasportGauge += $"{(fsh0[j] - 1520) * GaugeKoef:0.00},{j} ";
+                    // PasportGauge += $"{(fsh0[j] - 1520) * GaugeKoef:0.00},{j} ";
                     //PasportStraightLeft += $"{-1 * Math.Abs(yxr01) * tempSign * StrightKoef:0.00},{j} ";
 
 
                     j++;
+
+
+
                 }
 
                 catch (Exception e)
                 {
                     Console.WriteLine("Kilometer.GetZeroLines Error: " + e.Message);
                 }
-                
             }
-
-            //var kright = 0;
-            //var kleft = 0;
-            //var dx1 = flvl0.Count() - 1;
-            //var dx2 = flvl0.Count() - 10;
-            //int ik = 0;
-            //if (flvl0.Count() > 100)
+            //for (int i = 0; i < fsh0.Count - 1; i++)
             //{
-            //    for (int i = flvl0.Count() - 1; i < flvl0.Count() + 50; i++)
+            //    var d = (int)Math.Abs(fsh0[i] - fsh0[i + 1]);
+            //    if (d >= 4)
             //    {
-            //        ik =
-            //        flvl0.Add(flvl0((dx1 - dx2) / 10));
-            //    }
-
-
-            //    for (int i = 1; i < 100; i++)
-            //    {
-
-
+            //        if ((fsh0[i] > fsh0[i + 1]) && (Math.Abs(fsh0[i] - fsh0[i + 1]) >= 4))
+            //        {
+            //            int k = i - 20;
+            //            if (i - 20 < 0)
+            //                k = i;
+            //            var s1 = 1524.0;
+            //            for (int ji = k; ji <= i + 1; ji++)
+            //            {
+            //                s1 -= 4 / 20;
+            //                fsh0[ji] = s1;
+            //            }
+            //        }
+            //        if ((fsh0[i] < fsh0[i + 1]) && (Math.Abs(fsh0[i] - fsh0[i + 1]) >= 4))
+            //        {
+            //            int k = i + 21;
+            //            if (i + 21 > fsh0.Count - 1)
+            //                k = fsh0.Count - 1;
+            //            var s1 = 1520.0;
+            //            for (int ji = k; ji <= i + 1; ji++)
+            //            {
+            //                s1 += 4 / 20;
+            //                fsh0[ji] = s1;
+            //            }
+            //        }
             //    }
             //}
-
-
-            for (int i = 0; i < fsh0.Count - 1; i++)
-            {
-                var d = (int)Math.Abs(fsh0[i] - fsh0[i + 1]);
-                if (d >= 4)
-                {
-                    if ((fsh0[i] > fsh0[i + 1]) && (Math.Abs(fsh0[i] - fsh0[i + 1]) >= 4))
-                    {
-                        int k = i - 20;
-                        if (i - 20 < 0)
-                            k = i;
-                        var s1 = 1524.0;
-                        for (int ji = k; ji <= i + 1; ji++)
-                        {
-                            s1 -= 4 / 20;
-                            fsh0[ji] = s1;
-                        }
-                    }
-                    if ((fsh0[i] < fsh0[i + 1]) && (Math.Abs(fsh0[i] - fsh0[i + 1]) >= 4))
-                    {
-                        int k = i + 21;
-                        if (i + 21 > fsh0.Count - 1)
-                            k = fsh0.Count - 1;
-                        var s1 = 1520.0;
-                        for (int ji = k; ji <= i + 1; ji++)
-                        {
-                            s1 += 4 / 20;
-                            fsh0[ji] = s1;
-                        }
-                    }
-                }
-            }
         }
+
         public void GetZeroLinesTrapez(List<OutData> outdatas, Trips trip, IMainTrackStructureRepository mainTrackStructureRepository, int prevCount, int nextCount, List<Kilometer> KMS = null)
         {
+            if (Number == 6204)
+            {
+
+            }
 
 
             //fZeroStright - данные пасспорта рихтовки
             //flvl0 - данные пасспорта уровня
-            if (this.Number == 727)
+            if (this.Number == 725)
                 Number = Number;
             if ((outdatas == null) || (outdatas.Count < 1))
                 return;
@@ -1777,8 +1895,8 @@ namespace ALARm.Core
                                     {
                                         if (trip.Travel_Direction == Direction.Direct)
                                         {
-                                            var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                            var realStartCoord = getIndex(outdatas, ElData.RealStartCoordinate, 0);
+                                            var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                            var realStartCoord = getIndex(outdatas, ElData.RealStartCoordinate, (int)Math.Truncate(ElData.RealStartCoordinate));
 
                                             if (realStartCoord < curCoord)
                                             {
@@ -1787,8 +1905,8 @@ namespace ALARm.Core
                                         }
                                         else
                                         {
-                                            var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                            var realStartCoord = getIndex(outdatas, ElData.RealFinalCoordinate, 0);
+                                            var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                            var realStartCoord = getIndex(outdatas, ElData.RealFinalCoordinate, (int)Math.Truncate(ElData.RealFinalCoordinate));
 
                                             if (realStartCoord < curCoord)
                                             {
@@ -1797,21 +1915,16 @@ namespace ALARm.Core
                                             }
                                         }
                                     }
-                                    if ((ModifiedCurveSrt.Count() > InternalIndex + prevCurveDataDiv) && (InternalIndex + prevCurveDataDiv >= 0))
+                                    if (InternalIndex + prevCurveDataDiv < ModifiedCurveSrt.Count() && InternalIndex + prevCurveDataDiv >= 0)
                                     {
                                         flvl0[j] = ModifiedCurveSrt[InternalIndex + prevCurveDataDiv];
                                     }
-                                    else
-                                    {
-                                        flvl0[j] = 0;
-                                    }
-
                                     InternalIndex++;
                                 }
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
-                                Console.WriteLine("Ошибка при записи возв 6мм " + e.Message);
+                                Console.WriteLine("Ошибка при записи возв 6мм ");
                             }
 
                             j++;
@@ -1819,13 +1932,17 @@ namespace ALARm.Core
                     }
                     catch (Exception)
                     {
-                        //Console.WriteLine("Ошибка интерполяция точек кривой возв 6мм");
+                        Console.WriteLine("Ошибка интерполяция точек кривой возв 6мм");
                     }
                 }
             }
             catch (Exception e)
             {
-                //Console.WriteLine($"Возвышение 6мм ====> ошибка {e.Message}");
+                Console.WriteLine($"Возвышение 6мм ====> ошибка {e.Message}");
+            }
+            if (Number == 7301)
+            {
+
             }
 
             foreach (var curve in Curves)
@@ -1836,22 +1953,22 @@ namespace ALARm.Core
                 var ListX_lvl = new List<int> { };
                 var ListY_lvl = new List<double> { };
 
-
+                var ListX_strSH = new List<int> { };
+                var ListY_strSH = new List<double> { };
                 //Рихтовка
                 var startCurve = -1.0;
 
                 foreach (var stright in curve.Straightenings)
                 {
-                    
+
                     if (trip.Travel_Direction == Direction.Direct)
                     {
-                        
                         var tempX = new List<int>
-                        //ListX_str.AddRange(new List<int>
+                        //ListX_str.AddRange(new List<int> +
                         {
                             getIndex(outdatas, stright.RealStartCoordinate, stright.Start_Km),
-                            getIndex(outdatas, stright.FirstTransitionEnd, stright.Start_Km),
-                            getIndex(outdatas, stright.SecondTransitionStart, stright.Final_Km),
+                             getIndex(outdatas, stright.FirstTransitionEnd, (int)Math.Truncate(stright.FirstTransitionEnd)),
+                             getIndex(outdatas, stright.SecondTransitionStart, (int)Math.Truncate(stright.SecondTransitionStart)),
                             getIndex(outdatas, stright.RealFinalCoordinate, stright.Final_Km),
                         };
 
@@ -1874,11 +1991,16 @@ namespace ALARm.Core
                     }
                     else
                     {
+
+                        if (Number == 7272)
+                        {
+
+                        }
                         var tempX = new List<int>
                         {
                             getIndex(outdatas, stright.RealFinalCoordinate, stright.Final_Km),
-                            getIndex(outdatas, stright.SecondTransitionStart, stright.Final_Km),
-                            getIndex(outdatas, stright.FirstTransitionEnd, stright.Start_Km),
+                       getIndex(outdatas, stright.SecondTransitionStart, (int)Math.Truncate(stright.SecondTransitionStart)),
+                      getIndex(outdatas, stright.FirstTransitionEnd, (int)Math.Truncate(stright.FirstTransitionEnd)),
                             getIndex(outdatas, stright.RealStartCoordinate, stright.Start_Km),
                         };
                         tempX.AddRange(ListX_str);
@@ -1894,9 +2016,6 @@ namespace ALARm.Core
                             0.0
                         };
 
-                        if (Number == 717)
-                        {
-                        }
                         tempY.AddRange(ListY_str);
                         ListY_str = tempY;
 
@@ -1910,9 +2029,10 @@ namespace ALARm.Core
 
                 vremY_str.Add(ListY_str.First());
                 vremX_str.Add(ListX_str.First());
-
-                for (int i = 1; i < ListY_str.Count - 1; i++)
+                if (ListX_str.Average() < 1) break;
+                for (int i = 1; i < ListY_str.Count() - 1; i++)
                 {
+
                     if (ListY_str[i] == 0 && ListY_str[i + 1] == 0 || ListY_str[i - 1] == 0 && ListY_str[i] == 0)
                     {
                     }
@@ -1930,6 +2050,8 @@ namespace ALARm.Core
                 var ModifiedCurveSrtF = new List<double>();
                 var fZeroStrightF = new List<double>();
                 var prevCurveDataDivF = 0;
+
+
                 try
                 {
                     var ModifiedCurveSrt = new List<double>();
@@ -1947,6 +2069,7 @@ namespace ALARm.Core
                             double y1 = ListY_str[t];
                             var linearY = (y2 - y1) / bottom_dx1 * c + y1;
                             ModifiedCurveSrt.Add(linearY);
+                            //if (Math.Abs(linearY) < 2 && c> (ListX_str[t + 1] - ListX_str[t])/2) break;
                         }
                     }
                     ModifiedCurveSrtF = ModifiedCurveSrt;
@@ -1960,25 +2083,23 @@ namespace ALARm.Core
 
                     //егер кривойдын жартысы текущии километр алдында калып койса
                     var prevCurveDataDiv = 0;
-                    if (this.Number == 704 || this.Number == 705)
-                    { 
-                        Number = Number;
-                    }
+
                     int j = 0;
+                    var sinG = 0;
                     for (int i = trip.Travel_Direction == Direction.Direct ? Start_m : Final_m; i != (trip.Travel_Direction == Direction.Direct ? Final_m : Start_m); i += (int)trip.Travel_Direction)
                     {
                         try
                         {
                             var currentCoordReal = Number.ToDoubleCoordinate(i);
 
-                            if (currentCoordReal.Between(curve.RealStartCoordinate, curve.RealFinalCoordinate - (trip.Travel_Direction == Direction.Direct ? (1.0 / 10000.0) : 0)))
+                            if (currentCoordReal.Between(curve.Straightenings.First().RealStartCoordinate, curve.Straightenings.Last().RealFinalCoordinate - (trip.Travel_Direction == Direction.Direct ? (1.0 / 10000.0) : 0)))
                             {
                                 if (prevCurveDataDiv == 0)
                                 {
                                     if (trip.Travel_Direction == Direction.Direct)
                                     {
-                                        var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                        var realStartCoord = getIndex(outdatas, curve.RealStartCoordinate, 0);
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Straightenings.First().RealStartCoordinate, (int)Math.Truncate(curve.Straightenings.First().RealStartCoordinate));
 
                                         if (realStartCoord < curCoord)
                                         {
@@ -1987,9 +2108,8 @@ namespace ALARm.Core
                                     }
                                     else
                                     {
-                                        var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                        var realStartCoord = getIndex(outdatas, curve.RealFinalCoordinate, 0);
-
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Straightenings.Last().RealFinalCoordinate, (int)Math.Truncate(curve.Straightenings.Last().RealFinalCoordinate));
                                         if (realStartCoord < curCoord)
                                         {
                                             prevCurveDataDiv = curCoord - realStartCoord;
@@ -2001,8 +2121,9 @@ namespace ALARm.Core
                                 {
                                     InternalIndex = InternalIndex;
                                 }
-                                if ((ModifiedCurveSrt.Count() > InternalIndex + prevCurveDataDiv + 2) && (InternalIndex + prevCurveDataDiv > 0)  &&(j< sign.Count ) &&(j< fZeroStright.Count) )
+                                if ((ModifiedCurveSrt.Count() > InternalIndex + prevCurveDataDiv) && (InternalIndex + prevCurveDataDiv >= 0) && (j < sign.Count()) && (j < fZeroStright.Count()))
                                 {
+
                                     fZeroStright[j] = sign[j] * Math.Abs(ModifiedCurveSrt[InternalIndex + prevCurveDataDiv]);
 
                                     InternalIndex++;
@@ -2011,6 +2132,15 @@ namespace ALARm.Core
 
                             }
                             prevCurveDataDivF = InternalIndex;
+
+
+                            //or (int j = 0; j < fZeroStright.Count())
+                            //{
+                            //    fZeroStright[j]= fZeroStright[j]
+                            //}
+
+
+
                         }
                         catch (Exception)
                         {
@@ -2020,109 +2150,39 @@ namespace ALARm.Core
                         }
                         j++;
                     }
+                    //for (int j = 0; j < fZeroStright.Count())
+                    //{
+                    //    fZeroStright[j]= fZeroStright[j]
+                    //}
 
                 }
                 catch (Exception)
                 {
                     Console.WriteLine("Ошибка интерполяция точек кривой Рихтовка");
                 }
-                if (Number == 727)
-                {
 
-                }
 
                 var countzero = 0;
                 var valstr = 0.0;
                 var perstr = 0.0;
                 var x_perstr = 0;
                 var flag = true;
-                if (trip.Travel_Direction == Direction.Reverse)///&& trip.Travel_Direction == Direction.Direct
-                {
-                    int i_start = 0;
-                    for (int ii = 0; ii < fZeroStright.Count; ii++)
-                    {
-
-
-                        if (Math.Abs(fZeroStright[ii]) < 0.1 && flag)
-                        {
-                            countzero++;
-                            if (ii - i_start > 2) { countzero = 0; }
-
-                            i_start = ii;
-                        }
-                        else flag = false;
-
-
-                    }
-                    fZeroStrightF = fZeroStright;
-                    if (countzero > 150)
-                    {
-                        countzero = 0;
-
-                    }
-
-                    for (int ii1 = 0; (ii1 < countzero + 1) && (countzero < fZeroStright.Count - 3); ii1++)
-
-                    {
-                        var signdiv = Math.Sign(fZeroStright[countzero + 1] - fZeroStright[countzero + 3]);
-
-                        fZeroStrightF[countzero - ii1] = fZeroStright[countzero + 1] + signdiv * 0.25 * ii1 * Math.Abs(fZeroStright[countzero + 1] - fZeroStright[0]) / (countzero + 1);// - sign[countzero - ii1] * ii1 * (fZeroStright[countzero+1] - fZeroStright[0]) / (countzero + 1)
-
-
-                    }
-
-
-                    fZeroStright = fZeroStrightF;
-
-
-
-                }
-
-                if (trip.Travel_Direction == Direction.Direct)///&& trip.Travel_Direction == Direction.Direct
-                {
-                    int i_start = 0;
-                    for (int ii = 0; ii < fZeroStright.Count; ii++)
-                    {
-
-
-                        if (Math.Abs(fZeroStright[ii]) < 0.1 && flag)
-                        {
-                            countzero++;
-                            if (ii - i_start > 2) { countzero = 0; }
-
-
-                            i_start = ii;
-                            if (countzero > 150)
-                            {
-                                countzero = 0;
-
-                            }
-
-                        }
-                        else flag = false;
-
-
-
-                    }
-                    fZeroStrightF = fZeroStright;
-                    // if (countzero > fZeroStright.Count-3)
-                    // { continue; }
-                    for (int ii1 = 0; (ii1 < countzero + 1) && ii1 < fZeroStright.Count && (countzero < fZeroStright.Count - 3); ii1++)
-
-                    {
-                        var signdiv = Math.Sign(fZeroStright[countzero + 1] - fZeroStright[countzero + 3]);
-
-                        fZeroStrightF[countzero - ii1] = fZeroStright[countzero + 1] + signdiv * 0.25 * ii1 * Math.Abs(fZeroStright[countzero + 1] - fZeroStright[0]) / (countzero + 1);
-                    }
-
-
-                    fZeroStright = fZeroStrightF;
-                }
-
-                //fZeroStright[j] = sign[j] * Math.Abs(ModifiedCurveSrt[InternalIndex + prevCurveDataDiv]);
 
                 //Уровень
                 var startLvl = -1.0;
+                if (Number == 7218)
+                {
+
+                }
+                if (Number == 6940)
+                {
+
+                }
+                if (Number == 7303)
+                {
+                    Number = Number;
+                }
+
                 foreach (var elevations in curve.Elevations)
                 {
                     if (trip.Travel_Direction == Direction.Direct)
@@ -2131,8 +2191,8 @@ namespace ALARm.Core
                         //ListX_lvl.AddRange(new List<int>
                         {
                             getIndex(outdatas, elevations.RealStartCoordinate, elevations.Start_Km),
-                            getIndex(outdatas, elevations.FirstTransitionEnd, elevations.Start_Km),
-                            getIndex(outdatas, elevations.SecondTransitionStart, elevations.Final_Km),
+                            getIndex(outdatas, elevations.FirstTransitionEnd,(int)Math.Truncate(elevations.FirstTransitionEnd)),
+                            getIndex(outdatas, elevations.SecondTransitionStart, (int)Math.Truncate(elevations.SecondTransitionStart)),
                             getIndex(outdatas, elevations.RealFinalCoordinate, elevations.Final_Km),
                         };
 
@@ -2157,8 +2217,8 @@ namespace ALARm.Core
                         var tempX = new List<int>
                         {
                             getIndex(outdatas, elevations.RealFinalCoordinate, elevations.Final_Km),
-                            getIndex(outdatas, elevations.SecondTransitionStart, elevations.Final_Km),
-                            getIndex(outdatas, elevations.FirstTransitionEnd, elevations.Start_Km),
+                            getIndex(outdatas, elevations.SecondTransitionStart,  (int)Math.Truncate(elevations.SecondTransitionStart)),
+                            getIndex(outdatas, elevations.FirstTransitionEnd,  (int)Math.Truncate(elevations.FirstTransitionEnd)),
                             getIndex(outdatas, elevations.RealStartCoordinate, elevations.Start_Km),
                         };
 
@@ -2184,10 +2244,11 @@ namespace ALARm.Core
 
                 var vremX_lvl = new List<int> { };
                 var vremY_lvl = new List<double> { };
-
+                if (!ListY_lvl.Any()) continue;
                 vremY_lvl.Add(ListY_lvl.First());
                 vremX_lvl.Add(ListX_lvl.First());
-                for (int i = 1; i < ListY_lvl.Count - 1; i++)
+
+                for (int i = 1; i < ListY_lvl.Count() - 1; i++)
                 {
                     if (ListY_lvl[i] == 0 && ListY_lvl[i + 1] == 0 || ListY_lvl[i - 1] == 0 && ListY_lvl[i] == 0)
                     {
@@ -2203,14 +2264,11 @@ namespace ALARm.Core
 
                 ListY_lvl = vremY_lvl;
                 ListX_lvl = vremX_lvl;
-                if (Number == 727)
-                {
 
-                }
                 try
                 {
                     var ModifiedCurveLvl = new List<double>();
-                    
+
                     //интерполяция кривой                
                     for (int t = 0; t < ListY_lvl.Count() - 1; t++)
                     {
@@ -2228,6 +2286,7 @@ namespace ALARm.Core
                     //{
                     //    ModifiedCurveLvl.Reverse();
                     //}
+
                     var InternalIndex = 0;
                     //егер кривойдын жартысы текущии километр алдында калып койса
                     var prevCurveDataDiv = 0;
@@ -2239,14 +2298,14 @@ namespace ALARm.Core
                         {
                             var currentCoordReal = Number.ToDoubleCoordinate(i);
 
-                            if (currentCoordReal.Between(curve.RealStartCoordinate, curve.RealFinalCoordinate - (trip.Travel_Direction == Direction.Direct ? (1.0 / 10000.0) : 0)))
+                            if (currentCoordReal.Between(curve.Elevations.First().RealStartCoordinate, curve.Elevations.Last().RealFinalCoordinate - (trip.Travel_Direction == Direction.Direct ? (1.0 / 10000.0) : 0)))
                             {
                                 if (prevCurveDataDiv == 0)
                                 {
                                     if (trip.Travel_Direction == Direction.Direct)
                                     {
-                                        var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                        var realStartCoord = getIndex(outdatas, curve.RealStartCoordinate, 0);
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Elevations.First().RealStartCoordinate, (int)Math.Truncate(curve.Elevations.First().RealStartCoordinate));
 
                                         if (realStartCoord < curCoord)
                                         {
@@ -2255,8 +2314,8 @@ namespace ALARm.Core
                                     }
                                     else
                                     {
-                                        var curCoord = getIndex(outdatas, currentCoordReal, 0);
-                                        var realStartCoord = getIndex(outdatas, curve.RealFinalCoordinate, 0);
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Elevations.Last().RealFinalCoordinate, (int)Math.Truncate(curve.Elevations.Last().RealFinalCoordinate));
                                         if (realStartCoord < curCoord)
 
                                         {
@@ -2264,12 +2323,9 @@ namespace ALARm.Core
                                         }
                                     }
                                 }
-                                if (Number == 727)
-                                {
-                                    
-                                }
-                                  //  if ((ModifiedCurveLvl.Count() > InternalIndex + prevCurveDataDiv + 2) && (InternalIndex + prevCurveDataDiv > 0) && (j < sign.Count) && (j < flvl0.Count))
-                                if ((ModifiedCurveLvl.Count() > InternalIndex + prevCurveDataDiv + 2) && (InternalIndex + prevCurveDataDiv > 0) && (j < sign.Count) && (j < flvl0.Count))
+
+                                if ((ModifiedCurveLvl.Count() > InternalIndex + prevCurveDataDiv) && (InternalIndex + prevCurveDataDiv >= 0)
+                                    && (j < sign.Count()) && (j < flvl0.Count()))
                                 {
                                     flvl0[j] = sign[j] * Math.Abs(ModifiedCurveLvl[InternalIndex + prevCurveDataDiv]);
                                     InternalIndex++;
@@ -2279,13 +2335,13 @@ namespace ALARm.Core
                         }
                         catch (Exception)
                         {
-                            //Console.WriteLine("Ошибка при записи пасспорт трапез уровень");
+                            Console.WriteLine("Ошибка при записи пасспорт трапез уровень");
                         }
                     }
                 }
                 catch (Exception)
                 {
-                    //Console.WriteLine("Ошибка интерполяция точек кривой уровень");
+                    Console.WriteLine("Ошибка интерполяция точек кривой уровень");
 
                 }
 
@@ -2294,8 +2350,8 @@ namespace ALARm.Core
 
 
 
-                if (Number == 727)
-                { }
+
+
                 var flvl0F = new List<double> { };
                 flvl0F = flvl0;
                 countzero = 0;
@@ -2303,99 +2359,507 @@ namespace ALARm.Core
                 perstr = 0.0;
                 x_perstr = 0;
                 flag = true;
-                if (trip.Travel_Direction == Direction.Reverse  )///&& trip.Travel_Direction == Direction.Direct
+                if (trip.Travel_Direction == Direction.Reverse)///&& trip.Travel_Direction == Direction.Direct
                 {
-                    int i_start = 0;
-                    for (int ii = 0; ii < flvl0.Count; ii++)
+
+
+
+
+
+
+
+
+
+                    flvl0F = flvl0;
+                    countzero = 0;
+
+                    flag = true;
+
+                    for (int ii = flvl0.Count() - 2; ii > 1; ii--)
                     {
 
 
-                        if (Math.Abs(flvl0[ii]) < 0.1 && flag)
+                        if (Math.Abs(flvl0[ii] - flvl0[ii + 1]) > 10 && Math.Abs(flvl0[ii]) < 1)
                         {
-                            countzero++;
-                            if (ii - i_start > 2) { countzero = 0; }
+                            countzero = ii + 1;
 
-                            i_start = ii;
                         }
-                        else flag = false;
 
-
-                    }
-
-                    if (countzero > 150)
-                    {
-                        countzero = 0;
-
-                    }
-
-                    for (int ii1 = 0; (ii1 < countzero + 1) && (countzero < flvl0.Count - 3); ii1++)
-
-                    {
-                        var signdiv = Math.Sign(flvl0[countzero + 1] - fZeroStright[countzero + 3]);
-
-                        flvl0F[countzero - ii1] = flvl0[countzero + 1] + signdiv * 0.25 * ii1 * Math.Abs(flvl0[countzero + 1] - flvl0[0]) / (countzero + 1);// - sign[countzero - ii1] * ii1 * (fZeroStright[countzero+1] - fZeroStright[0]) / (countzero + 1)
-
-
-                    }
-
-
-                }
-
-                flvl0F = flvl0;
-                countzero = 0;
-                valstr = 0.0;
-                perstr = 0.0;
-                x_perstr = 0;
-                flag = true;
-                if (trip.Travel_Direction == Direction.Direct)///&& trip.Travel_Direction == Direction.Direct
-                {
-                    int i_start = 0;
-                    for (int ii = 0; ii < flvl0.Count; ii++)
-                    {
-
-
-                        if (Math.Abs(flvl0[ii]) < 0.1 && flag)
+                        if (countzero > 3)
                         {
-                            countzero++;
-                            if (ii - i_start > 2) { countzero = 0; }
-                            i_start = ii;
+
+                            flvl0F[ii] = flvl0[countzero];
                         }
-                        else flag = false;
-                    }
 
-                    if (countzero > 150)
+
+
+                    }
+                    countzero = 0;
+                    flvl0 = flvl0F;
+                    for (int ii = 1; ii < flvl0.Count() - 2; ii++)
                     {
-                        countzero = 0;
+
+
+                        if (Math.Abs(flvl0[ii] - flvl0[ii + 1]) > 10 && Math.Abs(flvl0[ii + 1]) < 1)
+                        {
+                            countzero = ii;
+
+                        }
+
+                        if (countzero > 3)
+                        {
+
+                            flvl0F[ii] = flvl0[countzero];
+                        }
+
+
 
                     }
 
-                    for (int ii1 = 0; (ii1 < countzero + 1) && (countzero < flvl0.Count - 3); ii1++)
-
-                    {
-                        var signdiv = Math.Sign(flvl0[countzero + 1] - fZeroStright[countzero + 3]);
-
-                        flvl0F[countzero - ii1] = flvl0[countzero + 1] + signdiv * 0.25 * ii1 * Math.Abs(flvl0[countzero + 1] - flvl0[0]) / (countzero + 1);// - sign[countzero - ii1] * ii1 * (fZeroStright[countzero+1] - fZeroStright[0]) / (countzero + 1)
+                    flvl0 = flvl0F;
 
 
-                    }
+
                 }
-                PasportLevel = "";
-                PasportStraightLeft = "";
-                int direction = -1;
 
-                flvl0 = flvl0F;
+                //flvl0F = flvl0;
+                //countzero = 0;
+                //valstr = 0.0;
+                //perstr = 0.0;
+                //x_perstr = 0;
+                //flag = true;
+                //if (trip.Travel_Direction == Direction.Direct)///&& trip.Travel_Direction == Direction.Direct
+                //{
+                //    int i_start = 0;
+                //    for (int ii = 0; ii < flvl0.Count; ii++)
+                //    {
 
-                for (int j = 0; j < flvl0.Count; j++)
+
+                //        if (Math.Abs(flvl0[ii]) < 0.1 && flag)
+                //        {
+                //            countzero++;
+                //            if (ii - i_start > 2) { countzero = 0; }
+
+                //            i_start = ii;
+                //        }
+                //        else flag = false;
+
+
+                //    }
+
+                //    if (countzero > 150)
+                //    {
+                //        countzero = 0;
+
+                //    }
+
+                //    for (int ii1 = 0; (ii1 < countzero + 1) && (countzero < flvl0.Count - 3); ii1++)
+
+                //    {
+                //        var signdiv = Math.Sign(flvl0[countzero + 1] - fZeroStright[countzero + 3]);
+
+                //        flvl0F[countzero - ii1] = flvl0[countzero + 1] + signdiv * 0.25 * ii1 * Math.Abs(flvl0[countzero + 1] - flvl0[0]) / (countzero + 1);// - sign[countzero - ii1] * ii1 * (fZeroStright[countzero+1] - fZeroStright[0]) / (countzero + 1)
+
+
+                //    }
+
+
+                //}
+
+
+
+
+
+
+
+
+
+                ////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                //PasportLevel = "";
+                //PasportStraightLeft = "";
+                //int direction = -1;
+
+
+                //for (int j = 0; j < flvl0.Count; j++)
+                //{
+                //    PasportLevel += $"{flvl0[j] },{j} ";
+                //    PasportStraightLeft += $"{fZeroStright[j] },{j} ";
+
+                //    j++;
+                //}
+
+
+
+                var ListX_sh = new List<int> { };
+                var ListY_sh = new List<double> { };
+                // шаблон
+                var shhWidth1 = 1520;
+                var shhWidth2 = 1520;
+                var index = -1;
+
+                // шаблон
+
+                ListX_strSH = new List<int> { };
+                ListY_strSH = new List<double> { };
+                foreach (var stright in curve.Straightenings)
                 {
-                    PasportLevel += $"{(flvl0[j]) },{j} ";
-                    PasportStraightLeft += $"{(fZeroStright[j]) },{j} ";
 
-                    j++;
+                    index = index + 1;
+                    var i_start = 0;
+                    var i_fin = 0;
+
+                    var strH = 0;
+                    strH = stright.Width - 1520;
+
+                    if (curve.Straightenings[index].Width == 0 && curve.Straightenings[index + 1].Width == 0) continue;
+                    if (index > 0) if (curve.Straightenings[index].Width == 0 && curve.Straightenings[index - 1].Width == 0) continue;
+                    if (trip.Travel_Direction == Direction.Direct)
+                    {
+                        var tempX = new List<int>
+
+                        {
+                            getIndex(outdatas, stright.RealStartCoordinate, stright.Start_Km),
+                             getIndex(outdatas, stright.FirstTransitionEnd, (int)Math.Truncate(stright.FirstTransitionEnd)),
+                             getIndex(outdatas, stright.SecondTransitionStart, (int)Math.Truncate(stright.SecondTransitionStart)),
+                            getIndex(outdatas, stright.RealFinalCoordinate, stright.Final_Km),
+                        };
+
+                        ListX_strSH.AddRange(tempX);
+
+
+
+                        if (Number == 7303)
+                        {
+                            Number = Number;
+                        }
+                        var tempY = new List<double>
+                        {
+                            0.0,
+                            strH,
+                            strH,
+                            0.0
+                        };
+
+                        ListY_strSH.AddRange(tempY);
+
+                        startCurve = strH;
+                    }
+                    else
+                    {
+
+                        if (Number == 7272)
+                        {
+
+                        }
+                        var tempX = new List<int>
+                        {
+                            getIndex(outdatas, stright.RealFinalCoordinate, stright.Final_Km),
+                       getIndex(outdatas, stright.SecondTransitionStart, (int)Math.Truncate(stright.SecondTransitionStart)),
+                      getIndex(outdatas, stright.FirstTransitionEnd, (int)Math.Truncate(stright.FirstTransitionEnd)),
+                            getIndex(outdatas, stright.RealStartCoordinate, stright.Start_Km),
+                        };
+                        tempX.AddRange(ListX_strSH);
+                        ListX_strSH = tempX;
+
+
+                        var tempY = new List<double>
+                        {
+                            0.0,
+                            strH,
+                            strH,
+                            0.0
+                        };
+
+                        tempY.AddRange(ListY_strSH);
+                        ListY_strSH = tempY;
+
+                        startCurve = strH;
+                    }
                 }
+
+
+                vremX_str = new List<int> { };
+                vremY_str = new List<double> { };
+                if (!ListY_strSH.Any()) continue;
+                vremY_str.Add(ListY_strSH.First());
+                vremX_str.Add(ListX_strSH.First());
+
+                for (int i = 1; i < ListY_strSH.Count() - 1; i++)
+                {
+
+                    //if (ListY_strSH[i] == 0 && ListY_strSH[i + 1] == 0 || ListY_strSH[i - 1] == 0 && ListY_strSH[i] == 0)
+                    //{
+
+                    //}
+                    //else
+                    {
+                        vremY_str.Add(ListY_strSH[i]);
+                        vremX_str.Add(ListX_strSH[i]);
+                    }
+                }
+                vremY_str.Add(0);
+                vremX_str.Add(ListX_strSH.Last());
+
+                ListY_strSH = vremY_str;
+                ListX_strSH = vremX_str;
+                ModifiedCurveSrtF = new List<double>();
+                fZeroStrightF = new List<double>();
+                prevCurveDataDivF = 0;
+
+
+                try
+                {
+                    var ModifiedCurveSrt = new List<double>();
+
+                    //интерполяция кривой                
+                    for (int t = 0; t < ListY_strSH.Count() - 1; t++)
+                    {
+                        for (int c = 0; c < ListX_strSH[t + 1] - ListX_strSH[t]; c++)
+                        {
+                            if (ListX_strSH[t + 1] - ListX_strSH[t] == 0)
+                                ListX_strSH[t + 1] = ListX_strSH[t + 1];
+
+                            double bottom_dx1 = ListX_strSH[t + 1] - ListX_strSH[t];
+                            double y2 = ListY_strSH[t + 1];
+                            double y1 = ListY_strSH[t];
+                            var linearY = (y2 - y1) / bottom_dx1 * c + y1;
+                            ModifiedCurveSrt.Add(linearY);
+                            //if (Math.Abs(linearY) < 2 && c> (ListX_str[t + 1] - ListX_str[t])/2) break;
+                        }
+                    }
+                    ModifiedCurveSrtF = ModifiedCurveSrt;
+                    //если счет км обратный
+                    //if(trip.Travel_Direction == Direction.Reverse)
+                    //{
+                    //    ModifiedCurveSrt.Reverse();
+                    //}
+
+                    var InternalIndex = 0;
+
+                    //егер кривойдын жартысы текущии километр алдында калып койса
+                    var prevCurveDataDiv = 0;
+
+                    int j = 0;
+                    var sinG = 0;
+                    if (Number == 7303)
+                    {
+                        Number = Number;
+                    }
+                    for (int i = trip.Travel_Direction == Direction.Direct ? Start_m : Final_m; i != (trip.Travel_Direction == Direction.Direct ? Final_m : Start_m); i += (int)trip.Travel_Direction)
+                    {
+                        try
+                        {
+                            var currentCoordReal = Number.ToDoubleCoordinate(i);
+
+                            if (currentCoordReal.Between(curve.Straightenings.First().RealStartCoordinate, curve.Straightenings.Last().RealFinalCoordinate - (trip.Travel_Direction == Direction.Direct ? (1.0 / 10000.0) : 0)))
+                            {
+                                if (prevCurveDataDiv == 0)
+                                {
+                                    if (trip.Travel_Direction == Direction.Direct)
+                                    {
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Straightenings.First().RealStartCoordinate, (int)Math.Truncate(curve.Straightenings.First().RealStartCoordinate));
+
+                                        if (realStartCoord < curCoord)
+                                        {
+                                            prevCurveDataDiv = curCoord - realStartCoord;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var curCoord = getIndex(outdatas, currentCoordReal, (int)Math.Truncate(currentCoordReal));
+                                        var realStartCoord = getIndex(outdatas, curve.Straightenings.Last().RealFinalCoordinate, (int)Math.Truncate(curve.Straightenings.Last().RealFinalCoordinate));
+                                        if (realStartCoord < curCoord)
+                                        {
+                                            prevCurveDataDiv = curCoord - realStartCoord;
+                                        }
+                                    }
+                                }
+
+                                if (InternalIndex > 800)
+                                {
+                                    InternalIndex = InternalIndex;
+                                }
+                                if ((ModifiedCurveSrt.Count() > InternalIndex + prevCurveDataDiv) && (InternalIndex + prevCurveDataDiv >= 0)
+                                    && (j < fZeroStright.Count())
+                                      && (j < sign.Count()) && (j < flvl0.Count())
+                                    )
+                                {
+
+                                    fsh0[j] = Math.Abs(ModifiedCurveSrt[InternalIndex + prevCurveDataDiv]) + 1520;
+
+                                    InternalIndex++;
+                                }
+
+
+                            }
+                            prevCurveDataDivF = InternalIndex;
+
+
+                            //or (int j = 0; j < fZeroStright.Count())
+                            //{
+                            //    fZeroStright[j]= fZeroStright[j]
+                            //}
+
+
+
+                        }
+                        catch (Exception)
+                        {
+
+
+                            Console.WriteLine("Ошибка при записи пасспорт РихтовкаSHabl " + " InternalIndex");
+                        }
+                        j++;
+                    }
+                    //for (int j = 0; j < fZeroStright.Count())
+                    //{
+                    //    fZeroStright[j]= fZeroStright[j]
+                    //}
+
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Ошибка интерполяция точек кривой РихтовкаSHabl");
+                }
+                if (Number == 7303)
+                {
+                    Number = Number;
+                }
+
+            }
+            if (Number == 7303)
+            {
+                Number = Number;
             }
 
-            
+            var Shgap_start_right = 0;
+            var Shgap_Start_left = 0;
+            var Shgap_final_right = 0;
+            var Shgap_final_left = 0;
+
+            Shgap_start_right = 0;
+            if (fsh0.Count() > 200)
+            {
+
+
+
+                for (int j = 50; j < fsh0.Count() - 50; j++)
+                {
+                    if (fsh0[j - 50] == fsh0[j + 50] && (fsh0[j - 10] < fsh0[j + 50] || fsh0[j + 10] < fsh0[j + 50] || fsh0[j + 25] < fsh0[j + 50]))
+                    {
+                        for (int jj = j - 50; jj < j + 50; jj++)
+                        {
+                            fsh0[jj] = fsh0[j - 50];
+                        }
+
+
+                    }
+                }
+
+                for (int j = 50; j < fsh0.Count() - 50; j++)
+                {
+                    if (fsh0[j - 50] == 1520
+                        && fsh0[j - 50] < fsh0[j] && fsh0[j - 5] < fsh0[j] && fsh0[j - 50] == fsh0[j - 10] && fsh0[j - 20] == fsh0[j - 10])
+                    {
+                        for (int jj = j - 50; jj < j; jj++)
+                        {
+                            fsh0[jj] = 1520 + (fsh0[j] - 1520) / 50.0 * (jj - j + 50);
+                        }
+
+
+                    }
+                }
+
+                for (int j = 50; j < fsh0.Count() - 50; j++)
+                {
+                    if (fsh0[j + 50] == 1520
+                       && fsh0[j] == fsh0[j - 10] && fsh0[j + 50] < fsh0[j] && fsh0[j + 5] < fsh0[j] && fsh0[j + 50] == fsh0[j + 10] && fsh0[j + 20] == fsh0[j + 10])
+                    {
+                        for (int jj = j; jj < j + 50; jj++)
+                        {
+                            fsh0[jj] = fsh0[j] - (fsh0[j] - 1520) / 50.0 * (jj - j);
+                        }
+
+
+                    }
+                }
+
+                for (int j = 55; j < fsh0.Count() - 55; j++)
+                {
+                    var i1 = 0;
+                    var i2 = 0;
+                    if (Number == 7291)
+                    {
+                        Number = Number;
+                    }
+
+                    if (fsh0[j - 55] > 1521 && fsh0[j - 55] == fsh0[j - 40] &&
+                        fsh0[j + 55] > 1521 && fsh0[j + 55] == fsh0[j + 40]
+                        && fsh0[j] < 1522 && (fsh0[j + 25] > 1521 || fsh0[j - 25] > 1521))
+                    {
+
+                        for (int jj = j; jj > j - 50; jj--)
+                        {
+                            if (fsh0[jj - 1] == fsh0[jj] && i1 == 0)
+                            {
+                                i1 = jj;
+                                break;
+                            }
+
+                        }
+                        for (int jj = j; jj < j + 50; jj++)
+                        {
+                            if (fsh0[jj + 1] == fsh0[jj] && i2 == 0)
+                            {
+                                i2 = jj;
+                                break;
+                            }
+
+                        }
+
+
+
+                        if (i1 > 0 && i2 > 0)
+                        {
+                            for (int jj = i1; jj < i2; jj++)
+                            {
+                                fsh0[jj] = fsh0[i1] + (fsh0[i2] - fsh0[i1]) / (i2 - i1) * (jj - i1);
+                            }
+                            break;
+                        }
+
+                    }
+                }
+
+
+
+
+
+
+            }
         }
+
+
 
         private int getIndex(List<OutData> outdatas, double dCoord, int km)
         {
@@ -2405,51 +2869,60 @@ namespace ALARm.Core
             {
                 var ind = tempData.Last().x;
 
-                //var prevKm = Math.Round(dCoord);
-                //if (Number != prevKm)
-                //{
-                //    if(Trip.Travel_Direction == Direction.Reverse)
-                //    {
-                //        if (Number > prevKm)
-                //        {
-                //            var minData = outdatas.Where(o => o.km == prevKm).ToList();
-                //        }
-                //        else
-                //        {
-
-                //        }
-                //    }                    
-                //}
-
                 return ind;
             }
             else
             {
-                var temp = outdatas.Where(o => o.km == km).ToList();
-                if (temp.Count() == 0 )
+                var temp = outdatas.Where(o => o.km == km).OrderBy(o => o.meter).ToList();
+                if (temp.Count() == 0)
                     return 0;
-                if (dCoord > temp.Last().RealCoordinate)
-                {
-                    var d = (dCoord - temp.Last().RealCoordinate)*10000;
-                    var t = temp.Last().x + (int)d;
-                    return t;
-                }
-                else
-                {
-                    var t = temp.First().x;
-                    return t;
-                }
-                Console.WriteLine("Не удалость найти индекс кривой " + dCoord);
-                return 0;
+
+                //if (temp.Last().RealCoordinate >= dCoord)
+                //{
+                //    return temp.Last().x;
+                //}
+                //else
+                //{
+                //    return temp.First().x;
+                //}
+                temp = temp.OrderBy(o => Math.Abs(o.RealCoordinate - dCoord)).ToList();
+                return temp.First().x;
             }
+
         }
+
+
+        //private int getIndex(List<OutData> outdatas, double dCoord, int km)
+        //{
+        //    var tempData = outdatas.Where(o => o.RealCoordinate == dCoord).ToList();
+        //    var tempData1 = outdatas.Where(o => o.RealCoordinate > dCoord).ToList();
+        //    var tempData2 = outdatas.Where(o => o.RealCoordinate < dCoord).ToList();
+        //    if (tempData.Any())
+        //    {
+        //        var ind = tempData.Last().x;
+
+        //        return ind;
+        //    }
+        //    else
+        //    {
+        //        var temp = outdatas.Where(o => o.km == km).OrderBy(o => o.meter).ToList();
+        //        if (temp.Count() == 0 && dCoord - Math.Floor(dCoord) <= 0.050)
+        //            return tempData2.First().x;
+        //        if (temp.Count() == 0 && dCoord - Math.Floor(dCoord) > 0.050)
+        //            return tempData1.Last().x;
+        //        temp = temp.OrderBy(o => Math.Abs(o.RealCoordinate - dCoord)).ToList();
+        //        return temp.First().x;
+        //    }
+        //}
+
 
         /// <summary>
         /// Километрдің бағасын қайта есептеу
         /// </summary>
-        public void CalcPoint() { 
+        public void CalcPoint()
+        {
             string Point500Reason = string.Empty;
-            int secondDegreeCommonCount = 0, thirdDegreeWithoutGaugeCount =0, thirdDegreeGaugeCount =0, fourthDegreeConmmonCount = 0, secondDegreeDrawdownSagStright =0;
+            int secondDegreeCommonCount = 0, thirdDegreeWithoutGaugeCount = 0, thirdDegreeGaugeCount = 0, fourthDegreeConmmonCount = 0, secondDegreeDrawdownSagStright = 0;
             foreach (var digression in Digressions)
             {
                 // ескертпе метрінің индексі
@@ -2459,7 +2932,8 @@ namespace ALARm.Core
                     if (digression.PassengerSpeedLimit.Between(0, passSpeed[mIndex] - 1) || digression.FreightSpeedLimit.Between(0, freightSpeed[mIndex] - 1))
                         GlbSpeedLimited = true;
                 }
-                switch (digression.Digression.Name) {
+                switch (digression.Digression.Name)
+                {
                     case string digname when digname == DigressionName.Strightening.Name
                     || digname == DigressionName.DrawdownLeft.Name
                     || digname == DigressionName.DrawdownRight.Name
@@ -2510,7 +2984,7 @@ namespace ALARm.Core
                     Point500Reason = "4cт";
                     Point = 500;
                 }
-               
+
             }
             else
             {
@@ -2518,13 +2992,15 @@ namespace ALARm.Core
                     Point = 10;
                 if (secondDegreeCommonCount.Between(6, 25))
                     Point = 40;
-                if (secondDegreeCommonCount.Between(26,100) || secondDegreeDrawdownSagStright.Between(26,60) || thirdDegreeWithoutGaugeCount.Between(1, 6) || thirdDegreeGaugeCount.Between(1, 10))
+                if (secondDegreeCommonCount.Between(26, 100) || secondDegreeDrawdownSagStright.Between(26, 60) || thirdDegreeWithoutGaugeCount.Between(1, 6) || thirdDegreeGaugeCount.Between(1, 10))
                     Point = 150;
-                if (thirdDegreeWithoutGaugeCount > 6) {
+                if (thirdDegreeWithoutGaugeCount > 6)
+                {
                     Point = 500;
                     Point500Reason = "3cт V=60";
                 }
-                if (thirdDegreeGaugeCount > 10) {
+                if (thirdDegreeGaugeCount > 10)
+                {
                     Point500Reason = "Ш10 V=60";
                     Point = 500;
                 }
@@ -2552,7 +3028,8 @@ namespace ALARm.Core
                 Point = 500;
         }
     }
-    public static class MyList {
+    public static class MyList
+    {
 
         public static string CutFromIndex(this string str, string value, int cutIndex)
         {
@@ -2567,30 +3044,27 @@ namespace ALARm.Core
                 foundCount++;
                 if (foundCount == cutIndex)
                     return str.Remove(index, str.Length - index);
-                
+
             }
         }
 
         public static int GetSign(this List<double> list, int km, List<int> meter, double a, double b)
         {
-            var result = 1.0;
+            var result = 0.0;
 
             var abs = 0.0;
             for (int i = 0; i < list.Count(); i++)
             {
                 var currCoord = km.ToDoubleCoordinate(meter[i]);
-                if (currCoord.Between(a,b))
+                if (currCoord.Between(a, b))
                 {
-                    if (Math.Abs(list[i]) > abs)
-                    {
-                        abs = Math.Abs(list[i]);
-                        result = list[i] / abs;
-                    }
+                    result = result + list[i];
                 }
             }
+            result = Math.Sign(result);
             return (int)result;
         }
-        
+
 
     }
 }

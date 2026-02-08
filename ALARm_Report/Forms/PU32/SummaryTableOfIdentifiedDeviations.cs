@@ -59,13 +59,14 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(trackId);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kms = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kms = kms.Where(o => o.Track_id == trackId).ToList();
                         if (kms.Count() == 0) continue;
 
 
 
 
-                        var lkm = kms.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
 
@@ -108,7 +109,7 @@ namespace ALARm_Report.Forms
                         foreach (var km in kms)
                         {
                             var trackclasses = (List<TrackClass>)MainTrackStructureService.GetMtoObjectsByCoord(trip.Trip_date, km.Number, MainTrackStructureConst.MtoTrackClass, trackId);
-                            
+
                             km.LoadTrackPasport(MainTrackStructureService.GetRepository(), tripProcess.Date_Vrem);
                             var digressions = RdStructureService.GetDigressionMarks(tripProcess.Id, km.Track_id, km.Number);
 
@@ -152,14 +153,14 @@ namespace ALARm_Report.Forms
 
                             foreach (var item in kmGap)
                             {
-                                
+
                                 var dig = new S3 { };
 
                                 dig.Km = item.Km;
                                 dig.Meter = item.Meter;
                                 if (item.Otst_l.Any())
                                 {
-                                    dig.Ots = item.Otst_l+ ".л";
+                                    dig.Ots = item.Otst_l + ".л";
                                     //dig.Pscode = item.c
                                     //dig.Date = item.Date.ToString("dd/MM/yyyy");
                                 }
@@ -169,14 +170,14 @@ namespace ALARm_Report.Forms
                                 }
                                 else if (item.Otst_r.Any() && item.Otst_l.Any())
                                 {
-                                    dig.Ots = item.Otst_l + ".л" +item.Otst_r + ".п";
+                                    dig.Ots = item.Otst_l + ".л" + item.Otst_r + ".п";
 
                                 }
                                 else
                                 {
                                     dig.Ots = "";
                                 }
-                              
+
                                 dig.Otkl = Math.Max(item.Zazor, item.R_zazor);
                                 dig.Primech = item.Temp;
                                 dig.Roadcode = item.Roadcode;
@@ -239,7 +240,7 @@ namespace ALARm_Report.Forms
                                 //    {
                                 //        Console.WriteLine("Скорости не были получены и расчитаны");
                                 //    }
-                                    
+
                                 //}
 
                                 dig.Uv = int.Parse(item.Vpz.Split('/')[0]);
@@ -248,14 +249,14 @@ namespace ALARm_Report.Forms
                                 ListS3.Add(dig);
                             }
 
-                            
+
                             ListS3 = ListS3.OrderBy(o => o.RealCoordinate).ToList();
 
                             var temp = ListS3.Where(o => o.Ots != "З.л" && o.Ots != "З?.л" && o.Ots != "З.п" && o.Ots != "З?.п").ToList();
 
                             foreach (var s3 in ListS3)
                             {
-                                
+
                                 var radius = "-";
                                 var vozvihenie = "-";
                                 var norm = "-";
@@ -269,8 +270,12 @@ namespace ALARm_Report.Forms
                                     curv.First().Straightenings = (MainTrackStructureService.GetCurves(curv.First().Id, MainTrackStructureConst.MtoStCurve) as List<StCurve>).OrderBy(st => st.RealStartCoordinate).ToList();
 
                                     radius = curv.First().Straightenings.First().Radius.ToString();
+                                    if (!curv.First().Elevations.Any())
+                                    {
+                                        continue;
+                                    }
                                     vozvihenie = curv.First().Elevations.First().Lvl.ToString();
-                                   
+
                                     norm = curv.First().Straightenings.First().Width.ToString();
                                 }
 
@@ -398,7 +403,7 @@ namespace ALARm_Report.Forms
                                             new XAttribute("radius", radius),
                                             new XAttribute("elevation", vozvihenie),
                                             new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
-                                            new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис")?"ис": s3.Primech.Contains("гр") ? "гр" : "-")
+                                            new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-")
                                             );
 
                                     tripElem.Add(xeNote);
@@ -439,7 +444,7 @@ namespace ALARm_Report.Forms
 
                                     tripElem.Add(xeNote);
                                 }
-                                else if ( s3.Ots == "Пр.л" || s3.Ots == "Пр.п")
+                                else if (s3.Ots == "Пр.л" || s3.Ots == "Пр.п")
                                 {
                                     XElement xeNote = new XElement("Note",
                                             new XAttribute("codDorogi", s3.Roadcode),
@@ -511,7 +516,7 @@ namespace ALARm_Report.Forms
 
                                     tripElem.Add(xeNote);
                                 }
-                                else if (s3.Ots == "ОШК" || s3.Ots== "Отв.ш")
+                                else if (s3.Ots == "ОШК" || s3.Ots == "Отв.ш")
                                 {
                                     XElement xeNote = new XElement("Note",
                                             new XAttribute("codDorogi", s3.Roadcode),
@@ -654,7 +659,7 @@ namespace ALARm_Report.Forms
 
                                     tripElem.Add(xeNote);
                                 }
-                                else if (s3.Ots == "Уобр" )
+                                else if (s3.Ots == "Уобр")
                                 {
                                     XElement xeNote = new XElement("Note",
                                             new XAttribute("codDorogi", s3.Roadcode),
@@ -669,7 +674,7 @@ namespace ALARm_Report.Forms
                                             new XAttribute("km", s3.Km),
                                             new XAttribute("m", s3.Meter),
                                             new XAttribute("vidOts", s3.Ots),
-                                            new XAttribute("norma", s3.Otkl <15 ? "20":"40"),
+                                            new XAttribute("norma", s3.Otkl < 15 ? "20" : "40"),
                                             new XAttribute("velichOts", s3.Otkl),
                                             new XAttribute("len", s3.Len),
                                             new XAttribute("stepen", s3.Typ.ToString() == "5" ? "-" : s3.Typ.ToString()),
@@ -798,7 +803,7 @@ namespace ALARm_Report.Forms
                                             new XAttribute("elevation", vozvihenie),
                                             new XAttribute("strelka", s3.Ots.Contains("Рст") ? 1 : s3.Strelka),
                                             new XAttribute("primech", s3.Primech.Contains("м;") ? "м" : s3.Primech.Contains("ис") ? "ис" : s3.Primech.Contains("гр") ? "гр" : "-"));
-                                
+
 
 
 

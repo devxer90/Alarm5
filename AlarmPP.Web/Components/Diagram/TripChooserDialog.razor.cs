@@ -91,7 +91,6 @@ namespace AlarmPP.Web.Components.Diagram
             Loading = false;
             StateHasChanged();
             _ = SetLabelById("status-label", "Идет получение детальных данных по километрам");
-
             AppData.Trip.Route = RdStructureRepository.GetTripFragments(AppData.Trip.Id);
             AppData.MainTrackStructureRepository = MainTrackStructureRepository;
             AppData.AdditionalParametersRepository = AdditionalParametersRepository;
@@ -101,6 +100,19 @@ namespace AlarmPP.Web.Components.Diagram
             AppData.MainTrackStructureRepository = MainTrackStructureRepository;
             AppData.AdditionalParametersRepository = AdditionalParametersRepository;
             AppData.ReloadKilometers();
+
+            //if (Helper.SendMessageFromRabbitMQ("localhost", AppData.Trip.Id, 1) == SocketState.Abortively)
+            //    Toaster.Add("localhost; Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+
+
+
+            //if (Helper.SendMessageFromSocket("localhost", 11000, $"start {AppData.Trip.Id} {1}") == SocketState.Abortively)
+            //    Toaster.Add("Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+            //if (Helper.SendMessageFromRabbitMQ("mycomputer", AppData.Trip.Id, 1) == SocketState.Abortively)
+            //    Toaster.Add("mycomputer Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+            //if (Helper.SendMessageFromSocket("mycomputer", 11000, $"start {AppData.Trip.Id} {1}") == SocketState.Abortively)
+            //    Toaster.Add("Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+
             foreach (var kilometer in AppData.Kilometers)
             {
                 //_ = SetLabelById("status-label", "Загрузка данных по попречному профилю рельса для " + kilometer.Number + " км ...");
@@ -207,17 +219,23 @@ namespace AlarmPP.Web.Components.Diagram
                 OnlineModeSelected(true);
                 return;
             }
-
-            var showError = AppData.Trip.Chief == null || CurrentTripType < 0 || TravelDirection == (int)Direction.NotDefined || AppData.Trip.Road_Id < 0 || AppData.Trip.Direction_id < 0 || AppData.Trip.Start_station < 0 || AppData.Trip.Final_station < 0 || CarPosition == (int)ALARm.Core.CarPosition.NotDefined || AppData.Trip.Route.Count == 0;
-            foreach (var escort in AppData.Trip.Escort)
+            try
             {
-                if ((escort.Distance_Id < 0) || (escort.FullName == null) || (escort.FullName.Equals(String.Empty)))
-                    showError = true;
+                var showError = AppData.Trip.Chief == null || CurrentTripType < 0 || TravelDirection == (int)Direction.NotDefined || AppData.Trip.Road_Id < 0 || AppData.Trip.Direction_id < 0 || AppData.Trip.Start_station < 0 || AppData.Trip.Final_station < 0 || CarPosition == (int)ALARm.Core.CarPosition.NotDefined || AppData.Trip.Route.Count == 0;
+                foreach (var escort in AppData.Trip.Escort)
+                {
+                    //if ((escort.Distance_Id < 0) || (escort.FullName == null) || (escort.FullName.Equals(String.Empty)))
+                    //   showError = true;
+                }
+                if (showError)
+                {
+                    Toaster.Add("Пожалуйста, проверьте заполненность всех полей", MatToastType.Danger, "Создание поездки");
+                    return;
+                }
             }
-            if (showError)
+            catch (Exception e)
             {
-                Toaster.Add("Пожалуйста, проверьте заполненность всех полей", MatToastType.Danger, "Создание поездки");
-                return;
+                System.Console.WriteLine(" Tripout of range 1" + e.Message);
             }
             AppData.Trip.Start_Position = AppData.Trip.Route[0].Start_Km + AppData.Trip.Route[0].Start_M / 10000.0;
             AppData.Trip.Trip_Type = (TripType)CurrentTripType;
@@ -237,6 +255,7 @@ namespace AlarmPP.Web.Components.Diagram
             AppData.Trip.Road_Id = road_id;
             AdmDirections = AdmStructureRepository.GetDirectionsOfRoad(road_id);
             AppData.Trip.Distances = AdmStructureRepository.GetDitancesOfRoad(road_id) as List<AdmDistance>;
+            AppData.Trip.Distances.OrderBy(o => o.Id);
             LoadTracks(-1);
         }
         void OnlineModeSelected(bool continious = false)
@@ -245,7 +264,7 @@ namespace AlarmPP.Web.Components.Diagram
 
             AppData.Trip.Route = RdStructureRepository.GetTripFragments(AppData.Trip.Id);
             AppData.Trip.Route[0].AdmTracks = AdmStructureRepository.GetUnits(AdmStructureConst.AdmTrack, AppData.Trip.Direction_id) as List<AdmTrack>;
-           AppData.Trip.Route[0].StationTracks = AdmStructureRepository.GetUnits(AdmStructureConst.AdmStationTrack, AppData.Trip.Start_station) as List<StationTrack>;
+            AppData.Trip.Route[0].StationTracks = AdmStructureRepository.GetUnits(AdmStructureConst.AdmStationTrack, AppData.Trip.Start_station) as List<StationTrack>;
             var startStationParks = AdmStructureRepository.GetUnits(AdmStructureConst.AdmPark, AppData.Trip.Start_station) as List<Park>;
             foreach (var park in startStationParks)
             {
@@ -262,25 +281,23 @@ namespace AlarmPP.Web.Components.Diagram
 
 
             AppData.ReloadKilometers();
-            ////Если ставлю все на  if (Helper.SendMessageFromRabbitMQ("localhost", AppData.Trip.Id, 1) == SocketState.Abortively)
-            ///Toaster.Add("mycomputer Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
-            //// то запускается на одном компьютере И паралельно поменять значения rwdet_project и ALARmSocketServer///Ищи по StartListening в ALARmSocketServer
+            //Если ставлю все на  if (Helper.SendMessageFromRabbitMQ("localhost;", AppData.Trip.Id, 1) == SocketState.Abortively)
+            // Toaster.Add("mycomputer Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+            // то запускается на одном компьютере И паралельно поменять значения rwdet_project и ALARmSocketServer///Ищи по StartListening в ALARmSocketServer
 
-
+            //video
 
             if (Helper.SendMessageFromRabbitMQ("localhost", AppData.Trip.Id, 1) == SocketState.Abortively)
-                Toaster.Add("localhost Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+                Toaster.Add("localhost; Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
 
-
-            ////if (Helper.SendMessageFromRabbitMQ("mycomputer", AppData.Trip.Id, 1) == SocketState.Abortively)
-            ////    Toaster.Add("mycomputer Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
 
             if (Helper.SendMessageFromSocket("localhost", 11000, $"start {AppData.Trip.Id} {1}") == SocketState.Abortively)
                 Toaster.Add("Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
 
-
-            //if (Helper.SendMessageFromSocket("mycomputer", 11000, $"start {AppData.Trip.Id} {1}") == SocketState.Abortively)
-            //    Toaster.Add("Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+            if (Helper.SendMessageFromRabbitMQ("mycomputer", AppData.Trip.Id, 1) == SocketState.Abortively)
+                Toaster.Add("mycomputer Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
+            if (Helper.SendMessageFromSocket("mycomputer", 11000, $"start {AppData.Trip.Id} {1}") == SocketState.Abortively)
+                Toaster.Add("Не удалось запустить онлайн обработку видеопотока. Проверьте подключение к сети!!!", MatToastType.Warning, "ALARmDK");
 
 
 
@@ -305,23 +322,24 @@ namespace AlarmPP.Web.Components.Diagram
         }
         void SelectStartStation(long station_id)
         {
+            Console.WriteLine("Select Start station");
             AppData.Trip.Start_station = station_id;
           
             if (station_id > -1) {
                 var station = AdmStations.Where(station => station.Station_Id == station_id).First();
                 AppData.Trip.Start_station_name = station.Station;
-                AppData.Trip.Route[0].Start_Km = station.Start_Km;
-                AppData.Trip.Route[0].Start_M= station.Start_M;
+                AppData.Trip.Route[0].Start_Km = station.Axis_Km;
+                AppData.Trip.Route[0].Start_M= station.Axis_M;
                 AppData.Trip.Travel_Direction = (Direction)TravelDirection;
                 if (AppData.Trip.Travel_Direction == Direction.Direct)
                 {
-                    AppData.Trip.Route[0].Final_Km = station.Start_Km;
-                    AppData.Trip.Route[0].Final_M = station.Start_M + 1;
+                    AppData.Trip.Route[0].Final_Km = station.Axis_Km;
+                    AppData.Trip.Route[0].Final_M = station.Axis_M + 1;
                 } else
 
                 {
-                    AppData.Trip.Route[0].Final_Km = station.Start_Km;
-                    AppData.Trip.Route[0].Final_M = station.Start_M - 1;
+                    AppData.Trip.Route[0].Final_Km = station.Axis_Km;
+                    AppData.Trip.Route[0].Final_M = station.Axis_M - 1;
                 }
 
                 AppData.Trip.Route[0].Belong_Id = station_id;

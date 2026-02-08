@@ -1,5 +1,4 @@
 ﻿using ALARm.Core;
-using ALARm.Core.AdditionalParameteres;
 using ALARm.Core.Report;
 using ALARm.Services;
 using ALARm_Report.controls;
@@ -16,525 +15,424 @@ using System.Xml.Xsl;
 
 namespace ALARm_Report.Forms
 {
+    /// <summary>
+    /// Отступления 2 степени
+    /// XML: report/trip/directions/tracks/note + total
+    /// Рабочая логика:
+    /// - directions всегда содержит хотя бы один tracks (если нет данных -> tracks nodata=1 + строка "нет данных" в XSL)
+    /// - выбор идет по SelectedTracks (направление+путь), поэтому "Путь 2" в разных направлениях не теряется
+    /// </summary>
     public class DeviationDegree2 : Report
     {
-        public override void Process(Int64 parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
+        public override void Process(long parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
-            //Сделать выбор периода
-            List<long> admTracksId = new List<long>();
+            // =========================
+            // 1) Выбор путей + направлений (как в рабочих вариантах)
+            // =========================
+            List<ChoiseForm.TrackChoice> selectedTracks;
             using (var choiceForm = new ChoiseForm(0))
             {
                 choiceForm.SetTripsDataSource(parentId, period);
                 choiceForm.ShowDialog();
+
                 if (choiceForm.dialogResult == DialogResult.Cancel)
                     return;
-                admTracksId = choiceForm.admTracksIDs;
+
+                selectedTracks = choiceForm.SelectedTracks ?? new List<ChoiseForm.TrackChoice>();
             }
+
+            if (selectedTracks == null || selectedTracks.Count == 0)
+                return;
+
+            // Уникализируем выбранные строки
+            selectedTracks = selectedTracks
+                .Where(x => x != null)
+                .GroupBy(x => new
+                {
+                    x.TrackId,
+                    Dir = (x.DirectionName ?? "").Trim(),
+                    Tr = (x.TrackName ?? "").Trim()
+                })
+                .Select(g => g.First())
+                .ToList();
+
+            // Группы выбора по направлению (код из скобок)
+            var selectedGroups = selectedTracks
+                .GroupBy(x =>
+                {
+                    var code = NormalizeDirectionCode(ExtractDirectionCode(x.DirectionName));
+                    var name = StripDirectionCode(x.DirectionName ?? "").Trim();
+                    return !string.IsNullOrWhiteSpace(code) ? $"CODE:{code}" : $"NAME:{name}";
+                })
+                .ToList();
+
+            // =========================
+            // 2) Справочники / проезды
+            // =========================
+            var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
+            if (distance == null)
+            {
+                MessageBox.Show("Не удалось определить ПЧ (distance).");
+                return;
+            }
+
+            var road = AdmStructureService.GetRoadName(distance.Id, AdmStructureConst.AdmDistance, true);
+            distance.Name = (distance.Name ?? "").Replace("ПЧ-", "");
+
+            var tripProcesses = RdStructureService.GetMainParametersProcess(period, distance.Name);
+            if (tripProcesses == null || tripProcesses.Count == 0)
+            {
+                MessageBox.Show(Properties.Resources.paramDataMissing);
+                return;
+            }
+
+            // Для PCHU/PD/PDB
+            var distSections = MainTrackStructureService.GetDistSectionByDistId(distance.Id) ?? new List<DistSection>();
+
+            // =========================
+            // 3) XML + Transform
+            // =========================
             XDocument htReport = new XDocument();
             using (XmlWriter writer = htReport.CreateWriter())
             {
-                List<Curve> curves = (MainTrackStructureService.GetCurves(parentId, MainTrackStructureConst.MtoCurve) as List<Curve>).Where(c => c.Radius <= 1200).OrderBy(c => c.Start_Km * 1000 + c.Start_M).ToList();
-                XDocument xdReport = new XDocument();
-
-                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
-                var road = AdmStructureService.GetRoadName(distance.Id, AdmStructureConst.AdmDistance, true);
-
-          
-                distance.Name = distance.Name.Replace("ПЧ-", "");
-
-
-
-                var tripProcesses = RdStructureService.GetMainParametersProcess(period, distance.Name);
-                if (tripProcesses.Count == 0)
-                {
-                    MessageBox.Show(Properties.Resources.paramDataMissing);
-                    return;
-                }
-
-                XElement report = new XElement("report");
+                var xdReport = new XDocument(new XElement("report"));
 
                 foreach (var tripProcess in tripProcesses)
                 {
+                    // trip для даты
+                    var tripObj = RdStructureService.GetTrip(tripProcess.Id);
+                    string tripDateStr = GetTripDateString(tripObj);
 
-                    List<Digression> notes = RdStructureService.GetDigressions(tripProcess.Trip_id, distance.Code, new int[] { 2 });
-                    var curvesAdmUnits = AdmStructureService.GetCurvesAdmUnits(curves[0].Id) as List<CurvesAdmUnits>;
+                    // S3 степени 2 грузим один раз (как и надо)
+                    var s3All = RdStructureService.GetS3(tripProcess.Trip_id, 2, distance.Name) as List<S3>;
+                    s3All = s3All ?? new List<S3>();
 
-                    CurvesAdmUnits curvesAdmUnit = curvesAdmUnits.Any() ? curvesAdmUnits[0] : null;
+                    // Проставим PCHU/PD/PDB
+                    if (distSections.Count > 0 && s3All.Count > 0)
+                    {
+                        foreach (var s in s3All)
+                        {
+                            try
+                            {
+                                var sect = distSections.FirstOrDefault(o =>
+                                    s.Km * 1000 + s.Meter >= o.Start_Km * 1000 + o.Start_M &&
+                                    s.Km * 1000 + s.Meter <= o.Final_Km * 1000 + o.Final_M);
 
-                    //var kms = RdStructureService.GetKilometerTrip(tripProcess.Trip_id);
-                    //if (kms.Count() == 0) continue;
-                    var directName = AdditionalParametersService.DirectName(tripProcess.Id, (int)tripProcess.Direction);
+                                if (sect != null)
+                                {
+                                    s.Pchu = sect.Pchu;
+                                    s.Pd = sect.Pd;
+                                    s.Pdb = sect.Pdb;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
 
-                    XElement tripElem = new XElement("trip",
-                         new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
+                    // trip header (добавляем всегда)
+                    var tripElem = new XElement("trip",
+                        new XAttribute("version", $"{DateTime.Now:dd.MM.yyyy HH:mm:ss} v{Assembly.GetExecutingAssembly().GetName().Version}"),
                         new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
-                        new XAttribute("direction", curvesAdmUnit.Direction),
-                        //new XAttribute("km", lkm.Min() + "-" + lkm.Max()),
-                        new XAttribute("track", curvesAdmUnit.Track),
-                        new XAttribute("check", tripProcess.GetProcessTypeName),
-                        new XAttribute("distance", distance.Code),
-                        new XAttribute("periodDate", period.Period),
-                        new XAttribute("road", road),
 
-                        new XAttribute("chief", tripProcess.Chief),
-                        new XAttribute("ps", tripProcess.Car));
-                 
+                        new XAttribute("trip_id", tripProcess.Trip_id),
+                        new XAttribute("trip_date", tripDateStr),
 
-                    int constrictionCount = 0; //Суж
-                    int broadeningCount = 0; //Уш
-                    int levelCount = 0; //У
-                    int skewnessCount = 0; //П - просадка
-                    int drawdownCount = 0; //Пр - перекос
-                    int straighteningCount = 0; //Р
+                        new XAttribute("check", tripProcess.GetProcessTypeName ?? ""),
+                        new XAttribute("distance", distance.Code ?? ""),
+                        new XAttribute("periodDate", period?.Period ?? ""),
+                        new XAttribute("road", road ?? ""),
+                        new XAttribute("chief", tripProcess.Chief ?? ""),
+                        new XAttribute("ps", tripProcess.Car ?? ""),
+                        new XAttribute("countDistance", 0)
+                    );
 
-                    int PUTconstrictionCount = 0; //Суж
-                    int PUTbroadeningCount = 0; //Уш
-                    int PUTlevelCount = 0; //У
-                    int PUTskewnessCount = 0; //П - просадка
-                    int PUTdrawdownCount = 0; //Пр - перекос
-                    int PUTstraighteningCount = 0; //Р
+                    // totals “в том числе”
+                    int constrictionCount = 0;   // Суж
+                    int broadeningCount = 0;     // Уш
+                    int levelCount = 0;          // У
+                    int skewnessCount = 0;       // П
+                    int drawdownCount = 0;       // Пр
+                    int straighteningCount = 0;  // Р
                     int RSTCount = 0;
 
-                    bool founddigression = false;
+                    int countDistance = 0;
 
-                    foreach (var track_id in admTracksId)
-                        {
+                    // ===== ПЕЧАТАЕМ РОВНО ТО, ЧТО ВЫБРАЛИ (как в рабочих отчётах) =====
+                    foreach (var dirGroup in selectedGroups)
+                    {
+                        var first = dirGroup.First();
 
-                            var trackName = AdmStructureService.GetTrackName(track_id);
-                            var trip = RdStructureService.GetTrip(tripProcess.Id);
-                            var kms = RdStructureService.GetKilometersByTrip(trip);
-                            if (!kms.Any()) continue;
+                        string dirNameRaw = first.DirectionName ?? "";
+                        string dirCode = NormalizeDirectionCode(ExtractDirectionCode(dirNameRaw));
+                        string dirName = StripDirectionCode(dirNameRaw);
 
-                            kms = kms.Where(o => o.Track_id == track_id).ToList();
-
-                            trip.Track_Id = track_id;
-                            var lkm = kms.Select(o => o.Number).ToList();
-
-                            if (lkm.Count() == 0) continue;
-
-                        XElement Direct = new XElement("direction",
-                            new XAttribute("name",
-                                tripProcess.DirectionName + " (" + tripProcess.DirectionCode + "), Путь: " + trackName + ", ПЧ: " + distance.Code)
+                        // directions (направление)
+                        var xeDirection = new XElement("directions",
+                            new XAttribute("direction", dirName),
+                            new XAttribute("directioncode", dirCode)
                         );
-                        //var ListS3 = RdStructureService.GetS3(tripProcess.Trip_id, 2, distance.Name,track_id) as List<S3>;
-                        var ListS3 = RdStructureService.GetS3(tripProcess.Trip_id, 2, distance.Name) as List<S3>;
 
-                            ListS3 = ListS3.Where(o => o.track_id == track_id).ToList();
-                            
-                        if (ListS3 != null && ListS3.Count > 0)
+                        bool hasAnyTracks = false;
+
+                        // пути внутри направления (уникально)
+                        var tracksDistinct = dirGroup
+                            .GroupBy(t => new { t.TrackId, Name = (t.TrackName ?? "").Trim() })
+                            .Select(g => g.First())
+                            .ToList();
+
+                        foreach (var tr in tracksDistinct)
                         {
-                            founddigression = true;
-                        }
-                            //Участки дист коррекция
-                            var dist_section = MainTrackStructureService.GetDistSectionByDistId(distance.Id);
-                            foreach (var item in ListS3)
-                            {
-                                var ds = dist_section.Where(
-                                    o => item.Km * 1000 + item.Meter >= o.Start_Km * 1000 + o.Start_M && item.Km * 1000 + item.Meter <= o.Final_Km * 1000 + o.Final_M).ToList();
+                            long trackId = tr.TrackId;
 
-                                item.Pchu = ds.First().Pchu;
-                                item.Pd = ds.First().Pd;
-                                item.Pdb = ds.First().Pdb;
+                            string trackName = (tr.TrackName ?? "").Trim();
+                            if (string.IsNullOrWhiteSpace(trackName))
+                                trackName = (AdmStructureService.GetTrackName(trackId)?.ToString() ?? trackId.ToString()).Trim();
+
+                            // tracks создаем всегда (как в рабочих вариантах)
+                            var xeTracks = new XElement("tracks",
+                                new XAttribute("direction", dirName),
+                                new XAttribute("directioncode", dirCode),
+                                new XAttribute("track", trackName),
+                                new XAttribute("countbyput", 0),
+                                new XAttribute("nodata", 1)
+                            );
+
+                            // 1) Берём по пути
+                            var byTrack = s3All
+                                .Where(s => s.track_id == trackId)
+                                .OrderBy(s => s.Km * 1000 + s.Meter)
+                                .ToList();
+
+                            // 2) Если можем — фильтруем по коду направления (НО безопасно!)
+                            //    Частая проблема: Directcode пустой/другого формата => тогда всё "исчезает".
+                            //    Поэтому: сперва пробуем с кодом, если пусто — берём без кода.
+                            List<S3> rows = byTrack;
+
+                            if (!string.IsNullOrWhiteSpace(dirCode))
+                            {
+                                var byCode = byTrack.Where(s =>
+                                    string.Equals(NormalizeDirectionCode(Convert.ToString(s.Directcode)), dirCode, StringComparison.OrdinalIgnoreCase)
+                                ).ToList();
+
+                                if (byCode.Count > 0)
+                                    rows = byCode;
                             }
 
-                            string lastDirection = String.Empty, lastTrack = String.Empty;
-                            int lastPchu = -1, lastPd = -1, lastPdb = -1, lastKm = -1;
-                            List<DigressionTotal> totals = new List<DigressionTotal>();
-                            DigressionTotal digressionTotal = new DigressionTotal();
-                            XElement xeDirection = new XElement("directions");
-                            XElement xeTracks = new XElement("tracks");
-                            XElement xeTrackscount = new XElement("trackscount");
+                            // 3) Фильтры как у тебя
+                            rows = rows.Where(s => s.Ots != "Анп" && s.Ots != "ПрУ" && s.Ots != "?Анп").ToList();
 
-                            foreach (var s3 in ListS3)
+                            // Если после фильтра нет строк — оставляем nodata=1 (но tracks всё равно будет)
+                            if (rows.Count == 0)
                             {
-                                XElement Notes = new XElement("Note");
+                                xeDirection.Add(xeTracks);
+                                hasAnyTracks = true;
+                                continue;
+                            }
 
-                                switch (s3.Ots)
+                            // Добавляем NOTE
+                            int countByPut = 0;
+                            bool anyNoteAdded = false;
+
+                            foreach (var s in rows)
+                            {
+                                // Пересчеты и totals
+                                switch (s.Ots)
                                 {
                                     case "Пр.п":
                                     case "Пр.л":
-                                        drawdownCount += s3.Kol;
+                                        drawdownCount += s.Kol;
                                         break;
 
                                     case "Суж":
-                                        s3.Kol = s3.Len / 4 + (s3.Len % 4 + 1 > 1 ? 1 : 0);
-                                        constrictionCount += s3.Kol;
-
+                                        s.Kol = s.Len / 4 + ((s.Len % 4 + 1 > 1) ? 1 : 0);
+                                        constrictionCount += s.Kol;
                                         break;
+
                                     case "Уш":
-                                        s3.Kol = s3.Len / 4 + (s3.Len % 4 + 1 > 1 ? 1 : 0);
-                                        broadeningCount += s3.Kol;
+                                        s.Kol = s.Len / 4 + ((s.Len % 4 + 1 > 1) ? 1 : 0);
+                                        broadeningCount += s.Kol;
                                         break;
+
                                     case "У":
-                                        s3.Kol = s3.Len / 20 + (s3.Len % 10 + 1 > 1 ? 1 : 0);
-                                        levelCount += s3.Kol;
+                                        // Оставил твою формулу как в присланном коде
+                                        s.Kol = s.Len / 20 + ((s.Len % 10 + 1 > 1) ? 1 : 0);
+                                        levelCount += s.Kol;
                                         break;
+
                                     case "П":
-                                        skewnessCount += s3.Kol;
+                                        skewnessCount += s.Kol;
                                         break;
+
                                     case "Р":
-                                        straighteningCount += s3.Kol;
+                                        straighteningCount += s.Kol;
                                         break;
+
                                     case "Рст":
-                                        RSTCount += s3.Kol;
+                                        RSTCount += s.Kol;
                                         break;
                                 }
-                                if (s3.Ots.Equals("Анп") || s3.Ots.Equals("ПрУ") || s3.Ots.Equals("?Анп"))
-                                {
-                                    continue;
-                                }
-                                else
-                                {
-                                    if (s3.Naprav.Equals(lastDirection))
-                                    {
-                                        if (s3.Put.Equals(lastTrack))
-                                        {
-                                            switch (s3.Ots)
-                                            {
-                                                case "Пр.п":
-                                                case "Пр.л":
-                                                    PUTdrawdownCount += s3.Kol;
-                                                    break;
 
-                                                case "Суж":
-                                                    PUTconstrictionCount += s3.Kol;
-                                                    break;
-                                                case "Уш":
-                                                    PUTbroadeningCount += s3.Kol;
-                                                    break;
-                                                case "У":
-                                                    PUTlevelCount += s3.Kol;
-                                                    break;
-                                                case "П":
-                                                    PUTskewnessCount += s3.Kol;
-                                                    break;
-                                                case "Р":
-                                                    PUTstraighteningCount += s3.Kol;
-                                                    break;
+                                countByPut += s.Kol;
 
-                                            }
+                                xeTracks.Add(new XElement("note",
+                                    new XAttribute("pchu", s.Pchu),
+                                    new XAttribute("pd", s.Pd),
+                                    new XAttribute("pdb", s.Pdb),
+                                    new XAttribute("km", s.Km),
+                                    new XAttribute("m", s.Meter),
+                                    new XAttribute("found_date", SafeFoundDate(s.TripDateTime)),
+                                    new XAttribute("deviation", s.Ots ?? ""),
+                                    new XAttribute("digression", s.Otkl),
+                                    new XAttribute("len", s.Len),
+                                    new XAttribute("count", s.Kol),
+                                    new XAttribute("primech", NormalizePrimech(s.Primech))
+                                ));
 
-                                            if (s3.Pchu == lastPchu)
-                                            {
-                                                if (s3.Pd == lastPd)
-                                                {
-                                                    if (s3.Pdb == lastPdb)
-                                                    {
-                                                        if (s3.Km == lastKm)
-                                                        {
-
-                                                            XElement xeNote = new XElement("note",
-                                                                new XAttribute("pchu", ""),
-                                                                new XAttribute("pd", ""),
-                                                                new XAttribute("pdb", ""),
-                                                                new XAttribute("km", ""),
-                                                                new XAttribute("m", s3.Meter),
-                                                                new XAttribute("deviation", s3.Ots),
-                                                                new XAttribute("digression", s3.Otkl),
-                                                                new XAttribute("len", s3.Len),
-                                                                new XAttribute("count", s3.Kol));
-
-                                                            if (totals.Any(t => t.Name == s3.Ots))
-                                                            {
-                                                                totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                                            }
-                                                            else
-                                                            {
-                                                                digressionTotal.Name = s3.Ots;
-                                                                digressionTotal.Count += s3.Kol;
-                                                                totals.Add(digressionTotal);
-                                                            }
-
-                                                            xeTracks.Add(xeNote);
-                                                        }
-                                                        else
-                                                        {
-                                                            lastKm = s3.Km;
-
-                                                            XElement xeNote = new XElement("note",
-                                                                new XAttribute("pchu", ""),
-                                                                new XAttribute("pd", ""),
-                                                                new XAttribute("pdb", ""),
-                                                                new XAttribute("km", s3.Km),
-                                                                new XAttribute("m", s3.Meter),
-                                                                new XAttribute("deviation", s3.Ots),
-                                                                new XAttribute("digression", s3.Otkl),
-                                                                new XAttribute("len", s3.Len),
-                                                                new XAttribute("count", s3.Kol));
-
-                                                            if (totals.Any(t => t.Name == s3.Ots))
-                                                            {
-                                                                totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                                            }
-                                                            else
-                                                            {
-                                                                digressionTotal.Name = s3.Ots;
-                                                                digressionTotal.Count += s3.Kol;
-                                                                totals.Add(digressionTotal);
-                                                            }
-
-                                                            xeTracks.Add(xeNote);
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        lastPdb = s3.Pdb;
-                                                        lastKm = s3.Km;
-
-                                                        XElement xeNote = new XElement("note",
-                                                            new XAttribute("pchu", ""),
-                                                            new XAttribute("pd", ""),
-                                                            new XAttribute("pdb", s3.Pdb),
-                                                            new XAttribute("km", s3.Km),
-                                                            new XAttribute("m", s3.Meter),
-                                                            new XAttribute("deviation", s3.Ots),
-                                                            new XAttribute("digression", s3.Otkl),
-                                                            new XAttribute("len", s3.Len),
-                                                            new XAttribute("count", s3.Kol));
-
-                                                        if (totals.Any(t => t.Name == s3.Ots))
-                                                        {
-                                                            totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                                        }
-                                                        else
-                                                        {
-                                                            digressionTotal.Name = s3.Ots;
-                                                            digressionTotal.Count += s3.Kol;
-                                                            totals.Add(digressionTotal);
-                                                        }
-
-                                                        xeTracks.Add(xeNote);
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    lastPd = s3.Pd;
-                                                    lastPdb = s3.Pdb;
-                                                    lastKm = s3.Km;
-
-                                                    XElement xeNote = new XElement("note",
-                                                        new XAttribute("pchu", ""),
-                                                        new XAttribute("pd", s3.Pd),
-                                                        new XAttribute("pdb", s3.Pdb),
-                                                        new XAttribute("km", s3.Km),
-                                                        new XAttribute("m", s3.Meter),
-                                                        new XAttribute("deviation", s3.Ots),
-                                                        new XAttribute("digression", s3.Otkl),
-                                                        new XAttribute("len", s3.Len),
-                                                        new XAttribute("count", s3.Kol));
-
-                                                    if (totals.Any(t => t.Name == s3.Ots))
-                                                    {
-                                                        totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                                    }
-                                                    else
-                                                    {
-                                                        digressionTotal.Name = s3.Ots;
-                                                        digressionTotal.Count += s3.Kol;
-                                                        totals.Add(digressionTotal);
-                                                    }
-
-                                                    xeTracks.Add(xeNote);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                lastPchu = s3.Pchu;
-                                                lastPd = s3.Pd;
-                                                lastPdb = s3.Pdb;
-                                                lastKm = s3.Km;
-
-                                                XElement xeNote = new XElement("note",
-                                                    new XAttribute("pchu", s3.Pchu),
-                                                    new XAttribute("pd", s3.Pd),
-                                                    new XAttribute("pdb", s3.Pdb),
-                                                    new XAttribute("km", s3.Km),
-                                                    new XAttribute("m", s3.Meter),
-                                                    new XAttribute("deviation", s3.Ots),
-                                                    new XAttribute("digression", s3.Otkl),
-                                                    new XAttribute("len", s3.Len),
-                                                    new XAttribute("count", s3.Kol));
-
-                                                if (totals.Any(t => t.Name == s3.Ots))
-                                                {
-                                                    totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                                }
-                                                else
-                                                {
-                                                    digressionTotal.Name = s3.Ots;
-                                                    digressionTotal.Count += s3.Kol;
-                                                    totals.Add(digressionTotal);
-                                                }
-
-                                                xeTracks.Add(xeNote);
-                                            }
-                                        }
-                                        else
-                                        {
-
-
-                                            if (!lastTrack.Equals(String.Empty))
-                                            {
-                                                xeDirection.Add(xeTracks);
-                                            }
-                                            xeTracks = new XElement("tracks",
-                                              new XAttribute("direction", tripProcess.DirectionName),
-                                              new XAttribute("directioncode", s3.Directcode),
-                                              new XAttribute("track", s3.Put));
-
-
-
-                                            lastTrack = s3.Put;
-                                            lastPchu = s3.Pchu;
-                                            lastPd = s3.Pd;
-                                            lastPdb = s3.Pdb;
-                                            lastKm = s3.Km;
-
-                                            XElement xeNote = new XElement("note",
-                                                new XAttribute("pchu", s3.Pchu),
-                                                new XAttribute("pd", s3.Pd),
-                                                new XAttribute("pdb", s3.Pdb),
-                                                new XAttribute("km", s3.Km),
-                                                new XAttribute("m", s3.Meter),
-                                                new XAttribute("deviation", s3.Ots),
-                                                new XAttribute("digression", s3.Otkl),
-                                                new XAttribute("len", s3.Len),
-                                                new XAttribute("count", s3.Kol));
-
-                                            if (totals.Any(t => t.Name == s3.Ots))
-                                            {
-                                                totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                            }
-                                            else
-                                            {
-                                                digressionTotal.Name = s3.Ots;
-                                                digressionTotal.Count += s3.Kol;
-                                                totals.Add(digressionTotal);
-                                            }
-
-                                            xeTracks.Add(xeNote);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (!lastDirection.Equals(String.Empty))
-                                        {
-                                            xeDirection.Add(xeTracks);
-                                            tripElem.Add(xeDirection);
-                                        }
-                                        xeDirection = new XElement("directions",
-                                            new XAttribute("direction", s3.Direction_full),
-                                              new XAttribute("track", s3.Put)
-                                              );
-                                        xeTracks = new XElement("tracks",
-                                         new XAttribute("direction", tripProcess.DirectionName),
-                                         new XAttribute("directioncode", s3.Directcode),
-                                         new XAttribute("track", s3.Put));
-                                        //,
-                                        //new XAttribute("countPUT", PUTconstrictionCount + PUTbroadeningCount + PUTlevelCount + PUTskewnessCount + PUTdrawdownCount + PUTstraighteningCount)
-
-
-                                        lastDirection = s3.Naprav;
-                                        lastTrack = s3.Put;
-                                        lastPchu = s3.Pchu;
-                                        lastPd = s3.Pd;
-                                        lastPdb = s3.Pdb;
-                                        lastKm = s3.Km;
-
-                                        XElement xeNote = new XElement("note",
-                                           new XAttribute("pchu", s3.Pchu),
-                                            new XAttribute("pd", s3.Pd),
-                                            new XAttribute("pdb", s3.Pdb),
-                                            new XAttribute("km", s3.Km),
-                                            new XAttribute("m", s3.Meter),
-                                            new XAttribute("deviation", s3.Ots),
-                                            new XAttribute("digression", s3.Otkl),
-                                            new XAttribute("len", s3.Len),
-                                            new XAttribute("count", s3.Kol));
-
-                                        if (totals.Any(t => t.Name == s3.Ots))
-                                        {
-                                            totals.Where(t => t.Name == s3.Ots).First().Count += s3.Kol;
-                                        }
-                                        else
-                                        {
-                                            digressionTotal.Name = s3.Ots;
-                                            digressionTotal.Count += s3.Kol;
-                                            totals.Add(digressionTotal);
-                                        }
-
-                                        xeTracks.Add(xeNote);
-
-                                    }
-                                }
+                                anyNoteAdded = true;
                             }
-                        xeTracks.Add(new XAttribute("countbyput", digressionTotal.Count));
-                        xeTracks.Add(new XAttribute("distance", distance.Code));
-                        digressionTotal.Count = 0;
-                        xeDirection.Add(xeTracks);
+
+                            if (anyNoteAdded)
+                            {
+                                xeTracks.SetAttributeValue("nodata", null);
+                                xeTracks.SetAttributeValue("countbyput", countByPut);
+                                countDistance += countByPut;
+                            }
+
+                            xeDirection.Add(xeTracks);
+                            hasAnyTracks = true;
+                        }
+
+                        // ===== КАК В РАБОЧИХ ВАРИАНТАХ: directions НЕ ДОЛЖЕН БЫТЬ ПУСТЫМ =====
+                        // Если вдруг ничего не добавилось (редко), добавим заглушку, чтобы не было пустого листа
+                        if (!hasAnyTracks)
+                        {
+                            xeDirection.Add(new XElement("tracks",
+                                new XAttribute("direction", dirName),
+                                new XAttribute("directioncode", dirCode),
+                                new XAttribute("track", "—"),
+                                new XAttribute("countbyput", 0),
+                                new XAttribute("nodata", 1)
+                            ));
+                        }
+
                         tripElem.Add(xeDirection);
-
-                    }
-                 
-
-
-                    //В том числе:
-                    if (drawdownCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Пр - " + drawdownCount)));
-                    }
-                    if (constrictionCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Суж - " + constrictionCount)));
-                    }
-                    if (broadeningCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Уш - " + broadeningCount)));
-                    }
-                    if (levelCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "У - " + levelCount)));
-                    }
-                    if (skewnessCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "П - " + skewnessCount)));
-                    }
-                    if (straighteningCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Р - " + straighteningCount)));
-                    }
-                    if (RSTCount > 0)
-                    {
-                        tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Рст - " + RSTCount)));
                     }
 
-                    tripElem.Add(new XAttribute("countDistance", drawdownCount + constrictionCount + broadeningCount + levelCount + skewnessCount + straighteningCount + RSTCount));
-                    
-                    if (founddigression == true)
-                    {
-                        report.Add(tripElem);
-                    }
-                    
+                    // totals
+                    if (drawdownCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Пр - " + drawdownCount)));
+                    if (constrictionCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Суж - " + constrictionCount)));
+                    if (broadeningCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Уш - " + broadeningCount)));
+                    if (levelCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "У - " + levelCount)));
+                    if (skewnessCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "П - " + skewnessCount)));
+                    if (straighteningCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Р - " + straighteningCount)));
+                    if (RSTCount > 0) tripElem.Add(new XElement("total", new XAttribute("totalinfo", "Рст - " + RSTCount)));
+
+                    tripElem.SetAttributeValue("countDistance", countDistance);
+
+                    xdReport.Root.Add(tripElem);
                 }
-                
-                xdReport.Add(report);
-                XslCompiledTransform transform = new XslCompiledTransform();
+
+                // XSL -> HTML
+                var transform = new XslCompiledTransform();
                 transform.Load(XmlReader.Create(new StringReader(template.Xsl)));
                 transform.Transform(xdReport.CreateReader(), writer);
             }
+
+            // =========================
+            // 4) Сохранить и открыть
+            // =========================
             try
             {
-                htReport.Save(Path.GetTempPath() + "/report.html");
-                htReport.Save($@"G:\form\6.Выходные формы Основные параметры\Отступления 2-ой степени (Ф.О2).html");
+                var outPath = Path.Combine(Path.GetTempPath(), "report.html");
+                htReport.Save(outPath);
             }
             catch
             {
-                MessageBox.Show("Ошибка сохранения файлы");
+                MessageBox.Show("Ошибка сохранения файла");
             }
             finally
             {
-                System.Diagnostics.Process.Start(Path.GetTempPath() + "/report.html");
+                System.Diagnostics.Process.Start(Path.Combine(Path.GetTempPath(), "report.html"));
             }
+        }
+
+        // -------------------------
+        // Helpers
+        // -------------------------
+
+        private static string ExtractDirectionCode(string directionName)
+        {
+            if (string.IsNullOrWhiteSpace(directionName)) return "";
+            int i1 = directionName.LastIndexOf('(');
+            int i2 = directionName.LastIndexOf(')');
+            if (i1 >= 0 && i2 > i1)
+                return directionName.Substring(i1 + 1, i2 - i1 - 1).Trim();
+            return "";
+        }
+
+        private static string StripDirectionCode(string directionName)
+        {
+            if (string.IsNullOrWhiteSpace(directionName)) return "";
+            int i = directionName.LastIndexOf('(');
+            if (i > 0) return directionName.Substring(0, i).Trim();
+            return directionName.Trim();
+        }
+
+        private static string NormalizeDirectionCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return "";
+            var digits = new string(code.Where(char.IsDigit).ToArray());
+            return digits.TrimStart('0'); // "013863" -> "13863"
+        }
+
+        private static string GetTripDateString(object trip)
+        {
+            if (trip == null) return "";
+            try
+            {
+                var t = trip.GetType();
+                var p =
+                    t.GetProperty("Trip_date") ??
+                    t.GetProperty("trip_date") ??
+                    t.GetProperty("TripDate") ??
+                    t.GetProperty("tripDate") ??
+                    t.GetProperty("Trip_Date");
+
+                if (p == null) return "";
+                var v = p.GetValue(trip, null);
+                if (v == null) return "";
+
+                if (v is DateTime dt)
+                    return dt.ToString("dd.MM.yyyy HH:mm:ss");
+
+                return v.ToString();
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static string SafeFoundDate(DateTime dt)
+        {
+            try
+            {
+                if (dt.Year < 1900) return "";
+                return dt.ToString("dd.MM.yyyy");
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static string NormalizePrimech(string primech)
+        {
+            if (string.IsNullOrWhiteSpace(primech)) return "";
+            if (primech.Contains("м;")) return "мост";
+            if (primech.Contains("Стр")) return "Стр";
+            if (primech.Contains("гр-/60")) return "гр";
+            return primech.Replace(";", "");
         }
     }
 }

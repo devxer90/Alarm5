@@ -32,7 +32,8 @@ procedure Get_NullFunc;
 function gznak(a, b: real): real;
 
 PROCEDURE RWTB_INFOTS(pkm: integer);
-PROCEDURE Most_Tonnel(var PrmOts: MASOTS; name_ots: string);
+function Most_Tonnel(var PrmOts: MASOTS; name_ots: string):boolean;
+      function Most_TonnelProverka(var PrmOts: MASOTS; name_ots: string):boolean;
 /// ///////////////////
 // PROCEDURE OgrPoSochetaniu(m1,m2:masots; i:integer);
 // sochetanie otstuplenii v plane 3 stepeni s prosadkoi
@@ -1299,14 +1300,25 @@ begin
 
   GetV := v;
 end;
+function Table8_4_ins436_Pro(var value: integer) : integer;
+begin
+  case value of
+     16..20: result := 90;
+     21..25: result := 60;
+     26..30: result := 40;
+     31..34: result :=15;
+     35..High(Integer): result :=0;
+  end;
+
+end;
 
 // ------------------------------------------------------------------------------
 // ОБРАБОТКА УЧАСТКА МОСТЫ   //030406
 // ------------------------------------------------------------------------------
-PROCEDURE Most_Tonnel(var PrmOts: MASOTS; name_ots: string);
+FUNCTION Most_Tonnel(var PrmOts: MASOTS; name_ots: string): boolean;
 const
-  L1 = 200; // metr
-  L2 = 500; // metr
+  L1 = 0; // metr
+  L2 = 0; // metr
 var
   im0, xkord, ykord, ortasy: integer;
   shart, fstand: boolean;
@@ -1317,6 +1329,7 @@ var
     coor: integer;
   ots: string;
 BEGIN
+  Most_Tonnel:=false;
   TRY
     if Flag_sablog then
       SabLog('Most_Tonnell - ОБРАБОТКА УЧАСТКА МОСТЫ И ТОННЕЛИ');
@@ -1341,18 +1354,18 @@ BEGIN
           if (26 <= UMT[j].dl) and (UMT[j].dl <= 100) then
           begin
 
-            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, -L1, GlbTrackId,
+            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, 0, GlbTrackId,
               GlbTripDate);
-            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, L1, GlbTrackId,
+            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, 0, GlbTrackId,
               GlbTripDate);
           end
           else
 
             if (100 < UMT[j].dl) and (UMT[j].dl < GlbKmLength) then
           begin
-            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, -L1, GlbTrackId,
+            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, 0, GlbTrackId,
               GlbTripDate);
-            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, L1, GlbTrackId,
+            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, 0, GlbTrackId,
               GlbTripDate);
           end;
           fstand := false;
@@ -1386,20 +1399,36 @@ BEGIN
           vrg := PrmOts[im0].vrg;
           // xxxx:= (((L0v+Lmv) div 200) mod 1000) div 100 + 1;
           xxxx := (L0v div 100) + 1;
-          shart := (((uch_a <= xy) and (xy <= uch_b)) or
-            ((uch_a >= xy) and (xy >= uch_b)));
+         shart := (UMT[j].dl>25) and (   ((uch_a <= xy) and (xy <= uch_b)) or
+           ((uch_a >= xy) and (xy >= uch_b)));
 
-          if shart and (PrmOts[im0].st = 3) and (PrmOts[im0].prim = '') then
+
+           stv:= PrmOts[im0].st;
+          if shart and (PrmOts[im0].st >= 3) and (PrmOts[im0].prim = '') and not(PrmOts[im0].is_most_checked) then
           begin
-            PrmOts[im0].st := 3;
+
             PrmOts[im0].prim := PrmOts[im0].prim;
             v1 := GetV(0, u1);
             v2 := -1;
             if (v1 < u2) then
             begin
+
               v2 := GetV(1, u2);
 
             end;
+            if  ((PrmOts[im0].st > 3)  )  then
+             begin
+              v1 := GetV(0, v1);
+               v2 := GetV(1, v2);
+            end;
+               if (name_ots = 'л') then    name_ots := 'Пр.л' ;
+                     if (name_ots = 'п') then  name_ots:= 'Пр.п';
+            if (name_ots = 'Пр.л') or (name_ots = 'Пр.п') then
+            begin
+              v1 := Table8_4_ins436_Pro(belv);
+              v2:= v1;
+            end;
+
             if (v1 < u1) then
             begin
               PrmOts[im0].vop := v1;
@@ -1411,11 +1440,13 @@ BEGIN
               inttostr(xxxx) + ' ' + name_ots + ' ' + inttostr(belv) + '/' +
               inttostr(Ln) + ' м; ';
             WRT_UBEDOM(L0v, Lmv, 7, ots, v1, v2);
-            wrt_baskalar(name_ots, 'м;', belv, ortasy, Ln, 3, 0, u1, u2,
+            wrt_baskalar(name_ots, 'м;', belv, ortasy, Ln,  stv, 0, u1, u2,
               v1, v2, 0);
             GlbCountDGR := GlbCountDGR + 1;
             shart := false;
             { end; }
+            PrmOts[im0].is_most_checked := true;
+            Most_Tonnel := true;
           end;
         end; // for
       end; // if
@@ -1425,7 +1456,113 @@ BEGIN
   END;
 END;
 
-// ---------------------------------------------------------------------------
+// ----
+       // ------------------------------------------------------------------------------
+FUNCTION Most_TonnelProverka(var PrmOts: MASOTS; name_ots: string): boolean;
+const
+  L1 = 0; // metr
+  L2 = 0; // metr
+var
+  im0, xkord, ykord, ortasy: integer;
+  shart, fstand: boolean;
+  ab: integer;
+  uch_a, uch_b, xy: real;
+  xL0, xLm, j, dlina, Ln: integer;
+  stv, belv, L0v, Lmv, i, ogranichenie1, xxxx, v1, v2, u1, u2, vr, vrg,
+    coor: integer;
+  ots: string;
+BEGIN
+  Most_TonnelProverka:=false;
+  TRY
+    if Flag_sablog then
+      SabLog('Most_Tonnell - ОБРАБОТКА УЧАСТКА МОСТЫ И ТОННЕЛИ');
+
+    for j := 0 to High(UMT) do
+    begin
+
+      if (((UMT[j].nkm <= GlbKmtrue) and (GlbKmtrue <= UMT[j].kkm)) or
+        ((UMT[j].nkm >= GlbKmtrue) and (GlbKmtrue >= UMT[j].kkm))) then
+      begin
+        shart := false;
+        // ------------------------------------------------------------------------------
+        if (UMT[j].nmtr < GlbKmLength) and (UMT[j].kmtr < GlbKmLength) then
+        begin
+          uch_a := CoordinateToReal(UMT[j].nkm, UMT[j].nmtr);
+          uch_b := CoordinateToReal(UMT[j].kkm, UMT[j].kmtr);
+          // ab := GetCoordByLen(UMT[j].nkm,UMT[j].nmtr, GetDistanceBetween(UMT[j].nkm,UMT[j].nmtr,UMT[j].kkm, UMT[j].kmtr, GlbTrackId, GlbTripDate));
+
+          // uch_a := ab - round(UMT[j].dl / 2);
+          // uch_b := ab + round(UMT[j].dl / 2);
+
+          if (26 <= UMT[j].dl) and (UMT[j].dl <= 100) then
+          begin
+
+            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, 0, GlbTrackId,
+              GlbTripDate);
+            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, 0, GlbTrackId,
+              GlbTripDate);
+          end
+          else
+
+            if (100 < UMT[j].dl) and (UMT[j].dl < GlbKmLength) then
+          begin
+            uch_a := GetCoordByLen(UMT[j].nkm, UMT[j].nmtr, 0, GlbTrackId,
+              GlbTripDate);
+            uch_b := GetCoordByLen(UMT[j].kkm, UMT[j].kmtr, 0, GlbTrackId,
+              GlbTripDate);
+          end;
+          fstand := false;
+        end
+        else
+        begin
+          uch_a := CoordinateToReal(UMT[j].nkm, UMT[j].nmtr);
+          uch_b := CoordinateToReal(UMT[j].kkm, UMT[j].kmtr);
+          fstand := true;
+        end;
+        // ------------------------------------------------------------------------------
+        for im0 := 0 to High(PrmOts) do
+        begin
+          xL0 := PrmOts[im0].L0;
+          xLm := PrmOts[im0].Lm;
+
+          Ln := round(abs(xL0 - xLm));
+
+          xkord := xL0; //
+          ykord := xLm; //
+
+          ortasy := round((xL0 + xLm) / 2);
+          xy := CoordinateToReal(GlbKmtrue, ortasy);
+
+          belv := PrmOts[im0].bel;
+          L0v := PrmOts[im0].L0;
+          Lmv := PrmOts[im0].Lm;
+          u1 := PrmOts[im0].v;
+          u2 := PrmOts[im0].vg;
+          vr := PrmOts[im0].vrp;
+          vrg := PrmOts[im0].vrg;
+          // xxxx:= (((L0v+Lmv) div 200) mod 1000) div 100 + 1;
+          xxxx := (L0v div 100) + 1;
+//          shart := (UMT[j].dl>25) and (   ((uch_a <= xy) and (xy <= uch_b)) or
+//            ((uch_a >= xy) and (xy >= uch_b)));
+          shart := (UMT[j].dl>25) and ( (uch_a <= xy) and (xy <= uch_b))      ;
+           stv:= PrmOts[im0].st;
+          if shart  and not(PrmOts[im0].is_most_checked) then
+          begin
+
+            shart := false;
+
+            PrmOts[im0].is_most_checked := true;
+           Most_TonnelProverka := true;
+          end;
+        end; // for
+      end; // if
+    end; // for
+
+  EXCEPT
+  END;
+END;
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------
 function KrivoiUch(pmtr: integer): boolean;
 // Определение кривого участка по паспортным данным
 var
@@ -2816,8 +2953,8 @@ end;
 // ------------------------------------------------------------------------------
 function ProberkaNaMostTonnel(start, finish: integer): boolean;
 const
-  L1 = 200; // metr
-  L2 = 500; // metr
+  L1 = 0; // metr
+  L2 = 0; // metr
 var
   uch_a, uch_b, ortasy: real;
   j: integer;
@@ -2834,7 +2971,7 @@ BEGIN
       uch_a := CoordinateToReal(UMT[j].nkm, UMT[j].nmtr);
       uch_b := CoordinateToReal(UMT[j].kkm, UMT[j].kmtr);
 
-      if   ((uch_a <= ortasy) and (ortasy <= uch_b) and (UMT[j].dl>10)) then
+      if   ((uch_a <= ortasy) and (ortasy <= uch_b) and (UMT[j].dl>25)) then
       begin
         result := true;
         break;
@@ -3545,7 +3682,9 @@ begin
   kol := 1;
 
   if (ots = '?Укл') or (ots = 'Укл') or (ots = 'Пси') or (ots = '?Пси') or
-    (ots = 'Анп') or (ots = '?Анп') then
+    (ots = 'Анп') or (ots = '?Анп') or  (ots='ОШК') then
+
+
     otkl := round(h * 100)
   else
     otkl := round(h);
@@ -4306,7 +4445,7 @@ BEGIN
 
     SearchSiezd;
 
-    KrivoiNatur(GlbKmtrue);
+    //KrivoiNatur(GlbKmtrue);
 
     // PCH_F := inttostr(Glb_PutList_PCH);//GlbPCH;
 
@@ -4332,35 +4471,51 @@ BEGIN
     ns := 0;
     // GUsh_1548mm(F_sh, X_k, F_Rad, W1Ush);   //02.10.2012
 
-    for i := 0 to high(F_sh) do
+//    for i := 0 to high(F_sh) do
+//      F_sht[i] := F_sh[i];
+//
+//    // Tolegen 17.03.2021
+//    // Убираем суж и уш на 1м
+//    // 1 итер
+//
+//
+//
+//    // 2 итер
+//    for i := 0 to high(F_sh) do
+//      F_sht11[i] := F_sht[i];
+//
+//    for kkkkk := 0 to high(F_sht11) - 3 do
+//    begin
+//      if ((F_sht11[kkkkk] < F_sht11[kkkkk + 1]) and
+//        (F_sht11[kkkkk + 1] > F_sht11[kkkkk + 2])) then
+//      begin
+//        // showmessage(floattostr(F_sh[kkkkk+1])+ ' '+ floattostr(F_sh11[kkkkk+1]));
+//        F_sht[kkkkk + 1] := F_sht11[kkkkk + 2];
+//
+//        if (F_sht11[kkkkk] > F_sht11[kkkkk + 2]) then
+//          F_sht[kkkkk + 1] := F_sht11[kkkkk];
+//        // showmessage(floattostr(F_sh[kkkkk+1])+ ' '+ floattostr(F_sh11[kkkkk+1]));
+//      end;
+//
+//      if ((F_sht11[kkkkk] > F_sht11[kkkkk + 1]) and
+//        (F_sht11[kkkkk + 1] < F_sht11[kkkkk + 2])) then
+//      begin
+//
+//        F_sht[kkkkk + 1] := F_sht11[kkkkk];
+//
+//        if (F_sht11[kkkkk] < F_sh[kkkkk + 2]) then
+//          F_sht[kkkkk + 1] := F_sh[kkkkk + 2];
+//      end;
+//    end;
+for i := 0 to high(F_sh) do
       F_sht[i] := F_sh[i];
 
     // Tolegen 17.03.2021
     // Убираем суж и уш на 1м
     // 1 итер
-    for kkkkk := 0 to high(F_sh) - 3 do
-    begin
-      if ((F_sh[kkkkk] < F_sh[kkkkk + 1]) and
-        (F_sh[kkkkk + 1] > F_sh[kkkkk + 2])) then
-      begin
-        // showmessage(floattostr(F_sh[kkkkk+1])+ ' '+ floattostr(F_sh11[kkkkk+1]));
-        F_sht[kkkkk + 1] := F_sh[kkkkk + 2];
 
-        if (F_sh[kkkkk] > F_sh[kkkkk + 2]) then
-          F_sht[kkkkk + 1] := F_sh[kkkkk];
-        // showmessage(floattostr(F_sh[kkkkk+1])+ ' '+ floattostr(F_sh11[kkkkk+1]));
-      end;
 
-      if ((F_sh[kkkkk] > F_sh[kkkkk + 1]) and
-        (F_sh[kkkkk + 1] < F_sh[kkkkk + 2])) then
-      begin
 
-        F_sht[kkkkk + 1] := F_sh[kkkkk];
-
-        if (F_sh[kkkkk] < F_sh[kkkkk + 2]) then
-          F_sht[kkkkk + 1] := F_sh[kkkkk + 2];
-      end;
-    end;
     // 2 итер
     for i := 0 to high(F_sh) do
       F_sht11[i] := F_sht[i];
@@ -4389,8 +4544,7 @@ BEGIN
       end;
     end;
     GUsh_44(F_sh, F_mtr, F_Rad, W1Ush);
-    // GUsh_4(F_sh, F_mtr, F_Rad, W1Ush); // shi +
-    GUsh_3(F_sh, F_mtr, F_Rad, W1Ush);
+      GUsh_3(F_sh, F_mtr, F_Rad, W1Ush);
     GUsh_2(F_sh, F_mtr, F_Rad, W1Ush);
     GUsh_1(F_sh, F_mtr, F_Rad, W1Ush);
     if Flag_sablog then
@@ -4508,8 +4662,8 @@ BEGIN
     Most_Tonnel(W1pro1, 'Пр.п');
     Most_Tonnel(W1pro2, 'Пр.л');
     Most_Tonnel(W1Per, 'П');
-    Most_Tonnel(W1Pot, 'У');
-    Most_Tonnel(W1Rst, 'Р');
+   Most_Tonnel(W1Pot, 'У');
+   Most_Tonnel(W1Rst, 'Р');
     // ------------------------------------------------------------------------------
     // Коррекция км. Изменение отступлений 4 ст на 3 ст
     KORRECT;

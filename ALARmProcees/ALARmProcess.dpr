@@ -8,10 +8,10 @@ uses
   Params in 'Params.pas',
   DataModule in 'DataModule.pas' {MainDataModule: TDataModule},
   RWUn in 'RWUn.pas',
-  FuncsProcs in 'FuncsProcs.pas',
   ForOTS in 'ForOTS.pas',
   REPORTS in 'REPORTS.pas',
-  URemDistance in 'URemDistance.pas';
+  URemDistance in 'URemDistance.pas',
+  FuncsProcs in 'FuncsProcs.pas';
 
 var
   p: integer;
@@ -25,10 +25,9 @@ begin
     // Flag_Sablog := true;
     FileName := ParamStr(1);
     if FileName = '' then
-
-       FileName := 'g:\work_shifrovka\km_702_4816.svgpdat';
-//        FileName := 'g:\work_shifrovka\km_717_4820.svgpdat'  ;
-
+       //FileName := 'g:\work_shifrovka\km_5210_321100.svgpdat';        km_6912_1064980
+       // FileName := 'g:\work_shifrovka\km_7214_934915.svgpdat'; 7230_939951  km_7275_939951 km_7008_1287029.svgpdat
+               FileName := 'g:\work_shifrovka\km_5795_1699193.svgpdat';
     writeln(FileName);
 
     MainDataModule := DataModule.TMainDataModule.Create(nil);
@@ -41,7 +40,7 @@ begin
 
     if not(FileExists(FileName)) then
     begin
-      writeln('Не найден файл: ' + FileName);
+      writeln('Не найден файл:' + FileName);
       exit;
     end;
     if FileExists('DConfig.txt') then

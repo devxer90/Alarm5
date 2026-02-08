@@ -284,9 +284,17 @@ namespace ALARm.Core.Report
 
         public XElement RightSideChart(DateTime travelDate, Kilometer kilometer, long trackId, float[] xGrid)
         {
+
+            if (kilometer.Number == 7229)
+
+            {
+
+            }
+
             var GetBedomost = ((List<Bedemost>)RdStructureRepository.GetBedemost(kilometer.Trip.Id)).Where(o => o.Km == kilometer.Number).ToList();
             int y1 = kilometer.Start_m;
-            int y2 = kilometer.Final_m; ;
+            int y2 = kilometer.Final_m;
+
             var result = new XElement("rside",
                 new XAttribute("ticks", MMToPixelChart(xGrid[1]) - widthInPixel / widthImMM / 4),
                 new XAttribute("x4", MMToPixelChart(xGrid[1])),
@@ -300,6 +308,7 @@ namespace ALARm.Core.Report
                     MMToPixelChart(xGrid[0] + 0.75f)),// + (MMToPixelChart(152.5f) - MMToPixelChart(151f)) / 2),);
                 new XAttribute("lrail", kilometer.Rep_type_cni == true ? 745 :
                     MMToPixelChart(xGrid[0] - 1.75f)));// + (MMToPixelChart(152.5f) - MMToPixelChart(151f)) / 2),);
+
 
 
             //рисуем рихтовочную нить
@@ -342,36 +351,313 @@ namespace ALARm.Core.Report
 
             result.Add(strightsnode);
             //рисуем шпалы
+            var kr = new List<CrossTie>();
+            int ind_kr = -1;
+
+            string ctype = "1,8";
+            string color = "black";
+            if (kilometer.Number == 7251)
+
+            {
+
+            }
+            if (kilometer.Number == 7222)
+
+            {
+
+            }
+            if (kilometer.Number == 7253)
+
+            {
+
+            }
+            if (kilometer.CrossTies.Count() == 0)
+            {
+                result.Add(new XElement("crosstie",
+                    new XAttribute("sw", ctype),
+                    new XAttribute("st", color),
+                    new XAttribute("y1", -y1),
+                    new XAttribute("y2", -y2)
+                    ));
+            }
+
+
+
+
             foreach (var crossTie in kilometer.CrossTies)
             {
-                int start = crossTie.Start_Km == kilometer.Number ? crossTie.Start_M : y1;
-                int final = crossTie.Final_Km == kilometer.Number ? crossTie.Final_M : y2;
 
-                string ctype = "1,8";
-                string color = "black";
-                switch (crossTie.Crosstie_type_id)
-                {
-                    case (int)CrosTieType.Before96:
-                        //ctype = "1";
-                        ctype = "1,8,1,2,1,2";
-                        break;
-                    case (int)CrosTieType.After96:
-                        // ctype = "2";
-                        ctype = "1,8,1,2";
-                        break;
-                    case (int)CrosTieType.Woody:
-                        // ctype = "2";
+
+
+
+                //string ctype = "1,8";
+                //string color = "black";
+                kr.Add(crossTie);
+
+                int start = y1;
+                int final = y2;
+                //string ctype = "1,8";
+                //string color = "black";
+                var x = 0;
+                ind_kr = ind_kr + 1;
+
+                if (kilometer.CrossTies.Count() > 1 && ind_kr < kilometer.CrossTies.Count() - 1)
+                    if (kilometer.CrossTies[ind_kr].Final_Km == kilometer.Number
+                        && kilometer.CrossTies[ind_kr + 1].Start_Km == kilometer.Number
+                        && kilometer.CrossTies[ind_kr + 1].Start_M - kilometer.CrossTies[ind_kr].Final_M > 10)
+                    {
                         ctype = "1,8";
-                        break;
+                        color = "black";
+                        int y11 = kilometer.CrossTies[ind_kr].Final_M;
+                        int y12 = kilometer.CrossTies[ind_kr + 1].Start_M;
+                        result.Add(new XElement("crosstie",
+                        new XAttribute("sw", ctype),
+                        new XAttribute("st", color),
+                        new XAttribute("y1", -y11),
+                        new XAttribute("y2", -y12)
+                        ));
+                    }
 
+
+
+
+
+                if (ind_kr == 0 && kilometer.CrossTies[ind_kr].Start_Km == kilometer.Number && kilometer.CrossTies[ind_kr].Start_M > y1 + 4 && kilometer.CrossTies[ind_kr].Start_M < y2)
+
+                {
+                    ctype = "1,8";
+                    color = "black";
+                    int y11 = y1;
+                    int y12 = kilometer.CrossTies[ind_kr].Start_M;
+                    result.Add(new XElement("crosstie",
+                    new XAttribute("sw", ctype),
+                    new XAttribute("st", color),
+                    new XAttribute("y1", -y11),
+                    new XAttribute("y2", -y12)
+                    ));
                 }
-                result.Add(new XElement("crosstie",
+
+
+                //if (ind_kr == kilometer.CrossTies.Count() - 1 && kilometer.CrossTies[ind_kr].Start_Km == kilometer.Number && kilometer.CrossTies[ind_kr].Final_M < y2)
+
+                //{
+                //    ctype = "1,8";
+                //    color = "black";
+                //    int y11 = kilometer.CrossTies[ind_kr].Final_M;
+                //    int y12 = y2;
+                //    result.Add(new XElement("crosstie",
+                //    new XAttribute("sw", ctype),
+                //    new XAttribute("st", color),
+                //    new XAttribute("y1", -y11),
+                //    new XAttribute("y2", -y12)
+                //    ));
+                //}
+
+                if (ind_kr == 0 && kilometer.CrossTies[ind_kr].Start_Km < kilometer.Number && kilometer.CrossTies[ind_kr].Final_Km == kilometer.Number)
+                {
+                    start = y1;
+
+                    final = kilometer.CrossTies[ind_kr].Final_M;
+                    switch (kilometer.CrossTies[ind_kr].Crosstie_type_id)
+                    {
+                        case (int)CrosTieType.Before96:
+                            //ctype = "1";
+                            ctype = "1,8,1,2,1,2";
+                            x = 1;
+                            break;
+                        case (int)CrosTieType.After96:
+                            // ctype = "2";
+                            ctype = "1,8,1,2";
+                            x = 2;
+                            break;
+                        case (int)CrosTieType.Woody:
+                            // ctype = "2";
+                            ctype = "1,8";
+                            break;
+
+                    }
+                    result.Add(new XElement("crosstie",
+                     new XAttribute("sw", ctype),
+                     new XAttribute("st", color),
+                    new XAttribute("y1", -start),
+                     new XAttribute("y2", -final)
+                     ));
+                }
+
+
+
+
+
+
+
+
+                if (kilometer.CrossTies[ind_kr].Start_Km == kilometer.Number && kilometer.CrossTies[ind_kr].Final_Km == kilometer.Number)
+                {
+                    //   fin_old= crossTie.Final_M;
+                    /// crossTie[1]
+                   // start = crossTie.Start_M;
+                    //final = crossTie.Final_M;
+                    start = kilometer.CrossTies[ind_kr].Start_M;
+                    final = kilometer.CrossTies[ind_kr].Final_M;
+                    switch (kilometer.CrossTies[ind_kr].Crosstie_type_id)
+                    {
+                        case (int)CrosTieType.Before96:
+                            //ctype = "1";
+                            ctype = "1,8,1,2,1,2";
+                            x = 1;
+                            break;
+                        case (int)CrosTieType.After96:
+                            // ctype = "2";
+                            ctype = "1,8,1,2";
+                            x = 2;
+                            break;
+                        case (int)CrosTieType.Woody:
+                            // ctype = "2";
+                            ctype = "1,8";
+                            break;
+
+                    }
+                    result.Add(new XElement("crosstie",
+                 new XAttribute("sw", ctype),
+                 new XAttribute("st", color),
+                 new XAttribute("y1", -start),
+                  new XAttribute("y2", -final)
+             ));
+                }
+
+
+
+
+
+                if (ind_kr == kilometer.CrossTies.Count() - 1 && kilometer.CrossTies[ind_kr].Start_Km == kilometer.Number && kilometer.CrossTies[ind_kr].Final_Km > kilometer.Number)
+                {
+                    //   fin_old= crossTie.Final_M;
+                    /// crossTie[1]
+                   // start = crossTie.Start_M;
+                    //final = crossTie.Final_M;
+                    start = kilometer.CrossTies[ind_kr].Start_M;
+                    final = y2;
+
+                    switch (kilometer.CrossTies[ind_kr].Crosstie_type_id)
+                    {
+                        case (int)CrosTieType.Before96:
+                            //ctype = "1";
+                            ctype = "1,8,1,2,1,2";
+                            x = 1;
+                            break;
+                        case (int)CrosTieType.After96:
+                            // ctype = "2";
+                            ctype = "1,8,1,2";
+                            x = 2;
+                            break;
+                        case ((int)CrosTieType.Woody):
+                            // ctype = "2";
+                            ctype = "1,8";
+                            break;
+
+                    }
+                    result.Add(new XElement("crosstie",
+                 new XAttribute("sw", ctype),
+                 new XAttribute("st", color),
+                 new XAttribute("y1", -start),
+                  new XAttribute("y2", -final)
+             ));
+                }
+
+
+
+                if (kilometer.CrossTies[ind_kr].Start_Km < kilometer.Number && kilometer.CrossTies[ind_kr].Final_Km > kilometer.Number)
+                {
+                    //start = crossTie.Start_M;
+                    //final = y2;
+                    if (kilometer.Number == 7288)
+                    {
+
+                    }
+
+                    start = y1;
+
+                    final = y2;
+                    switch (kilometer.CrossTies[ind_kr].Crosstie_type_id)
+                    {
+                        case (int)CrosTieType.Before96:
+                            //ctype = "1";
+                            ctype = "1,8,1,2,1,2";
+                            x = 1;
+                            break;
+                        case (int)CrosTieType.After96:
+                            // ctype = "2";
+                            ctype = "1,8,1,2";
+                            x = 2;
+                            break;
+                            //case (int)CrosTieType.Woody:
+                            //    // ctype = "2";
+                            //    ctype = "1,8";
+                            //    break;
+
+                    }
+                    result.Add(new XElement("crosstie",
                     new XAttribute("sw", ctype),
                     new XAttribute("st", color),
                     new XAttribute("y1", -start),
                     new XAttribute("y2", -final)
                     ));
+
+                }
+
+
+                if (kilometer.CrossTies.Last().Start_Km > kilometer.Number && kilometer.CrossTies.First().Final_Km < kilometer.Number)
+                {
+                    //start = crossTie.Start_M;
+                    //final = y2;
+
+
+                    start = y1;
+
+                    final = y2;
+
+
+                    ctype = "1,8";
+                    color = "black";
+                    int y11 = kilometer.CrossTies[ind_kr].Final_M;
+                    int y12 = y2;
+                    result.Add(new XElement("crosstie",
+                    new XAttribute("sw", ctype),
+                    new XAttribute("st", color),
+                    new XAttribute("y1", -y11),
+                    new XAttribute("y2", -y12)
+                    ));
+                }
+
+
             }
+
+
+
+            if (kilometer.CrossTies[kilometer.CrossTies.Count() - 1].Final_Km == kilometer.Number
+                && kilometer.CrossTies[kilometer.CrossTies.Count() - 1].Final_M < y2 - 10)
+
+            {
+                ctype = "1,8";
+                color = "black";
+                int y11 = kilometer.CrossTies[kilometer.CrossTies.Count() - 1].Final_M;
+                int y12 = y2;
+                result.Add(new XElement("crosstie",
+                new XAttribute("sw", ctype),
+                new XAttribute("st", color),
+                new XAttribute("y1", -y11),
+                new XAttribute("y2", -y12)
+                ));
+            }
+
+
+
+
+
+
+
+            //}
+
             var longRailses = MainTrackStructureRepository.GetMtoObjectsByCoord(travelDate, kilometer.Number, MainTrackStructureConst.MtoLongRails, trackId) as List<LongRails>;
             //рисуем бесстыковые пути
             foreach (var longRails in longRailses)
@@ -379,6 +665,24 @@ namespace ALARm.Core.Report
 
                 int start = longRails.Start_Km == kilometer.Number ? longRails.Start_M : y1;
                 int final = longRails.Final_Km == kilometer.Number ? longRails.Final_M : y2;
+                //if (kilometer.Number > longRails.Start_Km && kilometer.Number < longRails.Final_Km)
+                //{
+                //    start = longRails.Start_M;
+                //    final = longRails.Final_Km;
+                //}
+
+                //if (kilometer.Number == longRails.Start_Km && kilometer.Number < longRails.Final_Km)
+                //{
+                //    start = longRails.Start_M;
+                //    final = y2;
+                //}
+                //if (kilometer.Number > longRails.Start_Km && kilometer.Number == longRails.Final_Km)
+                //{
+                //    start = y1;
+                //    final = longRails.Final_Km;
+                //}
+
+
 
                 result.Add(
                     new XElement("longRails",
@@ -386,6 +690,8 @@ namespace ALARm.Core.Report
                     new XAttribute("y2", -final))
                     );
             }
+
+
             //рисуем Изостыки
             var Isojoints = MainTrackStructureRepository.GetMtoObjectsByCoord(travelDate, kilometer.Number,
                 MainTrackStructureConst.MtoProfileObject, trackId) as List<ProfileObject>;
@@ -609,77 +915,77 @@ namespace ALARm.Core.Report
 
             }
             //рисуем стрелочные переводы
-            //var switchesnone = MainTrackStructureRepository.GetMtoObjectsByCoord(travelDate, kilometer.Number,
-            //    MainTrackStructureConst.MtoSwitch, trackId) as List<Switch>;
+            var switchesnone = MainTrackStructureRepository.GetMtoObjectsByCoord(travelDate, kilometer.Number,
+                MainTrackStructureConst.MtoSwitch, trackId) as List<Switch>;
 
-            //foreach (var sw in switchesnone)
-            //{
-            //    if (sw.Start_Km != kilometer.Number && sw.Final_Km != kilometer.Number)
-            //        continue;
-            //    if (kilometer.Number.ToDoubleCoordinate(Math.Max(kilometer.Start_m, kilometer.Final_m)) < Math.Max(sw.RealStartCoordinate, sw.RealFinalCoordinate))
-            //        continue;
-
-
-
-            //    int ostryak = kilometer.Number == sw.Start_Km ? sw.Start_M : 0;
-            //    int end = kilometer.Number == sw.Final_Km ? sw.Final_M : kilometer.Final_m;
-
-            //    var txtX = -sw.Length / 2;
-
-            //    //Стрелка жогарыдан сызу
-            //    if (sw.Dir_Id == SwitchDirection.Reverse)
-            //    {
-            //        var temp = ostryak;
-            //        ostryak = end;
-            //        end = temp;
-            //        txtX = -1 * txtX;
-            //    }
-
-            //    string center = (kilometer.Rep_type_cni == true ? "754" : MMToPixelChartString(xGrid[0] + 0.75f)).Replace(",", ".") + "," + -(ostryak) + " " +
-            //                    (kilometer.Rep_type_cni == true ? "754" : MMToPixelChartString(xGrid[0] + 0.75f)).Replace(",", ".") + "," + -(end) + " ";
-
-            //    int y = ostryak;
+            foreach (var sw in switchesnone)
+            {
+                if (sw.Start_Km != kilometer.Number && sw.Final_Km != kilometer.Number)
+                    continue;
+                if (kilometer.Number.ToDoubleCoordinate(Math.Max(kilometer.Start_m, kilometer.Final_m)) < Math.Max(sw.RealStartCoordinate, sw.RealFinalCoordinate))
+                    continue;
 
 
 
-            //    string notedefind = (kilometer.Rep_type_cni == true ? "763" : MMToPixelChartString(xGrid[0] - 1.5f)).Replace(",", ".") + "," + -(y - 2) + " " +
-            //                      (kilometer.Rep_type_cni == true ? "761" : MMToPixelChartString(xGrid[0] - 0.5f)).Replace(",", ".") + "," + -(y) + " " +
-            //                      (kilometer.Rep_type_cni == true ? "743.5" : MMToPixelChartString(xGrid[0] + 1.5f)).Replace(",", ".") + "," + -(y);
+                int ostryak = kilometer.Number == sw.Start_Km ? sw.Start_M : 0;
+                int end = kilometer.Number == sw.Final_Km ? sw.Final_M : kilometer.Final_m;
 
-            //    string points = null;
+                var txtX = -sw.Length / 2;
 
-            //    if (sw.Km == 709 && sw.Meter == 592)
-            //    {
+                //Стрелка жогарыдан сызу
+                if (sw.Dir_Id == SwitchDirection.Reverse)
+                {
+                    var temp = ostryak;
+                    ostryak = end;
+                    end = temp;
+                    txtX = -1 * txtX;
+                }
 
-            //    }
-            //    //Стрелка онга карап туру
+                string center = (kilometer.Rep_type_cni == true ? "754" : MMToPixelChartString(xGrid[0] + 0.75f)).Replace(",", ".") + "," + -(ostryak) + " " +
+                                (kilometer.Rep_type_cni == true ? "754" : MMToPixelChartString(xGrid[0] + 0.75f)).Replace(",", ".") + "," + -(end) + " ";
+
+                int y = ostryak;
 
 
 
-            //    if (sw.Side_Id == Side.NotDefined)
-            //    {
-            //        points = notedefind;
+                string notedefind = (kilometer.Rep_type_cni == true ? "763" : MMToPixelChartString(xGrid[0] - 1.5f)).Replace(",", ".") + "," + -(y - 2) + " " +
+                                  (kilometer.Rep_type_cni == true ? "761" : MMToPixelChartString(xGrid[0] - 0.5f)).Replace(",", ".") + "," + -(y) + " " +
+                                  (kilometer.Rep_type_cni == true ? "743.5" : MMToPixelChartString(xGrid[0] + 1.5f)).Replace(",", ".") + "," + -(y);
 
-            //    }
-            //    else
-            //        continue;
+                string points = null;
 
-            //    var stylenone = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.3;marker - end - url(#marker-arrow);marker - start - url(#marker-arrow)";
-            //    var style = "fill: none; stroke: blue; vector - effect:non - scaling - stroke; stroke - linejoin:round; stroke - width:0.5; marker - end - url(#marker-arrow)";
-            //    result.Add(new XElement("switchesnone",
-            //     new XAttribute("start", -(ostryak > end ? ostryak : end)),
-            //     new XAttribute("linex1", (sw.Side_Id == Side.Right ? 300 : 415) + 110),
-            //     new XAttribute("height", Math.Abs(ostryak - end)),
-            //     new XAttribute("xs", sw.Side_Id == Side.Right ? 300 : 415),
-            //     new XAttribute("end", -(ostryak < end ? ostryak : end)),
-            //     new XAttribute("points", points),
-            //     new XAttribute("center", center),
-            //     new XAttribute("num", sw.Num),
-            //     new XAttribute("y", -760),
-            //     new XAttribute("x", -(end - 1)),
-            //     new XAttribute("txtX", -(end + txtX))
-            //     ));
-            //}
+                if (sw.Km == 709 && sw.Meter == 592)
+                {
+
+                }
+                //Стрелка онга карап туру
+
+
+
+                if (sw.Side_Id == Side.NotDefined)
+                {
+                    points = notedefind;
+
+                }
+                else
+                    continue;
+
+                var stylenone = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.3;marker - end - url(#marker-arrow);marker - start - url(#marker-arrow)";
+                var style = "fill: none; stroke: blue; vector - effect:non - scaling - stroke; stroke - linejoin:round; stroke - width:0.5; marker - end - url(#marker-arrow)";
+                result.Add(new XElement("switchesnone",
+                 new XAttribute("start", -(ostryak > end ? ostryak : end)),
+                 new XAttribute("linex1", (sw.Side_Id == Side.Right ? 300 : 415) + 110),
+                 new XAttribute("height", Math.Abs(ostryak - end)),
+                 new XAttribute("xs", sw.Side_Id == Side.Right ? 300 : 415),
+                 new XAttribute("end", -(ostryak < end ? ostryak : end)),
+                 new XAttribute("points", points),
+                 new XAttribute("center", center),
+                 new XAttribute("num", sw.Num),
+                 new XAttribute("y", -760),
+                 new XAttribute("x", -(end - 1)),
+                 new XAttribute("txtX", -(end + txtX))
+                 ));
+            }
 
 
 
@@ -689,8 +995,17 @@ namespace ALARm.Core.Report
 
 
             //рисуем искуственные сооружения
+
             var artificialConstructions = MainTrackStructureRepository.GetMtoObjectsByCoord(travelDate, kilometer.Number,
                 MainTrackStructureConst.MtoArtificialConstruction, trackId) as List<ArtificialConstruction>;
+            if (kilometer.Number == 7305)
+            {
+
+            }
+            if (kilometer.Number == 7227)
+            {
+
+            }
             var artificialConstructionLines = new XElement("artcons");
             foreach (var artificialConstruction in artificialConstructions)
             {
@@ -798,9 +1113,12 @@ namespace ALARm.Core.Report
             ref int fourStepOgrCoun,
             ref int otherfourStepOgrCoun)
         {
-            
+            if (kilometer.Number == 5932)
+            {
+
+            }
             Digression = Digression.OrderBy(o => o.Meter).ToList();
-            for (int i=0; i< Digression.Count(); i++)
+            for (int i = 0; i < Digression.Count(); i++)
             {
                 if (Digression[i].Note().Contains("Уст.ск:"))
                 {
@@ -815,72 +1133,153 @@ namespace ALARm.Core.Report
                 var startDiagram = 0;
                 var finalDiagram = kilometer.Meters.Count;
 
-                if (Math.Max(kilometer.Start_m, kilometer.Final_m) < note.Meter)
+                if (Math.Max(kilometer.Start_m, kilometer.Final_m) < note.Meter && !note.Alert.Contains("Привязка"))
                 {
                     continue;
                 }
                 //-----------------------------------------------------
-
+                if (note.Alert.Contains("Привязка"))
+                {
+                }
                 try
                 {
 
-                    int meter = note.Meter.RoundTo10();
-                    if (!((meter >= Start.RoundTo10()) && (meter < Number * 100)))
-                        meter = Start + 30;
-                    if (kilometer.StationSection.Any())
-                        meter = Start + 20;
-                    if (meter <= Start.RoundTo10() + 10)
-                        meter += 10;
 
+
+
+
+                    //}
+                    int meter = note.Meter.RoundTo10();
+                    meter = Start + 10;
+                    if (note.Alert.Contains("Привязка"))
+                    {
+                        meter = note.Meter;
+                    }
+
+
+                    //if (meter > Number * 100)
+                    //    meter = (Start + 100) + 30;
+                    //if (kilometer.StationSection.Any())
+                    //    foreach (var st in kilometer.StationSection)
+                    //    {
+                    //        if (st.Start_M)
+                    //    }
+                    //    meter = (Start + 100) + 20;
+                    //if (meter <= Start.RoundTo10() + 10)
+                    //    meter += 10;
+
+                    usedTops.Sort();
                     if (usedTops.Contains(meter))
                         meter = usedTops.GetNextTop(Start, meter, Number);
+                    if (meter == -1)
+                        continue;
+                    if (note.DigName == "ОШК")
+                    {
+                        note.Value = (float)note.Value / 100;
+                    }
+
                     if (note.NotMoveAlert)
                     {
+
                         var speedline = new XElement("speedline",
+
+                             new XAttribute("y1", -(meter + 1)),
+                           new XAttribute("y2", -(meter - 8)),
+                            new XAttribute("y3", -(meter + 10)),
+                            new XAttribute("Meter", note.Meter),
+                            new XAttribute("points", $"188,-{ meter + 10} 195,-{ meter + 10} 195,-{note.Meter} 730,-{note.Meter}"),
+                            new XAttribute("note1", $"{note.Note().Split(';')[0] + "-" + note.Note().Split(';')[1]}"),
+                            new XAttribute("note2", ""));
+
+
+                        addParam.Add(speedline);
+
+                        //usedTops.Add(meter + 10);
+                        usedTops.Add(meter);
+
+                    }
+                    if (note.NotMoveAlertStation)
+                    {
+
+                        var station = new XElement("station",
+
+                            new XAttribute("y1", -(meter + 1)),
+                            new XAttribute("y2", -(meter - 8)),
+                            new XAttribute("y3", -(meter + 10)),
+                            new XAttribute("Meter", note.Meter),
+                            new XAttribute("points", $"188,-{ meter + 10} 220,-{ meter + 10} 220,-{note.Meter} 730,-{note.Meter}"),
+                            new XAttribute("note1", $"{note.Note().Split(';')[0]}{"/"}{note.Note().Split(';')[1]}"));
+                        //new XAttribute("note2", "")); ; ;
+
+
+                        addParam.Add(station);
+
+                        //usedTops.Add(meter + 10);
+                        usedTops.Add(meter);
+                    }
+                    if (note.Km == 5932)
+                    {
+                    }
+                    if (note.NotMoveAlertReparirprogect)
+                    {
+
+                        var rem = new XElement("rem",
+
+                            new XAttribute("y1", -(meter + 1)),
+                             new XAttribute("y2", -(meter - 8)),
+                            new XAttribute("y3", -(meter + 10)),
+                            new XAttribute("Meter", note.Meter),
+                            new XAttribute("points", $"220,-{ meter + 10} 220,-{ meter + 10} 220,-{note.Meter} 730,-{note.Meter}"),
+                            new XAttribute("note1", $"{note.Note().Split(';')[0] + note.Note().Split(';')[1]}"),
+                            new XAttribute("note2", ""));
+
+                        addParam.Add(rem);
+                        //usedTops.Add(meter + 10);
+                        usedTops.Add(meter);
+                    }
+
+                    if (note.Km == 5932 || note.Km == 5929)
+                    {
+
+                    }
+                    if (note.NotMoveAlertBinding)
+                    {
+
+                        var Binding = new XElement("binding",
+
                             new XAttribute("y1", -(meter + 10)),
                             new XAttribute("y2", -(meter)),
                             new XAttribute("y3", -(meter + 20)),
                             new XAttribute("Meter", note.Meter),
-                            new XAttribute("points", $"188,-{ meter + 10} 195,-{ meter + 10} 195,-{note.Meter} 730,-{note.Meter}"),
-                            new XAttribute("note1", $"{note.Note().Split(';')[0]}"),
-                            new XAttribute("note2", note.Note().Split(';')[1]));
+                            new XAttribute("points", $"190,-{ meter - 10} 230,-{ meter - 10} 220,-{meter} 730,-{note.Meter}"),
+                           new XAttribute("note1", $"{note.Note().Split(';')[0] + note.Note().Split(';')[1]}"),
+                           new XAttribute("note2", ""));
+                        //new XAttribute("note2", note.Note().Split(';')[1]));
 
-                        addParam.Add(speedline);
-                        usedTops.Add(meter + 10);
-                        usedTops.Add(meter);
+                        addParam.Add(Binding);
+
+                        // usedTops.Add(meter + 2);
                     }
-
-                    //if (note.DigName.Contains("гр"))
-                    //{
-
-
-                    //    digElements.Add(new XElement("ogrsk",
-                    //                                 new XAttribute("top", -meter),
-                    //                                 new XAttribute("x", 145),
-                    //                                 new XAttribute("note", note.primech),
-                    //                                new XAttribute("Meter", note.Meter),
-                    //                                 new XAttribute("fw", note.FontStyle())));
-
-                    //    usedTops.Add(meter);
-
-                    //    continue;
-                    //}
 
 
                     if (note.Note().Contains("Уст.ск:"))
                     {
+
                         speedmetres.Add(-meter);
                         addParam.Add(new XElement("speedline",
-                            new XAttribute("y1", -(meter + 10)),
-                            new XAttribute("y2", -(meter)),
-                                                    new XAttribute("Meter", note.Meter),
-                            new XAttribute("y3", -(meter + 20)),
+
+                           new XAttribute("y1", -(meter + 1)),
+                           new XAttribute("y2", -(meter - 8)),
+                            new XAttribute("y3", -(meter + 10)),
+                              new XAttribute("Meter", note.Meter),
                             new XAttribute("points", $"188,-{ meter + 10} 195,-{ meter + 10} 195,-{note.Meter} 730,-{note.Meter}"),
-                            new XAttribute("note1", $"{note.Meter} {note.Note().Split(' ')[1]}"),
-                            new XAttribute("note2", "       " + note.Note().Split(' ')[2])));
-                        usedTops.Add(meter.RoundTo10() + 20);
-                        usedTops.Add(meter.RoundTo10() + 10);
-                        usedTops.Add(meter.RoundTo10());
+                            new XAttribute("note1", $"{note.Meter} {"↑"}{note.Note().Split(' ')[1]}{"/"} {"↓"}{note.Note().Split(' ')[2]}")));
+                        //new XAttribute("note2", "")));
+                        //+note.Note().Split(' ')[2])
+
+                        //usedTops.Add(meter.RoundTo10() + 20);
+                        // usedTops.Add(meter.RoundTo10() + 10);
+                        usedTops.Add(meter);
                         continue;
 
                     }
@@ -889,7 +1288,7 @@ namespace ALARm.Core.Report
                         digElements.Add(new XElement("rect",
                                                     new XAttribute("top", -meter - 9),
                                                     new XAttribute("Meter", note.Meter),
-                                                    new XAttribute("x", 0)));
+                                                    new XAttribute("x", -2)));
 
                         digElements.Add(new XElement("R",
                                                      new XAttribute("top", -meter),
@@ -916,7 +1315,7 @@ namespace ALARm.Core.Report
                                                      new XAttribute("fw", note.FontStyle())));
 
                         usedTops.Add(meter);
-                        //  usedTops.Add(meter);
+                        //usedTops.Add(meter + 10);
                         continue;
                     }
                     //if (note.Note().Contains("Паспортная кривая"))
@@ -944,16 +1343,16 @@ namespace ALARm.Core.Report
 
                         if (data.Any())
                         {
-                            addParam.Add(new XElement("speedline",
-                                new XAttribute("y1", -(meter + 10)),
-                                new XAttribute("y2", -(meter)),
-                                                    new XAttribute("Meter", note.Meter),
-                                new XAttribute("y3", -(meter + 20)),
-                                new XAttribute("note1", $"{note.Meter} {data[0]}"),
-                                new XAttribute("note2", (!note.Note().Contains("смещения") ? "       " : "") + data[1]),
-                                new XAttribute("fw", note.Note().Contains("смещения") ? "bold" : "normal")));
+                            addParam.Add(new XElement("AlertKU",
+                                new XAttribute("y1", -(meter + 1)),
+                                new XAttribute("y2", -(meter - 8)),
+                                new XAttribute("y3", -(meter + 10)),
+                                new XAttribute("Meter", note.Meter),
+                                new XAttribute("note1", $"{note.Meter} {data[0]}{(!note.Note().Contains("смещ.") ? "       " : "") + data[1]}"),
+                                //new XAttribute("note2", ),
+                                new XAttribute("fw", note.Note().Contains("смещ.") ? "bold" : "normal")));
 
-                            usedTops.Add(meter.RoundTo10() + 10);
+                            //usedTops.Add(meter.RoundTo10() + 10);
                             usedTops.Add(meter.RoundTo10());
                         }
                         continue;
@@ -963,7 +1362,7 @@ namespace ALARm.Core.Report
                         digElements.Add(new XElement("rect",
                                                     new XAttribute("top", -meter - 9),
                                                     new XAttribute("Meter", note.Meter),
-                                                    new XAttribute("x", 0)));
+                                                    new XAttribute("x", -2)));
 
                         digElements.Add(new XElement("R",
                                                      new XAttribute("top", -meter),
@@ -1076,64 +1475,125 @@ namespace ALARm.Core.Report
                         if ((note.DigName.Contains("Пси") || note.DigName.Contains("?Пси")) && note.LimitSpeedToString() == "-/-")
                             continue;
 
-                        //if(note.DigName.Contains("Укл") || note.DigName.Contains("?Укл") || note.DigName.Contains("Пси") || note.DigName.Contains("?Пси") || note.DigName.Contains("Анп") || note.DigName.Contains("?Анп") )
-                        //{
-                        //    note.Value = (float)(note.Value / 100.0);
-                        //}
+                        if (note.DigName.Contains("Укл") || note.DigName.Contains("?Укл") || note.DigName.Contains("Пси") || note.DigName.Contains("?Пси") || note.DigName.Contains("Анп") || note.DigName.Contains("?Анп"))
+                        {
+                            note.Value = (float)(note.Value / 100.0);
+                        }
 
                         var primech2 = note.Comment.Any() ? note.Comment : "";
                         var primech3 = GetMarkByNoteType("Анп");
-                        digElements.Add(new XElement("m",
-                                            new XAttribute("top", -(meter + 10)),
-                                            new XAttribute("x", 1),
-                                            new XAttribute("note", note.Meter),
-                                                    new XAttribute("Meter", note.Meter),
-                                            new XAttribute("fw", note.FontStyle())));
+                        if (note.DigName.Contains("Укл") || note.DigName.Contains("?Укл"))
+                        {
+                            
+                            digElements.Add(new XElement("m",
+                                           new XAttribute("top", -(meter + 1 * 0)),
+                                           new XAttribute("x", 1),
+                                           new XAttribute("note", note.Meter),
+                                                   new XAttribute("Meter", note.Meter),
+                                           new XAttribute("fw", note.FontStyle())));
 
-                        digElements.Add(new XElement("otst",
-                                            new XAttribute("top", -(meter + 10)),
-                                            new XAttribute("x", 23),
-                                            new XAttribute("note", note.DigName),
-                                                    new XAttribute("Meter", note.Meter),
-                                            new XAttribute("fw", note.FontStyle())));
-                        digElements.Add(new XElement("otst",
-                                          new XAttribute("top", -(meter + 10)),
-                                          new XAttribute("x", 220),
-                                          new XAttribute("note", primech3),
+                            digElements.Add(new XElement("otst",
+                                                new XAttribute("top", -(meter + 1 * 0)),
+                                                new XAttribute("x", 23),
+                                                new XAttribute("note", note.DigName),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
+                            digElements.Add(new XElement("otst",
+                                              new XAttribute("top", -(meter + 1 * 0)),
+                                              new XAttribute("x", 220),
+                                              new XAttribute("note", primech3),
+                                                      new XAttribute("Meter", note.Meter),
+                                              new XAttribute("fw", note.FontStyle())));
+
+                            digElements.Add(new XElement("otst",
+                                             new XAttribute("top", -(meter + 1 * 0)),
+                                             new XAttribute("x", 60),
+                                             new XAttribute("note", primech2),
+                                                     new XAttribute("Meter", note.Meter),
+                                             new XAttribute("fw", note.FontStyle())));
+
+                            digElements.Add(new XElement("len",
+                                                new XAttribute("top", -(meter + 1 * 0)),
+                                                new XAttribute("x", 102),
+                                                new XAttribute("note", (note.DigName.Contains("Пси") || note.DigName.Contains("?Пси") ? "" : note.Value.ToString())),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
+
+                            digElements.Add(new XElement("ogrsk",
+                                                new XAttribute("top", -(meter + 2 * 0)),
+                                                //new XAttribute("x", 145),
+                                                new XAttribute("x", 170),
+                                                new XAttribute("note", DigressionName.SpeedUpNear == note.Digression ? "" : note.LimitSpeedToString()),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
+
+
+
+                            if ((note.LimitSpeedToString() != "-/-") && (note.LimitSpeedToString() != "") || note.DigName.Contains("гр"))
+                            {
+                                otherfourStepOgrCoun += 1;
+                            }
+
+                            usedTops.Add(meter);
+                            continue;
+
+                        }
+                        else 
+                        {
+                            digElements.Add(new XElement("m",
+                                          new XAttribute("top", -(meter + 1 * 0)),
+                                          new XAttribute("x", 1),
+                                          new XAttribute("note", note.Meter),
                                                   new XAttribute("Meter", note.Meter),
                                           new XAttribute("fw", note.FontStyle())));
 
-                        digElements.Add(new XElement("otst",
-                                         new XAttribute("top", -(meter + 10)),
-                                         new XAttribute("x", 60),
-                                         new XAttribute("note", primech2),
-                                                 new XAttribute("Meter", note.Meter),
-                                         new XAttribute("fw", note.FontStyle())));
+                            digElements.Add(new XElement("otst",
+                                                new XAttribute("top", -(meter + 1 * 0)),
+                                                new XAttribute("x", 23),
+                                                new XAttribute("note", note.DigName),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
+                            digElements.Add(new XElement("otst",
+                                              new XAttribute("top", -(meter + 1 * 0)),
+                                              new XAttribute("x", 220),
+                                              new XAttribute("note", primech3),
+                                                      new XAttribute("Meter", note.Meter),
+                                              new XAttribute("fw", note.FontStyle())));
 
-                        digElements.Add(new XElement("len",
-                                            new XAttribute("top", -(meter + 10)),
-                                            new XAttribute("x", 102),
-                                            new XAttribute("note", (note.DigName.Contains("Пси") || note.DigName.Contains("?Пси") ? "" : note.Length.ToString())),
-                                                    new XAttribute("Meter", note.Meter),
-                                            new XAttribute("fw", note.FontStyle())));
+                            digElements.Add(new XElement("otst",
+                                             new XAttribute("top", -(meter + 1 * 0)),
+                                             new XAttribute("x", 60),
+                                             new XAttribute("note", primech2),
+                                                     new XAttribute("Meter", note.Meter),
+                                             new XAttribute("fw", note.FontStyle())));
 
-                        digElements.Add(new XElement("ogrsk",
-                                            new XAttribute("top", -(meter + 10)),
-                                            //new XAttribute("x", 145),
-                                            new XAttribute("x", 170),
-                                            new XAttribute("note", DigressionName.SpeedUpNear == note.Digression ? "" : note.LimitSpeedToString()),
-                                                    new XAttribute("Meter", note.Meter),
-                                            new XAttribute("fw", note.FontStyle())));
+                            digElements.Add(new XElement("len",
+                                                new XAttribute("top", -(meter + 1 * 0)),
+                                                new XAttribute("x", 102),
+                                                new XAttribute("note", (note.DigName.Contains("Пси") || note.DigName.Contains("?Пси") ? "" : note.Length.ToString())),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
+
+                            digElements.Add(new XElement("ogrsk",
+                                                new XAttribute("top", -(meter + 2 * 0)),
+                                                //new XAttribute("x", 145),
+                                                new XAttribute("x", 170),
+                                                new XAttribute("note", DigressionName.SpeedUpNear == note.Digression ? "" : note.LimitSpeedToString()),
+                                                        new XAttribute("Meter", note.Meter),
+                                                new XAttribute("fw", note.FontStyle())));
 
 
 
-                        if ((note.LimitSpeedToString() != "-/-") && (note.LimitSpeedToString() != "") || note.DigName.Contains("гр"))
-                        {
-                            otherfourStepOgrCoun += 1;
+                            if ((note.LimitSpeedToString() != "-/-") && (note.LimitSpeedToString() != "") || note.DigName.Contains("гр"))
+                            {
+                                otherfourStepOgrCoun += 1;
+                            }
+
+                            usedTops.Add(meter);
+                            continue;
+
                         }
-
-                        usedTops.Add(meter+10);
-                        continue;
+                      
                     }
 
 
@@ -1222,12 +1682,12 @@ namespace ALARm.Core.Report
                         {
                             switch (note.Digression.Name)
                             {
-                               // слепой стык 
+                                // слепой стык 
                                 case string name when name == DigressionName.TreadTiltRight.Name:
                                     markPosition = 605.7f;
                                     isMarkNote = false;
                                     break;
-                            //нпк
+                                //нпк
                                 case string name when name == DigressionName.TreadTiltRight.Name:
                                     markPosition = 605.7f;
                                     isMarkNote = false;
@@ -1462,6 +1922,7 @@ namespace ALARm.Core.Report
                                         new XAttribute("y2", -(defCoord + dlength)),
                                         new XAttribute("x", mainParameters.MMToPixelChartString(markPosition)),
                                         new XAttribute("w", mainParameters.MMToPixelChartWidthString(note.Degree == 4 ? 4 : note.Degree == 3 ? 2 : 1))
+
                                 ));
                             }
                         }
@@ -1479,12 +1940,14 @@ namespace ALARm.Core.Report
                                     {
                                         //test
                                     }
-                                    digElements.Add(new XElement("line",
-                                                    new XAttribute("y1", -note.Meter),
-                                                    new XAttribute("y2", -note.finish_meter),
-                                                    new XAttribute("x", note.Diagram_type == "GD_PR" || note.Diagram_type == "KN-1" || note.Diagram_type == "Iznos_relsov" ? markPosition.ToString() : mainParameters.MMToPixelChartString(markPosition).ToString()),
-                                                    new XAttribute("w", mainParameters.MMToPixelChartWidthString(note.Degree == 4 ? 4 : note.Degree == 3 ? 2 : 1))
-                                                ));
+                                digElements.Add(new XElement("line",
+                                                new XAttribute("y1", -note.Meter),
+                                                new XAttribute("y2", -note.Meter - 1),
+                                                //new XAttribute("y2", -note.finish_meter),//-note.finish_meter
+                                                //new XAttribute("y2", note.Diagram_type == "GD_PR" || note.Diagram_type == "KN-1" || note.Diagram_type == "Iznos_relsov" ? mainParameters.MMToPixelChartString(-note.finish_meter).ToString() : mainParameters.MMToPixelChartString(-note.Meter).ToString()),
+                                                new XAttribute("x", note.Diagram_type == "GD_PR" || note.Diagram_type == "KN-1" || note.Diagram_type == "Iznos_relsov" ? markPosition.ToString() : mainParameters.MMToPixelChartString(markPosition).ToString()),
+                                                new XAttribute("w", mainParameters.MMToPixelChartWidthString(note.Degree == 4 ? 4 : note.Degree == 3 ? 2 : 1))
+                                            ));
                             }
                         }
                     }
@@ -1499,7 +1962,7 @@ namespace ALARm.Core.Report
                     //    if (note.Degree > 0 )
                     //    {
                     //    note.Km = note.Km;
-                        
+
                     //}
                     if ((note.LimitSpeedToString() != "-/-") && (note.LimitSpeedToString() != ""))
                     {
@@ -1658,7 +2121,7 @@ namespace ALARm.Core.Report
                             ));
                         digElements.Add(new XElement("step",
                                              new XAttribute("top", -meter),
-                                             new XAttribute("x", 60),
+                                             new XAttribute("x", 60),//60
                                              new XAttribute("fw", note.Is2to3 || note.IsEqualTo3 ? "bold" : note.FontStyle()),
                                                     new XAttribute("Meter", note.Meter),
                                              new XAttribute("note", note.DigName == DigressionName.PatternRetraction.Name ? "" : (note.Degree + ""))
@@ -1723,7 +2186,7 @@ namespace ALARm.Core.Report
                         digElements.Add(new XElement("islong",
                                                      new XAttribute("top", -meter),
                                                      //new XAttribute("x", 540),
-                                                     new XAttribute("x", 145),//выравниваем "Гр,ис,м,*" в одну линнию
+                                                     new XAttribute("x", 150),//выравниваем "Гр,ис,м,*" в одну линнию
                                                      new XAttribute("note", note.IsLong ? "*" : "")
 
                                                      ));

@@ -56,7 +56,6 @@ namespace AlarmPP.Web.Components.Diagram
         {
             if (args.Buttons == 1)
             {
-
                 MousePressed = true;
                 object[] paramss = new object[] { "" };
                 ScrollTop = Math.Round(await JSRuntime.InvokeAsync<double>("ScrollHeadSvg", paramss));
@@ -141,6 +140,7 @@ namespace AlarmPP.Web.Components.Diagram
                     int length = 0;
                     foreach (var kilometer in AppData.Kilometers)
                     {
+       
                         length += kilometer.GetLength();
                         if (AppData.Meter < length)
                         {
@@ -173,8 +173,9 @@ namespace AlarmPP.Web.Components.Diagram
                                     List<double> prevStrightAvgPart = new List<double>();
                                     List<double> nextStrightAvgPart = new List<double>();
 
-                                    int n = 400;
-                                    int prevN = 400;
+                                                                                                                  
+                                    int n = 500;
+                                   int prevN = 500;
                                     if (prevIndex > 0)
                                     {
                                         n = AppData.Kilometers[prevIndex - 1].LevelAvg.Count > prevN ? prevN : AppData.Kilometers[prevIndex - 1].LevelAvg.Count;
@@ -204,7 +205,13 @@ namespace AlarmPP.Web.Components.Diagram
 
                                                 Kilometer prevKm = null;
                                                 Kilometer next = null;
-                                                mainParameters.Process(template, AppData.Kilometers[prevIndex], AppData.Trip, OnlineModeData.AutoPrint, prevKm, next);
+                                                try
+                                                {
+                                                    mainParameters.Process(template, AppData.Kilometers[prevIndex], AppData.Trip, OnlineModeData.AutoPrint, prevKm, next);
+                                               } catch (Exception e)
+                                                {
+                                                    System.Console.WriteLine("Index out of range 2 " + e.Message);
+                                                }
 
                                                 //RdStructureRepository.SendEkasuiData(AppData.Trip, AppData.Kilometers[prevIndex].Number);
 
@@ -220,13 +227,13 @@ namespace AlarmPP.Web.Components.Diagram
                                                     {
                                                         if (!AppData.Kilometers[prevIndex].Crashed)
                                                         {
-                                                            dangers.Append($@"{ dangerous.DigName } 4 степени (знач.: {dangerous.Value}) на {dangerous.Km} км {dangerous.Meter} метре. Ограничение скорости: {dangerous.LimitSpeed}" + Environment.NewLine);
+                                                          //  dangers.Append($@"{ dangerous.DigName } 4 степени (знач.: {dangerous.Value}) на {dangerous.Km} км {dangerous.Meter} метре. Ограничение скорости: {dangerous.LimitSpeed}" + Environment.NewLine);
                                                         }
                                                     }
                                                     if (dangers.Length != 0)
                                                     {
-                                                        Toaster.Add(dangers.ToString(), MatToastType.Danger, "Внимание!!!", "");
-                                                        await JSRuntime.InvokeVoidAsync("beep", paramss);
+                                                     //   Toaster.Add(dangers.ToString(), MatToastType.Danger, "Внимание!!!", "");
+                                                    //    await JSRuntime.InvokeVoidAsync("beep", paramss);
                                                     }
                                                     dangers = null;
                                                 }
@@ -244,97 +251,109 @@ namespace AlarmPP.Web.Components.Diagram
                                     }
                                 }
                             }
-                            if (outdata.correction != 0)
-                            {
-                                if ((OnlineModeData.Corrections.Count < 1) || ((Math.Abs(OnlineModeData.Corrections.Last() - AppData.Meter) > 50) && (AppData.Meter > OnlineModeData.Corrections.Last())))
+
+                           
+                                if (outdata.correction != 0)
                                 {
-                                    OnlineModeData.Corrections.Add(AppData.Meter);
-                                    var kmforchange = AppData.Kilometers.IndexOf(kilometer) > 0 ? AppData.Kilometers[AppData.Kilometers.IndexOf(kilometer) - 1] : kilometer;
-                                    //если первая прибивка
-                                    if ((AppData.Kilometers.IndexOf(kilometer) < 2) && (OnlineModeData.Corrections.Count == 1))
+                                try
+                                {
+                                    if ((OnlineModeData.Corrections.Count < 1) || ((Math.Abs(OnlineModeData.Corrections.Last() - AppData.Meter) > 50) && (AppData.Meter > OnlineModeData.Corrections.Last())))
                                     {
-                                        //если два разных путей на одном километре
-                                        if ((kmforchange != kilometer) && (kilometer.Number == kmforchange.Number))
+                                        OnlineModeData.Corrections.Add(AppData.Meter);
+                                        var kmforchange = AppData.Kilometers.IndexOf(kilometer) > 0 ? AppData.Kilometers[AppData.Kilometers.IndexOf(kilometer) - 1] : kilometer;
+                                        //если первая прибивка
+                                        if ((AppData.Kilometers.IndexOf(kilometer) < 2) && (OnlineModeData.Corrections.Count == 1))
                                         {
-                                            if (kmforchange.Direction == Direction.Reverse)
+                                            //если два разных путей на одном километре
+                                            if ((kmforchange != kilometer) && (kilometer.Number == kmforchange.Number))
                                             {
-                                                kmforchange.Final_m -= (kilometer.GetLength() - kilometer.Meter);
+                                                if (kmforchange.Direction == Direction.Reverse)
+                                                {
+                                                    kmforchange.Final_m -= (kilometer.GetLength() - kilometer.Meter);
+                                                }
+                                                else
+                                                {
+                                                    kmforchange.Start_m += (kilometer.GetLength() - kilometer.Meter);
+                                                }
+                                                AppData.Meter = AppData.Meter - (kilometer.GetLength() - kilometer.Meter);
+                                                kilometer.CorrectionValue = -(kilometer.GetLength() - kilometer.Meter);
+                                                kilometer.CorrectionMeter = kilometer.Meter;
+                                                kilometer.CorrectionType = (CorrectionType)outdata.correction;
+                                                Toaster.Add($"Коррекция на: {kilometer.GetLength() - kilometer.Meter} м.   ", MatToastType.Info, "Поездка в режиме онлайн");
+                                                kmforchange.Clear(null, kilometer.GetLength() - kilometer.Meter);
+                                                kilometer.Clear();
+                                                break;
                                             }
                                             else
+                                            if (kmforchange != kilometer)
                                             {
-                                                kmforchange.Start_m += (kilometer.GetLength() - kilometer.Meter);
+
+                                                if (kilometer.RealMeterInOnline < 500)
+                                                {
+                                                    if (kmforchange.Direction == Direction.Direct)
+                                                        kmforchange.Start_m -= kilometer.Meter;
+                                                    else
+                                                        kmforchange.Final_m += kilometer.RealMeterInOnline;
+                                                    kilometer.Clear(kmforchange);
+                                                    kilometer.CorrectionValue = kilometer.Meter;
+                                                    Toaster.Add($"Коррекция на: {kilometer.CorrectionValue} м.", MatToastType.Info, "Поездка в режиме онлайн");
+                                                    kilometer.CorrectionMeter = kilometer.Meter;
+                                                    kilometer.CorrectionType = (CorrectionType)outdata.correction;
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    kilometer.Final_m = kilometer.RealMeterInOnline;
+                                                    kilometer.CorrectionValue = -(kilometer.GetLength() - kilometer.Meter);
+                                                    Toaster.Add($"Коррекция на: {kilometer.CorrectionValue} м.", MatToastType.Info, "Поездка в режиме онлайн");
+                                                    kilometer.CorrectionMeter = kilometer.Meter;
+                                                    kilometer.CorrectionType = (CorrectionType)outdata.correction;
+                                                }
                                             }
-                                            AppData.Meter = AppData.Meter - (kilometer.GetLength() - kilometer.Meter);
-                                            kilometer.CorrectionValue = -(kilometer.GetLength() - kilometer.Meter);
-                                            kilometer.CorrectionMeter = kilometer.Meter;
-                                            kilometer.CorrectionType = (CorrectionType)outdata.correction;
-                                            Toaster.Add($"Коррекция на: {kilometer.GetLength() - kilometer.Meter} м.   ", MatToastType.Info, "Поездка в режиме онлайн");
-                                            kmforchange.Clear(null, kilometer.GetLength() - kilometer.Meter);
-                                            kilometer.Clear();
-                                            break;
                                         }
+                                        //если последующая прибивка
                                         else
-                                        if (kmforchange != kilometer)
                                         {
 
                                             if (kilometer.RealMeterInOnline < 500)
                                             {
-                                                if (kmforchange.Direction == Direction.Direct)
-                                                    kmforchange.Start_m -= kilometer.Meter;
-                                                else
-                                                    kmforchange.Final_m += kilometer.RealMeterInOnline;
-                                                kilometer.Clear(kmforchange);
+                                                kmforchange.Final_m += kilometer.RealMeterInOnline;
+                                                AppData.Meter = AppData.Meter - kilometer.Meter;
                                                 kilometer.CorrectionValue = kilometer.Meter;
-                                                Toaster.Add($"Коррекция на: {kilometer.CorrectionValue} м.", MatToastType.Info, "Поездка в режиме онлайн");
                                                 kilometer.CorrectionMeter = kilometer.Meter;
+                                                Toaster.Add($"{kilometer.Number} Коррекция на: {kilometer.CorrectionValue} м. ", MatToastType.Info, "Поездка в режиме онлайн");
                                                 kilometer.CorrectionType = (CorrectionType)outdata.correction;
-                                                break;
+                                                kilometer.Clear(kmforchange);
                                             }
                                             else
                                             {
+                                                int prevLength = kilometer.GetLength();
                                                 kilometer.Final_m = kilometer.RealMeterInOnline;
-                                                kilometer.CorrectionValue = -(kilometer.GetLength() - kilometer.Meter);
-                                                Toaster.Add($"Коррекция на: {kilometer.CorrectionValue} м.", MatToastType.Info, "Поездка в режиме онлайн");
+                                                kilometer.CorrectionValue = -(prevLength - kilometer.GetLength());
+                                                Toaster.Add($"{kilometer.Number} км коррекция на:   {kilometer.CorrectionValue} ", MatToastType.Info, "Поездка в режиме онлайн");
                                                 kilometer.CorrectionMeter = kilometer.Meter;
                                                 kilometer.CorrectionType = (CorrectionType)outdata.correction;
                                             }
                                         }
                                     }
-                                    //если последующая прибивка
-                                    else
-                                    {
 
-                                        if (kilometer.RealMeterInOnline < 500)
-                                        {
-                                            kmforchange.Final_m += kilometer.RealMeterInOnline;
-                                            AppData.Meter = AppData.Meter - kilometer.Meter;
-                                            kilometer.CorrectionValue = kilometer.Meter;
-                                            kilometer.CorrectionMeter = kilometer.Meter;
-                                            Toaster.Add($"{kilometer.Number} Коррекция на: {kilometer.CorrectionValue} м. ", MatToastType.Info, "Поездка в режиме онлайн");
-                                            kilometer.CorrectionType = (CorrectionType)outdata.correction;
-                                            kilometer.Clear(kmforchange);
-                                        }
-                                        else
-                                        {
-                                            int prevLength = kilometer.GetLength();
-                                            kilometer.Final_m = kilometer.RealMeterInOnline;
-                                            kilometer.CorrectionValue = -(prevLength - kilometer.GetLength());
-                                            Toaster.Add($"{kilometer.Number} км коррекция на:   {kilometer.CorrectionValue} ", MatToastType.Info, "Поездка в режиме онлайн");
-                                            kilometer.CorrectionMeter = kilometer.Meter;
-                                            kilometer.CorrectionType = (CorrectionType)outdata.correction;
-                                        }
-                                    }
                                 }
-                                outdata.correction = 0;
-                            }
-                            if (Math.Abs(OnlineModeData.GlobalMeter - outdata._meters) != 1)
+                            catch (Exception e)
                             {
-                                //AppData.Meter = GetCurrentCoordinate(AppData.Kilometers, outdata.km, outdata.meter);
-                            }
-                            //AppData.Meter = GetCurrentCoordinate(AppData.Kilometers, outdata.km, outdata.meter);
-                            //System.Console.WriteLine($"{AppData.Meter}-{OnlineModeData.GlobalMeter}");
-                            OnlineModeData.GlobalMeter = outdata._meters;
 
+                                Console.WriteLine("WRITE ERROR Pribivka " + e.Message);
+                            }
+                            outdata.correction = 0;
+                                }
+                                if (Math.Abs(OnlineModeData.GlobalMeter - outdata._meters) != 1)
+                                {
+                                    //AppData.Meter = GetCurrentCoordinate(AppData.Kilometers, outdata.km, outdata.meter);
+                                }
+
+                                //AppData.Meter = GetCurrentCoordinate(AppData.Kilometers, outdata.km, outdata.meter);
+                                //System.Console.WriteLine($"{AppData.Meter}-{OnlineModeData.GlobalMeter}");
+                                OnlineModeData.GlobalMeter = outdata._meters;
+                           
 
                             int currentMetre = kilometer.Direction == Direction.Direct ? (AppData.Meter - (length - kilometer.GetLength()) + kilometer.Start_m) : kilometer.Final_m - (AppData.Meter - (length - kilometer.GetLength()));
                             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
@@ -489,7 +508,7 @@ namespace AlarmPP.Web.Components.Diagram
                                                             //OnlineModeData.CalibrConstLeft = 0; // Уакытша
                                                             //OnlineModeData.CalibrConstRight = 0; // Уакытша
                 OnlineModeData.NominalRailScheme = OnlineModeData.GetNominalRailScheme(Rails.r50);
-                digressionTable.Refresh();
+                if (digressionTable != null) {                digressionTable.Refresh();              }
             }
             catch (Exception e)
             {
@@ -539,8 +558,10 @@ namespace AlarmPP.Web.Components.Diagram
                 List<double> prevStrightAvgPart = new List<double>();
                 List<double> nextStrightAvgPart = new List<double>();
 
-                int n = 200;
-                int prevN = 200;
+               // int n = 200;
+               // int prevN = 200;
+                int n = 500;
+                int prevN = 00;
                 if (prevIndex > 0)
                 {
                     n = AppData.Kilometers[prevIndex - 1].LevelAvg.Count > prevN ? prevN : AppData.Kilometers[prevIndex - 1].LevelAvg.Count;
@@ -652,16 +673,20 @@ namespace AlarmPP.Web.Components.Diagram
             var nextLevelAvgPart = new List<double>();
             var prevStrightAvgPart = new List<double>();
             var nextStrightAvgPart = new List<double>();
-            int n = 200;
+           // int n = 200;
+            //int prevN = 200;
+            int n = 500;
+            int prevN = 500;
             //int n = 200;
             int prevIndex = AppData.Kilometers.IndexOf(AppData.CurrentKilometer);
 
-            int prevN = 200;
-            //int prevN = 200;
+          
+
+            //int prevN = 200; 
             if (prevIndex > 0)
             {
                 n = AppData.Kilometers[prevIndex - 1].LevelAvg.Count > prevN ? prevN : AppData.Kilometers[prevIndex - 1].LevelAvg.Count;
-                prevLevelAvgPart = AppData.Kilometers[prevIndex - 1].LevelAvg.GetRange(AppData.Kilometers[prevIndex - 1].LevelAvg.Count - n - 1, n);
+                prevLevelAvgPart =AppData.Kilometers[prevIndex - 1].LevelAvg.GetRange(AppData.Kilometers[prevIndex - 1].LevelAvg.Count - n - 1, n);
                 prevStrightAvgPart = AppData.Kilometers[prevIndex - 1].StrightAvg.GetRange(AppData.Kilometers[prevIndex - 1].StrightAvg.Count - n - 1, n);
 
             }

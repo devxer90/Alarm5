@@ -12,7 +12,10 @@ namespace ALARm.Core
         public string Period => CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(PeriodMonth) + ' ' + PeriodYear.ToString();
         public string PeriodMonthMonth => CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(PeriodMonth);
         public DateTime StartDate => new DateTime(PeriodYear, PeriodMonth, 1);
-        public DateTime FinishDate => StartDate.AddMonths(1).AddDays(-1);
+        public DateTime FinishDate => new DateTime(PeriodYear, PeriodMonth, DateTime.DaysInMonth(PeriodYear, PeriodMonth));
+
+        //public DateTime FinishDate => StartDate.AddMonths(1);
+        //public DateTime FinishDate => StartDate.AddDays(+30);
         public override string ToString()
         {
             return $"{(PeriodMonth < 10 ? "0":"")}{PeriodMonth}-{PeriodYear}";

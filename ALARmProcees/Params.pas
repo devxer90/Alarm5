@@ -487,7 +487,7 @@ procedure SabLog(NamePnt: string);
 
                     FlagKrv: ConFlagsKrv; // flag dlia krv uch
                     InfKvUch, kv, kv_natur: MFeatKrv;
-                    kkk, U_IND, U_LNG, U_KMTRUE, N_PCHU, N_PD, N_PDB,
+                    kkk, U_IND,U_I1,U_I2, U_LNG, U_KMTRUE, N_PCHU, N_PD, N_PDB,
                       CountInLog, VarKm, VarI: integer;
                     Flog: TEXTFILE;
                     Urb_min_km: real;

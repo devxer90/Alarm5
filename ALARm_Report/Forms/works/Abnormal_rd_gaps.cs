@@ -59,17 +59,18 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (!kilometers.Any()) continue;
 
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
 
                         trip.Track_Id = track_id;
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
 
-                      
-                       
+
+
 
 
                         ////Выбор километров по проезду-----------------
@@ -77,7 +78,7 @@ namespace ALARm_Report.Forms
                         var filters = new List<Filter>();
 
 
-           
+
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
 
@@ -101,8 +102,8 @@ namespace ALARm_Report.Forms
                         XElement tripElem = new XElement("trip",
                             new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
                             new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
-                            new XAttribute("direction", curvesAdmUnit.Direction),
-                           
+                            new XAttribute("direction", tripProcess.DirectionName),
+
                             new XAttribute("check", tripProcess.GetProcessTypeName),
                             new XAttribute("track", trackName),
                             new XAttribute("road", road),
@@ -143,7 +144,7 @@ namespace ALARm_Report.Forms
                             //данные стыка
                             var gaps = new List<Digression> { };
 
-                            foreach (var gap in check_gap_state.Where(o =>  o.Km == km.Number).ToList())
+                            foreach (var gap in check_gap_state.Where(o => o.Km == km.Number).ToList())
                             {
                                 gap.PassSpeed = speed.Count > 0 ? speed[0].Passenger : -1;
                                 gap.FreightSpeed = speed.Count > 0 ? speed[0].Freight : -1;
@@ -208,7 +209,7 @@ namespace ALARm_Report.Forms
                                 gap.FreightSpeed = speed.Count > 0 ? speed[0].Freight : -1;
                                 var dig = gap.GetDigressions();
                                 var dig2 = gap.GetDigressions2();
-                               
+
                                 if (gap.Zazor > 24)
                                 {
 
@@ -222,11 +223,11 @@ namespace ALARm_Report.Forms
                                         new XAttribute("Ots", gap.Threat == Threat.Left ? " Зазор правый" : "Зазор левый "),
                                         new XAttribute("velichina", gap.Zazor.ToString()),//ToDo temperature
                                         new XAttribute("temperature", temperature.Count != 0 ? temperature[0].Kupe.ToString() : " "),//ToDo temperature
-                                        new XAttribute("Vpz", speed.Count > 0? speed[0].Passenger.ToString() + "/" + speed[0].Freight.ToString() : "-/-"),
+                                        new XAttribute("Vpz", speed.Count > 0 ? speed[0].Passenger.ToString() + "/" + speed[0].Freight.ToString() : "-/-"),
                                         new XAttribute("VdopZazor", dig.AllowSpeed),
                                         //new XAttribute("VdopZazor",  dig.AllowSpeed.Equals("25/25") ? dig.AllowSpeed  : "-/-"),
 
-                                        new XAttribute("Primech","")
+                                        new XAttribute("Primech", "")
                                         );
                                     tripElem.Add(Notes);
                                 }
@@ -250,17 +251,17 @@ namespace ALARm_Report.Forms
                                         );
                                     tripElem.Add(Notes);
                                 }
-                                
+
                                 //if (dig2.R_DigName == DigressionName.Gap || dig.DigName == DigressionName.Gap || dig2.R_DigName == DigressionName.AnomalisticGap || dig.DigName == DigressionName.AnomalisticGap)
                                 //{
                                 //    lev.Add(Notes);
                                 //}
 
                             }
-                     
+
                         }
                         lev.Add(
-                   new XAttribute("total", boleeFirst+ boleeSecond+ boleeTherd+ boleeFourth),
+                   new XAttribute("total", boleeFirst + boleeSecond + boleeTherd + boleeFourth),
                    new XAttribute("boleeFirst", boleeFirst),
                    new XAttribute("boleeSecond", boleeSecond),
                    new XAttribute("boleeTherd", boleeTherd),

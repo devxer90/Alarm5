@@ -185,13 +185,13 @@ namespace ALARm_Report.Forms
                             XElement addParam = new XElement("addparam",
                            new XAttribute("top-title",
                                (direction != null ? $"{direction.Name} ({direction.Code})" : "Неизвестный") + " Путь: " +
-                               kilometer.Track_name + $" Класс: {(trackclasses.Any() ? trackclasses.First().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
+                               kilometer.Track_name + $" Класс: {(!trackclasses.Any() || trackclasses.First().Class_Id.ToString() == "6" ? "-" : trackclasses.First().Class_Id.ToString())} Км:" + kilometer.Number + " " +
                                (kilometer.PdbSection.Count > 0 ? $" ПЧ-{kilometer.PdbSection[0].Distance}" : " ПЧ-") + " Уст: " + " " +
                                (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")),
 
                                new XAttribute("right-title",
                                     copyright + ": " + "ПО " + softVersion + "  " +
-                                    systemName + ":" + trip.Car + "(" + trip.Chief.Trim() + ") (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].RoadAbbr : "НЕИЗВ") + ">" + "<" + kilometer.Passage_time.ToString("dd.MM.yyyy  HH:mm") + ">" +
+                                    systemName + ":" + trip.Car + "(" + trip.Chief.Trim() + ") (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].Road : "НЕИЗВ") + ">" + "<" + kilometer.Passage_time.ToString("dd.MM.yyyy  HH:mm") + ">" +
                                     "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(trip.Travel_Direction.ToString())) + ">" +
                                     "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(trip.Car_Position.ToString())) + ">" +
                                     "<" + trip.Trip_date.Month + "-" + trip.Trip_date.Year + " " + "контр. Проезд:" + trip.Trip_date.ToString("dd.MM.yyyy  HH:mm") + " " + diagramName + ">"
@@ -402,8 +402,9 @@ namespace ALARm_Report.Forms
                                 averageLevel += MMToPixelChartString(LevelAvgTrapezoid[index] * LevelKoef * (int)trip.Travel_Direction + LevelPosition) + "," + metre + " ";
                                 zeroLevel += MMToPixelChartString(kilometer.flvl0[index] * (int)trip.Travel_Direction * LevelKoef + LevelPosition) + "," + metre + " ";
                             }
-                            var style = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.3";
-                            var styleAverage = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.7; stroke-dasharray:0.7 0.6;";
+                             var style = "fill:none;stroke:black;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:1";
+                            var styleAverage = "fill:none;stroke:black;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:1; stroke-dasharray:0.7 0.6;";
+                            var styleAvg = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.5; stroke-dasharray:4 2;stroke:dodgerblue";
 
 
                             addParam.Add(new XElement("polyline", new XAttribute("points", drawdownRight), new XAttribute("style", style)));

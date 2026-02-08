@@ -409,7 +409,7 @@ namespace ALARm_Report.Forms
 
         public string cs = ALARm.DataAccess.Helper.ConnectionString();
 
-        //public string cs = "Host=localhost;Username=postgres;Password=alhafizu;Database=railway";
+        //public string cs = "Host=localhost;;Username=postgres;Password=alhafizu;Database=railway";
         public NpgsqlConnection conn { get; set; }
 
         //public string Vnutr__profil__koridor = @"C:\sntfi\ProfileProject\213_Vnutr__profil__koridor_2020_10_26_10_38_24.Profile_Calibr";

@@ -593,7 +593,11 @@ namespace ALARm_Report.Forms
 								{
 									kmTotal.MainParamPointSum += digression.GetPoint(km);
 									//ToDo - ағамен ақылдасу керек
-									kmTotal.CurvePointSum += digression.GetCurvePoint(km);
+									//if (kmTotal.CurvePointSum == 0)
+								//	{
+										
+										kmTotal.CurvePointSum += digression.GetCurvePoint(km);
+								//	}
 								}
 
 								//Износ баллы

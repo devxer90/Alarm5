@@ -14,7 +14,9 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace ALARm.WebApi.Controllers{
+
+namespace ALARm.WebApi.Controllers
+{
 
 
     [ApiController]
@@ -23,8 +25,9 @@ namespace ALARm.WebApi.Controllers{
     {
         private readonly ILogger<ImageApiController> _logger;
         private readonly IAdditionalParametersRepository _additionalParametersRepository;
-        
-        public ImageApiController(ILogger<ImageApiController> logger, IAdditionalParametersRepository additionalParametersRepository){
+
+        public ImageApiController(ILogger<ImageApiController> logger, IAdditionalParametersRepository additionalParametersRepository)
+        {
             _logger = logger;
             _additionalParametersRepository = additionalParametersRepository;
         }
@@ -59,7 +62,7 @@ namespace ALARm.WebApi.Controllers{
 
                 var topDic = _additionalParametersRepository.getBitMaps(data.FileId, data.Ms - 200 * (int)carPosition, data.Fnum - 1 * (int)carPosition, data.RepType);
                 List<Bitmap> top = (List<Bitmap>)topDic["bitMaps"];
-                var commonBitMap = new Bitmap(top[0].Width * 5  - 87, top[0].Height * 3  - 175);
+                var commonBitMap = new Bitmap(top[0].Width * 5 - 87, top[0].Height * 3 - 175);
                 Graphics g = Graphics.FromImage(commonBitMap);
 
                 int x1 = -7,
@@ -71,12 +74,12 @@ namespace ALARm.WebApi.Controllers{
                     x4 = top[1].Width + top[1].Width + top[2].Width + top[3].Width - 120,
                     y4 = -24;
 
-                
+
 
                 g.DrawImageUnscaled(RotateImage(top[0], -1), x1, y1);
                 g.DrawImageUnscaled(RotateImage(top[1], 3), x2, y2);
-                g.DrawImageUnscaled(RotateImage(top[2], 0), top[0].Width + top[1].Width-30, -35);
-                g.DrawImageUnscaled(RotateImage(top[4], 3), x4-20, y4);
+                g.DrawImageUnscaled(RotateImage(top[2], 0), top[0].Width + top[1].Width - 30, -35);
+                g.DrawImageUnscaled(RotateImage(top[4], 3), x4 - 20, y4);
                 g.DrawImageUnscaled(RotateImage(top[3], -1), x3, y3);
 
                 var topShapes = (List<Dictionary<String, Object>>)topDic["drawShapes"];
@@ -95,7 +98,7 @@ namespace ALARm.WebApi.Controllers{
                 //center
                 g.DrawImageUnscaled(center[0], topx1, topy1);
                 g.DrawImageUnscaled(RotateImage(center[1], 1), topx2, topy2);
-                g.DrawImageUnscaled(RotateImage(center[2], 1), center[0].Width + center[1].Width-28, top[2].Height - upperKoef);
+                g.DrawImageUnscaled(RotateImage(center[2], 1), center[0].Width + center[1].Width - 28, top[2].Height - upperKoef);
                 g.DrawImageUnscaled(RotateImage(center[4], 4), center[1].Width + center[1].Width + center[2].Width + center[3].Width - 135, top[4].Height + y4 - 63);
                 g.DrawImageUnscaled(RotateImage(center[3], -3), center[1].Width + center[1].Width + center[2].Width - 57, top[3].Height + y3 - 50);
 
@@ -109,7 +112,7 @@ namespace ALARm.WebApi.Controllers{
                 List<Bitmap> bottom = (List<Bitmap>)bottomDic["bitMaps"];
                 g.DrawImageUnscaled(bottom[0], -12, center[0].Height * 2 - 2 * upperKoef - 10 - 60);
                 g.DrawImageUnscaled(RotateImage(bottom[1], 1), bottom[0].Width - 30, center[1].Height * 2 - 2 * upperKoef - 80);
-                g.DrawImageUnscaled(RotateImage(bottom[2], 1), bottom[0].Width + bottom[1].Width-33, center[2].Height * 2 - 2 * upperKoef-60);
+                g.DrawImageUnscaled(RotateImage(bottom[2], 1), bottom[0].Width + bottom[1].Width - 33, center[2].Height * 2 - 2 * upperKoef - 60);
                 g.DrawImageUnscaled(RotateImage(bottom[4], 4), bottom[1].Width + bottom[1].Width + bottom[2].Width + bottom[3].Width - 20 - 110, center[4].Height * 2 - 2 * upperKoef - 70);
                 g.DrawImageUnscaled(RotateImage(bottom[3], -3), bottom[1].Width + bottom[1].Width + bottom[2].Width - 50, center[3].Height * 2 - 2 * upperKoef - 50);
 
@@ -121,7 +124,7 @@ namespace ALARm.WebApi.Controllers{
 
 
 
-                
+
 
 
 

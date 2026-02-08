@@ -748,7 +748,7 @@ namespace GapService
             var threat_id = sidePoverh == "Left" ? "1" : "2";
             var trip_id = "213"; //TODO
 
-            var con = new NpgsqlConnection("Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=Aniyar_COpy");
+            var con = new NpgsqlConnection("Host=DESKTOP-EMAFC5J;Username=postgres;Password=alhafizu;Database=railway_irkutsk_save");
             con.Open();
 
             var cmd = new NpgsqlCommand();

@@ -21,8 +21,9 @@ namespace AlarmPP.Web.Components.Diagram
                 Toaster.Add("Выберите ПЧ", MatToastType.Danger, "Ошибка добавления сопроваюдающего!!!", "");
                 return;
             }
-            if ((newEscort.FullName == null) || (newEscort.FullName.Equals("")))
-            {
+          //  if ((newEscort.FullName == null) || (newEscort.FullName.Equals("")) )
+                if ((newEscort.FullName == null))
+                {
                 Toaster.Add("Введите ФИО сопроваждающего", MatToastType.Danger, "Ошибка добавления сопроваюдающего!!!", "");
                 return;
             }

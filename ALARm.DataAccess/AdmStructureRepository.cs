@@ -86,7 +86,7 @@ namespace ALARm.DataAccess
                     result = db.Execute("delete from road_direction where direction_id=@id", new { id }, commandType: CommandType.Text);
                     if (result != 0)
                     {
-                        result = db.Execute("delete from adm_direction where id=@id ", new { id }, commandType: CommandType.Text);
+                        result = db.Execute("delete from adm_direction where id=@id", new { id }, commandType: CommandType.Text);
                     }
                     return result != 0;
                 }
@@ -134,7 +134,7 @@ namespace ALARm.DataAccess
                     db.Open();
                 return db.Query<AdmDistance>("Select ad.ID, (ad.NAME) as NAME from ADM_DISTANCE as ad " +
                     "INNER JOIN ADM_NOD as an on an.ID = ad.ADM_NOD_ID " +
-                    " where an.ADM_ROAD_ID=" + roadId.ToString() + "  order by ad.ID", commandType: CommandType.Text).ToList();
+                    " where an.ADM_ROAD_ID=" + roadId.ToString() + "  order by ad.code", commandType: CommandType.Text).ToList();
             }
         }
 
@@ -206,9 +206,8 @@ namespace ALARm.DataAccess
 					                left join stw_park_track as stp on stp.adm_track_id = track.id
 					                left join stw_park as park on park.id = stp.stw_park_id
 				                    left join adm_station as pstation on pstation.id = park.adm_station_id
-                                    where track.ADM_DIRECTION_ID= {parentId} group by track.id, direction.code, station.code, direction.name, station.name, pstation.name,park.name, pstation.code  order by track.ID";
+                                    where track.ADM_DIRECTION_ID= {parentId} group by track.id, direction.code, station.code, direction.name, station.name, pstation.name,park.name, pstation.code order by border ";
                         return db.Query<AdmTrack>(sqltext, commandType: CommandType.Text).ToList();
-
                     case AdmStructureConst.AdmStation:
                         if (parentId == 0)
                         {
@@ -259,7 +258,6 @@ namespace ALARm.DataAccess
                             left join tpl_pdb_section section on section.period_id = period.id
                             where stwt.stw_park_id=" + parentId.ToString() + " group by stwt.id, trackt.id, park.id, track.id, station.code, park.name order by ID";
                         return db.Query<StationTrack>(sqltext, commandType: CommandType.Text).ToList();
-
                     case AdmStructureConst.AdmStationSection:
                         sqltext = @"Select distinct tss.*, ast.NAME as station from adm_station as ast 
                             INNER JOIN CAT_STATION_TYPE as st on st.ID = ast.TYPE_ID
@@ -541,7 +539,7 @@ namespace ALARm.DataAccess
 
                 return db.Query<AdmUnit>("Select distance.* from ADM_DISTANCE distance " +
                     "inner join adm_nod nod on nod.id = distance.adm_nod_id " +
-                    "inner join adm_road road on road.id = nod.adm_road_id and road.id = " + roadId.ToString(), commandType: CommandType.Text).ToList();
+                    "inner join adm_road road on road.id = nod.adm_road_id and road.id = " + roadId.ToString() + "	ORDER BY  code", commandType: CommandType.Text).ToList();
             }
         }
         
@@ -573,7 +571,7 @@ namespace ALARm.DataAccess
                     try
                     {
                         string roadName = db.QueryFirst<string>(@"
-                        Select distinct road.abbr from Adm_Road as road
+                        Select distinct road.name from Adm_Road as road
                         Inner join adm_nod as nod on nod.adm_road_id = road.id
                         Inner join adm_distance as distance on distance.adm_nod_id = nod.id
                         left join adm_pchu as pchu on pchu.adm_distance_id = distance.id
@@ -716,9 +714,20 @@ namespace ALARm.DataAccess
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
-                return db.QueryFirst<AdmDirection>(@"Select ad.* from adm_direction as ad
+                //return db.QueryFirst<AdmDirection>(@"Select ad.* from adm_direction as ad
+                //    INNER JOIN adm_track as atr on atr.adm_direction_id = ad.id
+                //     where atr.id =" + track_id.ToString(), commandType: CommandType.Text);
+                var roadName = $@"Select ad.* from adm_direction as ad
                     INNER JOIN adm_track as atr on atr.adm_direction_id = ad.id
-                     where atr.id =" + track_id.ToString(), commandType: CommandType.Text);
+                     where atr.id =" + track_id.ToString();
+                List<AdmDirection> stationSections = db.Query<AdmDirection>(roadName).ToList();
+                if (stationSections.Count() < 1)
+                {
+                    roadName = $@"Select ad.* from adm_station as ad
+                    INNER JOIN adm_track as atr on atr.adm_station_id = ad.id
+                     where atr.id =" + track_id.ToString();
+                }
+                return db.QueryFirst<AdmDirection>(roadName);
             }
         }
         public object GetUnitsOfRoad(int admLevel, long road_id)

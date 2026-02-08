@@ -965,14 +965,14 @@ namespace ALARm.Core.Report
             return TableOfRetractionSlopeSpeed(PR.Max());
         }
 
-        public int GetKRSpeedPass(List<RDCurve> rdcs)
+        public int GetKRSpeedPass(List<RDCurve> item)
         {
             var KR = new List<int> { };
 
-            for (int index = 0; index < rdcs.Count; index++)
+            for (int index = 0; index < item.Count; index++)
             {
-                var R = (17860.0 / (Math.Abs(rdcs[index].Trapez_str) != 0 ? Math.Abs(rdcs[index].Trapez_str) : 0.0001));
-                var CR_value = (int)(Math.Sqrt(13.0 * R * (0.7 + 0.0061 * Math.Abs(rdcs[index].Trapez_level))));
+                var R = (17860.0 / (Math.Abs(item[index].Trapez_str) != 0 ? Math.Abs(item[index].Trapez_str) : 0.0001));
+                var CR_value = (int)(Math.Sqrt(13.0 * R * (0.7 + 0.0061 * Math.Abs(item[index].Trapez_level))));
                 KR.Add(CR_value);
             }
             return KR.Any() ? KR.Min() : -1;

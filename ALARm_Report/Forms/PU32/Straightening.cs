@@ -93,6 +93,7 @@ namespace ALARm_Report.Forms
 
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
                         if (kilometers.Count == 0) continue;
 
@@ -100,7 +101,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -232,7 +233,7 @@ namespace ALARm_Report.Forms
                                 XElement addParam = new XElement("addparam",
                                     new XAttribute("top-title",
                                             (direction != null ? $"{direction.Name} ({direction.Code})" : "Неизвестный") + " Путь: " +
-                                            kilometer.Track_name + $" Класс: {(trackclasses.Any() ? trackclasses.First().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
+                                            kilometer.Track_name + $" Класс: {(trackclasses.Any() ? trackclasses.Last().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
                                             (kilometer.PdbSection.Count > 0 ? $" ПЧ-{kilometer.PdbSection[0].Distance}" : " ПЧ-") + " Уст: " + " " +
                                             (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")),
                                         //new XAttribute("common", common),
@@ -269,7 +270,7 @@ namespace ALARm_Report.Forms
                                         new XAttribute("topf", xp + 8),
                                         new XAttribute("topx", -kilometer.Start_m - svgLength),
                                         new XAttribute("topx1", -kilometer.Start_m - svgLength - 30),
-                                        new XAttribute("topx2", -kilometer.Start_m - svgLength - 15-8),
+                                        new XAttribute("topx2", -kilometer.Start_m - svgLength - 15 - 8),
 
                                     new XAttribute("fragment", (kilometer.StationSection != null && kilometer.StationSection.Count > 0 ? "Станция: " + kilometer.StationSection[0].Station : (kilometer.Sector != null ? kilometer.Sector.ToString() : "")) + " Км:" + kilometer.Number),
 
@@ -284,25 +285,25 @@ namespace ALARm_Report.Forms
                                         new float[] { 109.2f, 146f, 152.5f, 155f, -592 }),
 
                                     new XElement("xgrid",
-                                        new XElement("x", MMToPixelChartString(StraighRighttPosition - 30.0 * StrightKoef), 
-                                            new XAttribute("dasharray", "0.5,2"), 
-                                            new XAttribute("stroke", "grey"), 
-                                            new XAttribute("label", "  –30"), 
-                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition - 30.0 * StrightKoef - 0.5)), 
+                                        new XElement("x", MMToPixelChartString(StraighRighttPosition - 30.0 * StrightKoef),
+                                            new XAttribute("dasharray", "0.5,2"),
+                                            new XAttribute("stroke", "grey"),
+                                            new XAttribute("label", "  –30"),
+                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition - 30.0 * StrightKoef - 0.5)),
                                             new XAttribute("x", xp + 8)),
-                                        
-                                        new XElement("x", MMToPixelChartString(StraighRighttPosition), 
-                                            new XAttribute("dasharray", "3,3"), 
-                                            new XAttribute("stroke", "black"), 
-                                            new XAttribute("label", "      0"), 
-                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition - 0.5)), 
+
+                                        new XElement("x", MMToPixelChartString(StraighRighttPosition),
+                                            new XAttribute("dasharray", "3,3"),
+                                            new XAttribute("stroke", "black"),
+                                            new XAttribute("label", "      0"),
+                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition - 0.5)),
                                             new XAttribute("x", xp + 8)),
-                                        
+
                                         new XElement("x", MMToPixelChartString(StraighRighttPosition + 3.0 * StrightKoef),
-                                            new XAttribute("dasharray", "0.5,2"), 
-                                            new XAttribute("stroke", "grey"), 
-                                            new XAttribute("label", "      3"), 
-                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition + 3.0 * StrightKoef - 0.5)), 
+                                            new XAttribute("dasharray", "0.5,2"),
+                                            new XAttribute("stroke", "grey"),
+                                            new XAttribute("label", "      3"),
+                                            new XAttribute("y", MMToPixelChartString(StraighRighttPosition + 3.0 * StrightKoef - 0.5)),
                                             new XAttribute("x", xp + 8)),
 
 
@@ -381,7 +382,7 @@ namespace ALARm_Report.Forms
                             }
                             report.Add(kmlist);
                         }
-                      
+
                     }
                 }
                 xdReport.Add(report);

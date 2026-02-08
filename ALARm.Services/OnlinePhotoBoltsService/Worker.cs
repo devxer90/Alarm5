@@ -54,8 +54,8 @@
 //        public FrontState State { get; set; } = FrontState.Undefined;
 //        public string ModalClass { get; set; } = "image-modal";
 
-      
-       
+
+
 //        void DeleteClick(DigressionMark mark)
 //        {
 //            digression = mark;
@@ -67,7 +67,7 @@
 //            DigressionEditDialog = true;
 //        }
 
-       
+
 
 
 
@@ -184,7 +184,7 @@
 
 //                return base.StartAsync(cancellationToken);
 //            }
-//            catch(Exception e)
+//            catch (Exception e)
 //            {
 //                StartAsync(cancellationToken);
 //                return base.StartAsync(cancellationToken);
@@ -210,7 +210,7 @@
 //                var ViolPerpen = RdStructureService.GetViolPerpen((int)trip.Id, new int[] { 7 }, km.Number);
 
 //                AdditionalParametersService.Insert_ViolPerpen(km, skreplenie, ViolPerpen);
-          
+
 
 //                return "Success";
 //            }
@@ -322,7 +322,7 @@
 //            {
 //                digression.DigressionImage = null;
 //            }
-          
+
 //        }
 
 

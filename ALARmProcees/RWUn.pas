@@ -1148,7 +1148,7 @@ begin
                   end;
                 indfxu := k;
               end;
-              if (Fxu < 3.3) and (Fxu > 0) then
+              if (Fxu < 3.3) and (Fxu > 1) then
               begin
                 xcoord_ := F_Mtr[jj];
                 ycoord_ := F_Mtr[indfxu];
@@ -1303,7 +1303,7 @@ var
 begin
   try
     k := 0;
-    n := 2;
+    n := 3;
     v1 := GlobPassSkorost;
     V2 := GlobGruzSkorost;
     for i := 0 to High(UKrv) do
@@ -1751,21 +1751,25 @@ begin
       else
         psiLen := UKrv[j].strights[sj].l2;
 
-      if (UKrv[j].levels[sj].nkm <= GlbKmTrue) and
-        (GlbKmTrue <= UKrv[j].levels[sj].kkm) then
+      if (sj <High(UKrv[j].strights)) then
+      begin
+
+      if (UKrv[j].strights[sj].nkm <= GlbKmTrue ) and
+        (GlbKmTrue <= UKrv[j].strights[sj].kkm  ) then
       begin
 
         jal2 := true;
         KrivHaving := true;
-        c := CoordinateToReal(UKrv[j].levels[sj].nkm, UKrv[j].levels[sj].nmtr);
-        d := CoordinateToReal(UKrv[j].levels[sj].kkm, UKrv[j].levels[sj].kmtr);
-        x1 := GetCoordByLen(UKrv[j].levels[sj].nkm, UKrv[j].levels[sj].nmtr,
+        c := CoordinateToReal(UKrv[j].strights[sj].nkm, UKrv[j].strights[sj].nmtr);
+        d := CoordinateToReal(UKrv[j].strights[sj].kkm, UKrv[j].strights[sj].kmtr);
+        x1 := GetCoordByLen(UKrv[j].strights[sj].nkm, UKrv[j].strights[sj].nmtr,
           -20, GlbTrackId, GlbTripDate);
-        x2 := GetCoordByLen(UKrv[j].levels[sj].nkm, UKrv[j].levels[sj].nmtr,
-          +UKrv[j].levels[sj].l1 + 20, GlbTrackId, GlbTripDate);
-        x3 := GetCoordByLen(UKrv[j].levels[sj].kkm, UKrv[j].levels[sj].kmtr,
-          -UKrv[j].levels[sj].l2 - 20, GlbTrackId, GlbTripDate);
-        x4 := CoordinateToReal(UKrv[j].levels[sj].kkm, UKrv[j].levels[sj].kmtr);
+        x2 := GetCoordByLen(UKrv[j].strights[sj].nkm, UKrv[j].strights[sj].nmtr,
+          +UKrv[j].strights[sj].l1 + 20, GlbTrackId, GlbTripDate);
+        x3 := GetCoordByLen(UKrv[j].strights[sj].kkm, UKrv[j].strights[sj].kmtr,
+          -UKrv[j].strights[sj].l2 - 20, GlbTrackId, GlbTripDate);
+        x4 := CoordinateToReal(UKrv[j].strights[sj].kkm, UKrv[j].strights[sj].kmtr);
+      end;
       end;
 
       max_Vdps := 100000;
@@ -2178,9 +2182,9 @@ begin
   setlength(F_NORM, 2000);
   setlength(F_PUCH, 2000);
   setlength(S_NORM, 2000);
-
+  //setlength(F0_sh0, 2000);
   setlength(F0_sh, 2000);
-
+  setlength(F0_shD, 2000);
   setlength(F0_urov, 2000);
   setlength(F0_rih1, 2000);
   setlength(F0_rih2, 2000);
@@ -2800,9 +2804,9 @@ var
   Z_Angle, dv, dsurb, dsurb0, drih0, kif1, kif2, kif3, kif4, kif5,
     delta_zangle: real;
   fbool: boolean;
-  _D_urb, _dsurb, _dsurb0, skip, side_wear_left, side_wear_right: real;
+ Dmsh,Dsh0, _D_urb, _dsurb, _dsurb0, skip, side_wear_left, side_wear_right: real;
 
-  kkkkk, ijk, iik, iost, jost: INTEGER;
+  kkkkk, ijk, iik, iost, jost,ip1,ip2,ip3,ip4: INTEGER;
   avgOfUrb: real;
 
 label
@@ -2854,16 +2858,16 @@ begin
         D_rh1, D_rh2, _D_urb, Z_Angle, _dsurb, _dsurb0, skip, skip, skip, skip,
         // 17             18            19   20   21    22             23           24             25
         side_wear_right, side_wear_left, skip, skip, skip, stright_avg,
-        level_avg, curvePointLevel, curvePointStr, sign);
+        level_avg, curvePointLevel, curvePointStr, sign,Dsh0);
 
       // D_sh - шаблон  Gauge
       // 9 _D_urb - измеренный уровень
       // 8 D_rh2 - измеренная рихт
 
       // 10 - Z_Angle - трапезойд для рихтовки
-      // 11 _dsurb - трапезойд для уровня
-      // _dsurb0 - средний уровень
-
+      // 11   _dsurb - трапезойд для уровня
+      //   _dsurb0 - средний уровень
+            //   Dsh0  norma
       // ,factst);//,factst,factst,factst,factst,factst,factst);
       setlength(SideWearLeft, U_IND + 1);
       setlength(SideWearRight, U_IND + 1);
@@ -3016,17 +3020,16 @@ begin
       /// /////////////////////////////////////////////////////////////////////////////????
       S_NORM[U_IND] := 1520;
 
-      F0_sh[U_IND] := 1520;
-
+      F0_sh[U_IND] :=  Dsh0;
+        F0_shD[U_IND] := Dsh0;
       Fsr_Urb[U_IND] := dsurb; // round(dsurb0);
       Furb1[U_IND] := round(D_urb); // 1.09*
       Furbx[U_IND] := round(D_urb);
       Furb_sr[U_IND] := round(dsurb0); //
       if (abs(dsurb) < 1) then
-
-        F_urb_Per[U_IND] := round(1.10 * (D_urb - dsurb0))
+           F_urb_Per[U_IND] := round(1.10 * (D_urb - dsurb0))
       else
-        F_urb_Per[U_IND] := round(1.10 * (D_urb - dsurb));
+       F_urb_Per[U_IND] := round(1.0 * (D_urb - dsurb));
       if (abs(dsurb) < 1) then
 
         AvgTr[U_IND] := round(1.0 * dsurb0)
@@ -3055,8 +3058,31 @@ begin
 
     end; // WHILE
 
+
+
+
     // -------------------------------------------------------------------------
     U_LNG := U_IND;
+
+          for  ip1:= 0 to high(F0_shD)-1 do
+
+               begin
+                Dmsh:=1520;
+               ip3:=max(ip1-100,1 ) ;
+               ip4:=  min(ip1+100,high(F0_shD  )-1 ) ;
+
+                      for ip2:=  ip3 to   ip4 do
+                               begin
+                               if (  F0_sh[ip2] >=Dmsh) then
+                                   Dmsh:=    F0_sh[ip2];
+
+                             end ;
+
+
+                   F0_shD[ip1] := Dmsh;
+                  end;
+//
+
     prvKmLen := U_LNG;
     lng := k;
     CVSredKm := round(dv); // ckorost b km
@@ -3204,11 +3230,11 @@ begin
       // Get_Null_2Kriv;
       OprFactStrelki1;
       DopUklBozb;
-      // DopUklBozb_Shablona;
+      DopUklBozb_Shablona;
       Nesob_nash_naras_voz_s_rih;
       VPiket;
 
-      Tegisteu_F0_sh;
+     // Tegisteu_F0_sh;
 
       Length_Km := U_LNG / 1000;
 

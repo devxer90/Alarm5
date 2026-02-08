@@ -148,10 +148,10 @@
         <DgTitleCol X="@AppData.PasportPosition" Width="@AppData.PasportWidth" Heigth="@AppData.TitleRowHeigth" Title="Проезд" ShowValue="true" Value="@AppData.Data[(int)Services.Series.Pasport]"></DgTitleCol>
         <DgTitleCol X="@AppData.SpeedPosition" Width="@AppData.SpeedWidth" Heigth="@AppData.TitleRowHeigth" Title="Скорость" ShowValue="true" Value="@AppData.Data[(int)Services.Series.Speed]"></DgTitleCol>
         <!--Events-->
-        @if (AppData.ShowEvents)
+        @*@if (AppData.ShowEvents)
         {
             <DgTitleCol X="@AppData.EventPosition" Width="@AppData.EventWidth" Heigth="@AppData.TitleRowHeigth" Title="События" ShowValue="false"></DgTitleCol>
-        }
+        }*@
         <!--Signals-->
         @if (AppData.ShowMainParams)
         {
@@ -581,9 +581,9 @@
     @if (AppData.DigressionChecked)
     {
         <div style="float:left; height:100%">
-            @if (AppData != null && AppData.Data != null)
+            @if (AppData != null && AppData.Data != null && AppData.CurrentKm != 0)
             {
-                <p>@AppData.Data[(int)Services.Series.Section] Путь: @AppData.CurrentKilometer.Track_name Км: @AppData.CurrentKm М:@AppData.CurrentKmMeter Направление @AppData.CurrentKilometer.Direction_name: Перегон :@AppData.CurrentKilometer.Sector </p>
+            <p>@AppData.Data[(int)Services.Series.Section] Путь: @AppData.CurrentKilometer.Track_name Км: @AppData.CurrentKm М:@AppData.CurrentKmMeter Направление @AppData.CurrentKilometer.Direction_name: Перегон :@AppData.CurrentKilometer.Sector </p>
             }
             <DigressionTable @ref="digressionTable" Kilometers="@AppData.Kilometers"></DigressionTable>
         </div>
@@ -603,6 +603,12 @@
         <div div class="float-left h-100">
             <EscortList Style="margin:5px"></EscortList>
         </div>
+        @if (AppData.ShowCorrection)
+        {
+            <div class="float-left">
+                <Alarmcheck kilometers="@AppData.Kilometers"></Alarmcheck>
+            </div>
+        }
         <div class="float-left">
 
             <p>

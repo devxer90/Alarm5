@@ -57,5 +57,7 @@ namespace ALARm.controls
             result = DialogResult.OK;
             Close();
         }
+
+    
     }
 }

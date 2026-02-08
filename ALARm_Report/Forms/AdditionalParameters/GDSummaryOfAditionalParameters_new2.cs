@@ -184,7 +184,7 @@ namespace ALARm_Report.Forms
                             XElement addParam = new XElement("addparam",
                                 new XAttribute("top-title",
                                     (direction != null ? $"{direction.Name} ({direction.Code} )" : "Неизвестный") + " Путь: " + kilometer.Track_name +
-                                    $" Класс: {(trackclasses.Any() ? trackclasses.First().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
+                                    $" Класс: {(!trackclasses.Any() || trackclasses.First().Class_Id.ToString() == "6 " ? "-" : trackclasses.First().Class_Id.ToString())} Км:" + kilometer.Number + " " +
                                     (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].ToString() : " ПЧ-/ПЧУ-/ПД-/ПДБ-") + " Уст: " + " " +
                                     (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")),
 

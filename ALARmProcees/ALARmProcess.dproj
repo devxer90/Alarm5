@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{300A5821-50D5-4413-8FDF-5AF0CBDC6F58}</ProjectGuid>
+        <ProjectGuid>{430C2FDC-B2D4-46E5-AA8B-E6DA79D64DDB}</ProjectGuid>
         <ProjectVersion>19.2</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <MainSource>ALARmProcess.dpr</MainSource>
@@ -97,12 +97,21 @@
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
         <DCCReference Include="RWUn.pas"/>
-        <DCCReference Include="FuncsProcs.pas"/>
         <DCCReference Include="ForOTS.pas"/>
         <DCCReference Include="REPORTS.pas"/>
         <DCCReference Include="URemDistance.pas"/>
+        <DCCReference Include="FuncsProcs.pas"/>
         <None Include="pgsparam.txt"/>
         <None Include="ModelSupport_ALARmProcess\default.txaPackage"/>
+        <None Include="ModelSupport_ALARmProcess\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\REPORTS\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\Params\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\RWUn\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\ForOTS\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\URemDistance\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\DataModule\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\ALARmProcess\default.txvpck"/>
+        <None Include="ModelSupport_ALARmProcess\FuncsProcs\default.txvpck"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -125,6 +134,58 @@
                 </Source>
             </Delphi.Personality>
             <Deployment Version="3">
+                <DeployFile LocalName="ModelSupport_ALARmProcess\Params\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\ForOTS\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\ALARmProcess\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\URemDistance\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\RWUn\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="ModelSupport_ALARmProcess\FuncsProcs\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="pgsparam.txt" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
@@ -136,13 +197,15 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="ModelSupport_ALARmProcess\REPORTS\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="ModelSupport_ALARmProcess\DataModule\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

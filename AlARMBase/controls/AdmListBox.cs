@@ -8,7 +8,7 @@ namespace ALARm.controls
 {
     public partial class AdmListBox : MetroFramework.Controls.MetroUserControl
     {
-        public Int64 CurrentId {
+        public long CurrentId {
             get {
                 var admunit = (AdmUnit)cmbAdmUnit.SelectedItem;
                 Int64 neutral = -1;

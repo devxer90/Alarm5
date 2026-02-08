@@ -100,7 +100,7 @@ namespace ALARm_Report.Forms
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
 
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
-
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (kilometers.Count == 0)
                             continue;
 
@@ -108,7 +108,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -180,7 +180,7 @@ namespace ALARm_Report.Forms
                                 new XAttribute("top-title",
                                     (direction != null ? $"{direction.Name} ({direction.Code} )" : "Неизвестный") + " Путь: " + kilometer.Track_name + " Км:" +
                                     kilometer.Number + " " + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].ToString() : " ПЧ-/ПЧУ-/ПД-/ПДБ-") + " Уст: " + " " +
-                                    (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")  + $" Скор:{(int)kilometer.Speed.Average()}"),
+                                    (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-") + $" Скор:{(int)kilometer.Speed.Average()}"),
 
                                 new XAttribute("right-title",
                                     copyright + ": " + "ПО " + softVersion + "  " +
@@ -332,7 +332,7 @@ namespace ALARm_Report.Forms
                                 ////пу
                                 //downhillLeft += MMToPixelChartString(PULeftPosition + GetDIstanceFrom1div60(1 / crossRailProfile.DownhillLeft[index])) + "," + metre + " ";
                                 //downhillRight += MMToPixelChartString(PURightPosition + GetDIstanceFrom1div60(1 / crossRailProfile.DownhillRight[index])) + "," + metre + " ";
-                                if (DB_gauge.Count-1 > i)
+                                if (DB_gauge.Count - 1 > i)
                                 {
                                     gauge += MMToPixelChartString(gaugePosition + gaugeKoef * (DB_gauge[i].Gauge - 1500)).Replace(",", ".") + "," + metre + " ";
                                     otzh += MMToPixelChartString(releasePosition + (DB_gauge[i].Gauge - DB_gauge[i + 1].Gauge)).Replace(",", ".") + "," + metre + " ";
@@ -360,7 +360,7 @@ namespace ALARm_Report.Forms
                             }
 
                             List<Digression> addDigressions = crossRailProfile.GetDigressions();
-                            
+
 
 
 
@@ -478,17 +478,17 @@ namespace ALARm_Report.Forms
                                 digression.DigName = gap.Otst_l == "З" ? DigressionName.GapL : gap.Otst_l == "З?" ? DigressionName.GapSimbolL :
                                                      gap.Otst_r == "З" ? DigressionName.GapR : gap.Otst_r == "З?" ? DigressionName.GapSimbolR :
                                                      gap.Otst_l == "СЗ" ? DigressionName.FusingGapL : gap.Otst_r == "СЗ" ? DigressionName.FusingGapR : DigressionName.Undefined;
-                            
-                               
+
+
                                 addDigressions.Add(digression);
                             }
                             addParam.Add(gapElements);
 
-                            
+
 
                             foreach (var dig in addDigressions)
                             {
-                                if (dig.Meter == 631) 
+                                if (dig.Meter == 631)
                                 {
                                     dig.Meter = dig.Meter;
                                 }
@@ -515,7 +515,7 @@ namespace ALARm_Report.Forms
                                                         }
                                                     }
                                                 }
-                                            
+
                                             }
                                         }
                                     }
@@ -606,14 +606,14 @@ namespace ALARm_Report.Forms
                                     //if (picket != null)
                                     //{
                                     //    picket.Digression.Add(Digressions.First());
-                                        
+
                                     //}
                                 }
                             }
 
 
                             kilometer.Digressions.AddRange(dignatur);
-                            kilometer.LoadDigresions(RdStructureRepository, MainTrackStructureRepository, trip, AdditionalParam:true);
+                            kilometer.LoadDigresions(RdStructureRepository, MainTrackStructureRepository, trip, AdditionalParam: true);
 
 
                             var digElemenets = new XElement("digressions");

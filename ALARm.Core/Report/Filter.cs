@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace ALARm.Core.Report
 {
-    public interface Filter { 
+    public interface Filter
+    {
         public string Name { get; set; }
         public object Value { get; set; }
-    
+
     }
 
     public enum PU32Type
@@ -18,9 +19,9 @@ namespace ALARm.Core.Report
     }
     public class FloatFilter : Filter
     {
-        public  float Value { get; set; }
+        public float Value { get; set; }
         public string Name { get; set; }
-        object Filter.Value { get => this.Value; set=> this.Value = float.Parse(((string)value).Replace(".", ",")); }
+        object Filter.Value { get => this.Value; set => this.Value = float.Parse(((string)value).Replace(".", ",")); }
     }
     public class INTFilter : Filter
     {
@@ -29,7 +30,7 @@ namespace ALARm.Core.Report
         object Filter.Value { get => this.Value; set => this.Value = int.Parse(((string)value)); }
     }
 
- 
+
     public class DoubleFilter : Filter
     {
         public double Value { get; set; }
@@ -37,7 +38,8 @@ namespace ALARm.Core.Report
         object Filter.Value { get => this.Value; set => this.Value = double.Parse(((string)value).Replace(".", ",")); }
     }
 
-    public class TripTypeEntity { 
+    public class TripTypeEntity
+    {
         public string Name { get; set; }
         public int Value { get; set; }
     }
@@ -52,7 +54,7 @@ namespace ALARm.Core.Report
     public class PU32TypeFilter : Filter
     {
         public string Value { get; set; }
-        public PU32Type PU32Type {get;set;}
+        public PU32Type PU32Type { get; set; }
         public string Name { get; set; }
         object Filter.Value
         {
@@ -85,15 +87,15 @@ namespace ALARm.Core.Report
         public string Name { get; set; }
         object Filter.Value
         {
-            get => this.Value; 
+            get => this.Value;
             set
             {
                 if (value == null)
                     this.Value = null;
                 else
                 {
-                    
-                    this.Value = (string)value ;
+
+                    this.Value = (string)value;
                     if (this.Value == "контрольная")
                         TripType = TripType.Control;
                     else
@@ -112,22 +114,26 @@ namespace ALARm.Core.Report
         public string Name { get; set; }
         public DateTime DateValue { get; set; }
         public string Value { get; set; }
-        object Filter.Value { get => this.Value; 
-            set {
+        object Filter.Value
+        {
+            get => this.Value;
+            set
+            {
                 if (value == null)
                     return;
                 DateTime date;
-                
-                if (DateTime.TryParse((string)value, out date)) 
+
+                if (DateTime.TryParse((string)value, out date))
                 {
                     this.Value = (string)value;
                     this.DateValue = date;
-                } else
+                }
+                else
                 {
                     throw new Exception("Пожайлуста укажите значение в формате даты 'ДД.ММ.ГГГГ'. Например: 01.01.2000");
                 }
-                
-            } 
+
+            }
         }
     }
     public class PeriodFilter : Filter
@@ -135,23 +141,26 @@ namespace ALARm.Core.Report
         public ReportPeriod PeriodValue { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
-        object Filter.Value { get => this.Value; 
-            set {
+        object Filter.Value
+        {
+            get => this.Value;
+            set
+            {
                 if (value == null)
                     return;
                 var s = (value as string).Split('-');
-                if (s.Count()<2)
+                if (s.Count() < 2)
                 {
                     return;
                 }
                 int month, year = 0;
-                if (!int.TryParse(s[0],out month) || !int.TryParse(s[1], out year))
+                if (!int.TryParse(s[0], out month) || !int.TryParse(s[1], out year))
                     return;
                 PeriodValue = new ReportPeriod { PeriodMonth = month, PeriodYear = year };
                 Value = PeriodValue.ToString();
             }
         }
-        
+
     }
 
 

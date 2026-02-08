@@ -90,7 +90,7 @@ namespace ALARm.controls
             speed.Final_M = coordControl.FinalM;
             speed.Passenger = int.Parse(passenger.Text);
             speed.Freight = int.Parse(freight.Text);
-            speed.Empty_Freight = int.Parse(emptyfreight.Text);
+            speed.Empty_Freight = int.Parse(emptyfreight.Text);//стриж
             result = DialogResult.OK;
             Close();
         }

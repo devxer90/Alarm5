@@ -822,15 +822,15 @@ object MainDataModule: TMainDataModule
   object pgsConnection: TFDConnection
     Params.Strings = (
       'User_Name=postgres'
-      'Database=Aniyar_COpy'
+      'Database=railway_irkutsk_save'
       'Password=alhafizu'
-      'Server=DESKTOP-EMAFC5J'
+      'Server=localhost'
       'ExtendedMetadata=True'
       'CharacterSet=UTF8'
       'DriverID=PG')
     LoginPrompt = False
     Transaction = FDTransaction
-    Left = 64
+    Left = 56
     Top = 72
   end
   object fdReadPasport: TFDQuery

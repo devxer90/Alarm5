@@ -17,7 +17,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>ALARm_Report</RootNamespace>
     <AssemblyName>ALARm_Report</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -173,8 +173,8 @@
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Data.OracleClient" />
-    <Reference Include="System.Drawing.Common, Version=4.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Drawing.Common.4.7.0\lib\net461\System.Drawing.Common.dll</HintPath>
+    <Reference Include="System.Drawing.Common, Version=4.0.0.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Drawing.Common.5.0.2\lib\net461\System.Drawing.Common.dll</HintPath>
     </Reference>
     <Reference Include="System.IO, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IO.4.3.0\lib\net462\System.IO.dll</HintPath>
@@ -537,6 +537,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="controls\CompareTripsForm.resx">
       <DependentUpon>CompareTripsForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="controls\CurveChart.resx">
       <DependentUpon>CurveChart.cs</DependentUpon>
@@ -651,7 +652,9 @@
     <Content Include="xls\PRandNPKpiketCharacteristics.xslt" />
     <Content Include="xls\PU32H.xslt" />
     <Content Include="xls\pu32dris.xslt" />
-    <Content Include="xls\pu32dsh.xslt" />
+    <Content Include="xls\pu32dsh.xslt">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="xls\pu32kompl.xslt" />
     <Content Include="xls\StatementStateGaps.xslt" />
     <Content Include="xls\StatemButtGapsTemperaturesRails.xslt" />
@@ -684,8 +687,12 @@
     <Content Include="xls\DefShpal.xslt" />
     <Content Include="xls\DiffTypeSleepers.xslt" />
     <Content Include="xls\ViolationPerpendicularity.xslt" />
-    <Content Include="xls\GraphLongitudinalProfile.xslt" />
-    <Content Include="xls\BPD.xslt" />
+    <Content Include="xls\GraphLongitudinalProfile.xslt">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="xls\BPD.xslt">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="xls\TripPlanProfileIrregularity.xslt" />
     <Content Include="xls\GraphDeviationsInProfile.xslt" />
     <Content Include="xls\LongitudinalProfileElements.xslt" />
@@ -703,7 +710,9 @@
     <Content Include="xls\speed_limits.xslt" />
     <Content Include="xls\Deviation_close_to_the_limit.xslt" />
     <Content Include="xls\GRK_param.xslt" />
-    <Content Include="xls\PRU.xslt" />
+    <Content Include="xls\PRU.xslt">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="xls\Long_profile_irregularities.xslt" />
     <Content Include="xls\RSHCH.xslt" />
     <Content Include="xls\fp52.xslt" />
@@ -718,7 +727,9 @@
     <Content Include="xls\Pu32dbd.xslt" />
     <Content Include="xls\TrackDeviations.xslt" />
     <Content Include="xls\EscortList.xslt" />
-    <Content Include="xls\ChecklistVerificationSheet.xslt" />
+    <Content Include="xls\ChecklistVerificationSheet.xslt">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="xls\ProvenPathDoNot.xslt" />
     <Content Include="xls\TrackConditionAfterRepair.xslt" />
     <Content Include="xls\fp53.xslt" />

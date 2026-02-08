@@ -135,7 +135,6 @@
             this.metroLabel4.Dock = System.Windows.Forms.DockStyle.Left;
             this.metroLabel4.Location = new System.Drawing.Point(5, 5);
             this.metroLabel4.Name = "metroLabel4";
-            this.metroLabel4.Padding = new System.Windows.Forms.Padding(2);
             this.metroLabel4.Size = new System.Drawing.Size(140, 29);
             this.metroLabel4.TabIndex = 1;
             this.metroLabel4.Text = "Отметка (м)";
@@ -176,8 +175,7 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximizeBox = false;
             this.Name = "ProfmarksForm";
-            this.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-           // this.Padding = new System.Windows.Forms.Padding(13, 60, 13, 13);
+            this.Padding = new System.Windows.Forms.Padding(13, 60, 13, 13);
             this.Text = "Добавление записи";
             this.metroPanel2.ResumeLayout(false);
             this.mpFinalM.ResumeLayout(false);

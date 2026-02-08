@@ -27,9 +27,10 @@ namespace ALARm.DataAccess
                 var appSetting = root.GetSection("ConnectionStrings:DefaultConnection");
                 return appSetting.Value;
             }
-            catch
+            catch(Exception e)  
             {
-                return ConfigurationManager.ConnectionStrings["cn"].ConnectionString;
+                Console.WriteLine("ошибка подлючения AppData" + e);
+                return ConfigurationManager.ConnectionStrings["cn"].ConnectionString ;
             }
         }
 

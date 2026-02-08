@@ -1,7 +1,177 @@
-/*
+﻿/*
  * author: Zulkhazhav Altanbek, Sultan Beibarys
  */
 //diagram page functions
+
+
+//window.viewer = {
+//	enterFullscreen: (element) => {
+//		const el = element instanceof Element ? element : document.documentElement;
+//		if (el.requestFullscreen) return el.requestFullscreen();
+//		if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+//		if (el.msRequestFullscreen) return el.msRequestFullscreen();
+//	},
+//	exitFullscreen: () => {
+//		if (document.exitFullscreen) return document.exitFullscreen();
+//		if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+//		if (document.msExitFullscreen) return document.msExitFullscreen();
+//	},
+//	onFullscreenChange: (dotNetObj) => {
+//		const handler = () => {
+//			dotNetObj.invokeMethodAsync('OnFullscreenChanged', !!document.fullscreenElement);
+//		};
+//		// на всякий случай очистим предыдущий обработчик и повесим новый
+//		document.removeEventListener('fullscreenchange', handler);
+//		document.addEventListener('fullscreenchange', handler);
+//		handler(); // сразу сообщим текущее состояние
+//	}
+//};
+// app.js — единый viewer namespace
+
+// app.js — единый viewer namespace (без дубликатов)
+// app.js — единый viewer namespace (без дублей)
+(function () {
+	// не перезатираем, если уже существует
+	window.viewer = window.viewer || {};
+
+	// ===== helpers =====
+	function getIsFs() {
+		const d = document;
+		return !!(d.fullscreenElement || d.webkitFullscreenElement ||
+			d.msFullscreenElement || d.mozFullScreenElement);
+	}
+	function isEditableTarget(el) {
+		if (!el) return false;
+		const tag = el.tagName?.toLowerCase();
+		return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+	}
+
+	// ===== fullscreen API =====
+	window.viewer.enterFullscreen = function (el) {
+		if (!el) return;
+		(el.requestFullscreen ||
+			el.webkitRequestFullscreen ||
+			el.msRequestFullscreen ||
+			el.mozRequestFullScreen)?.call(el);
+	};
+
+	window.viewer.exitFullscreen = function () {
+		const d = document;
+		(d.exitFullscreen ||
+			d.webkitExitFullscreen ||
+			d.msExitFullscreen ||
+			d.mozCancelFullScreen)?.call(d);
+	};
+
+	window.viewer.isFullscreenActive = function () {
+		return getIsFs();
+	};
+
+	// ===== fullscreen change subscribe/unsubscribe =====
+	window.viewer._fsHandler = null;
+
+	window.viewer.onFullscreenChange = function (dotNetRef) {
+		// если уже подписаны — сначала отписаться
+		if (window.viewer._fsHandler) {
+			window.viewer.offFullscreenChange();
+		}
+		const handler = function () {
+			const isFs = getIsFs();
+			// имя должно совпадать с [JSInvokable("OnFullscreenChangedBool")]
+			dotNetRef.invokeMethodAsync('OnFullscreenChangedBool', isFs);
+		};
+		window.viewer._fsHandler = handler;
+
+		document.addEventListener('fullscreenchange', handler);
+		document.addEventListener('webkitfullscreenchange', handler);
+		document.addEventListener('msfullscreenchange', handler);
+		document.addEventListener('mozfullscreenchange', handler);
+	};
+
+	window.viewer.offFullscreenChange = function () {
+		const handler = window.viewer._fsHandler;
+		if (!handler) return;
+		document.removeEventListener('fullscreenchange', handler);
+		document.removeEventListener('webkitfullscreenchange', handler);
+		document.removeEventListener('msfullscreenchange', handler);
+		document.removeEventListener('mozfullscreenchange', handler);
+		window.viewer._fsHandler = null;
+	};
+
+	// ===== глобальные хоткеи — вызываем РОВНО ваши методы =====
+	// Space → OnTimedEventAsync (старт/мягкая пауза)
+	// P     → PauseAsync (жёсткая пауза)
+	// ArrowDown/Up → StepNext/StepPrev (опционально)
+	window.viewer._keysHandler = null;
+
+	window.viewer.bindGlobalKeys = function (dotNetRef) {
+		if (window.viewer._keysHandler) {
+			window.viewer.unbindGlobalKeys();
+		}
+		const h = function (event) {
+			// игнор, если фокус в поле ввода
+			if (isEditableTarget(event.target)) return;
+
+			// Space — ваш Start/Soft-Pause (OnTimedEventAsync)
+			if (event.key === ' ' || event.key === 'Spacebar') {
+				event.preventDefault();
+				dotNetRef.invokeMethodAsync('OnTimedEventAsync');
+				return;
+			}
+			// P — ваш явный PauseAsync (жёсткая пауза)
+			if (event.key === 'p' || event.key === 'P') {
+				event.preventDefault();
+				dotNetRef.invokeMethodAsync('PauseAsync');
+				return;
+			}
+
+			// шаги (если хотите стрелками перемещаться по кадрам)
+			if (event.key === 'ArrowDown') {
+				event.preventDefault();
+				dotNetRef.invokeMethodAsync('StepNext');
+				return;
+			}
+			if (event.key === 'ArrowUp') {
+				event.preventDefault();
+				dotNetRef.invokeMethodAsync('StepPrev');
+				return;
+			}
+		};
+		window.viewer._keysHandler = h;
+		document.addEventListener('keydown', h, { passive: false });
+	};
+
+	window.viewer.unbindGlobalKeys = function () {
+		if (!window.viewer._keysHandler) return;
+		document.removeEventListener('keydown', window.viewer._keysHandler);
+		window.viewer._keysHandler = null;
+	};
+	window.blazorMeasure_getElementRect = function (element) {
+		if (!element) {
+			return { width: 0, height: 0 };
+		}
+		const r = element.getBoundingClientRect();
+		return { width: r.width, height: r.height };
+	};
+
+})();
+
+
+function GetDgScrollLeft(elemid) {
+
+	return document.getElementById(elemid).scrollLeft;
+}
+
+function ScrollMainSvg(y) {
+	document.getElementById("dgmainscroll").scroll(document.getElementById("dgmainscroll").scrollLeft, y);
+}
+function ScrollMainSvg2(y) {
+	document.getElementById("dgmainscroll").scroll(document.getElementById("dgmainscroll").scrollLeft, y - document.getElementById("dgmainscroll").clientHeight + 25);
+}
+
+
+
+
 function GetDgScrollLeft(elemid) {
 
     return document.getElementById(elemid).scrollLeft;
@@ -203,31 +373,31 @@ function showImage(response) {
 				menuNode.style.left = containerRect.left + stage.getPointerPosition().x + 4 + 'px';
 			});
 
-			//������
+			//начало
 			// rect.on('transformstart', function () {
 			// 	console.log('transform start');
 			// 	changeTooltipText(rect);
 			// });
-			// ����-����
+			// реал-тайм
 			rect.on('transform', function () {
 				changeTooltipText(rect, s);
 			});
-			//�����
+			//конец
 			// rect.on('transformend', function () {
 			// 	console.log('transform end');
 			// 	changeTooltipText(rect);
 			// });
 
 
-			//��������������
+			//перетаскивание
 			rect.on('dragmove', function () {
 				changeTooltipText(rect, s);
 			});
-			//���������
+			//наведение
 			rect.on('mousemove press', function () {
 				changeTooltipText(rect, s);
 			});
-			//�������� ����� ������ 
+			//наводить потом убрать 
 			// rect.on('mouseout touchend', function () {
 			// 	changeTooltipText(rect);
 			// 	layer.draw();
@@ -571,6 +741,8 @@ function DrawCanvas(f) {
 	//canvas.getContext("2d").save();
 }
 
+
+
 function GetPos(e) {
 	var totalOffsetX = 0;
 	var totalOffsetY = 0;
@@ -655,6 +827,8 @@ var xcan, ycan, xcan0, ycan0;
 var newWidth, newHeight = 0;
 var currentZoomWidth = 0;
 var shiftPressed = false;
+
+
 function initCanvas(response) {
 	var img, canvas;
 	var lastClick = [0, 0];
@@ -702,7 +876,7 @@ function initCanvas(response) {
 		centerHeight = newHeight / 2;
 		DrawCanv(0);
 	};
-
+	
 	/*canvas.onmousedown = function (event) {
 		canvas = GetCanvas();
 		console.log(firstEnd)
@@ -1202,7 +1376,7 @@ function drawLines(canv) {
 	const ctx = canv.getContext('2d');
 	var w = canv.width;
 	var h = canv.height;
-	var startPointX = 200;
+	var startPointX =  200;
 	var endPointX = w - 200;
 	var cw = w / 2;  // center 
 	var ch = h / 2;

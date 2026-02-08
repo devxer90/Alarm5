@@ -1,8 +1,8 @@
 DriverID=PG
 User_Name=postgres
-Database=Aniyar_COpy
+Database=railway_irkutsk_save
 Password=alhafizu
-Server=DESKTOP-EMAFC5J
+Server=localhost
 Port=5432
 ExtendedMetadata=True
 CharacterSet=UTF8

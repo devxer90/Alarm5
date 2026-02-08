@@ -62,8 +62,8 @@ namespace ALARm_Report.Forms
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kms = RdStructureService.GetKilometersByTrip(trip);
                         if (!kms.Any()) continue;
-
-                        kms = kms.Where(o => o.Track_id == track_id).ToList();
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
+                        kms = kilometerssort.Where(o => o.Track_id == track_id).ToList();
 
                         trip.Track_Id = track_id;
                         var lkm = kms.Select(o => o.Number).ToList();

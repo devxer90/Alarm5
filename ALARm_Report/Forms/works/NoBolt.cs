@@ -43,7 +43,7 @@ namespace ALARm_Report.Forms
                 {
                     //if (mainProcess.Trip_id != 126) { continue; }
 
-                    var digressions = RdStructureService.NoBolt(mainProcess, Threat.Left);
+                    var digressions = RdStructureService.NoBolt(mainProcess, Threat.Right);
                     if (digressions == null) { continue; }
 
                     if (digressions.Count < 1)

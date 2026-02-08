@@ -35,7 +35,16 @@
                 int points = 0;
                 try
                 {
+                    if (BedKilometers.Select(o=>o.Rating_bedomost) == null)
+                    {
+                        //BedKilometers.Select(o => o.Rating_bedomost) = 0;
+                        //BedKilometers.SpeedLim == "-";
+
+                    }
+                    //var bcount = BedKilometers.Where(o => (o.Number == km.Number && o.Track_name.Equals(km.Track_name))).Count();
+
                     var bedkmseq = BedKilometers.Where(o => (o.Number == km.Number && o.Track_name.Equals(km.Track_name)));
+
                     if (bedkmseq != null && bedkmseq.Count() > 0)
                     {
                         var bedkm = bedkmseq.First();
@@ -62,6 +71,13 @@
                             }
 
                         }
+                        if (rowIndex > currentKMPosition)
+                        {
+                            currentKMPosition = currentKMPosition + km.GetLength();
+                            continue;
+                        }
+
+
                         int index = rowIndex;
                         int pos = currentKMPosition;
                         <tr style="background:@(CurrentRow == index ? "#75d2ff" : "lightgray")" @onmousedown="@(_ => GoToMark(pos, index))">
@@ -89,8 +105,13 @@
                 {
                     System.Console.WriteLine(e.Message);
                 }
-                currentKMPosition = currentKMPosition + km.GetLength();
+                if (km.Number == 5956)
+                {
 
+                }
+                var kmlengy = km.GetLength();
+                currentKMPosition = currentKMPosition + km.GetLength();
+                
             }
 
         }

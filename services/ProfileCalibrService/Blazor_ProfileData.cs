@@ -189,8 +189,10 @@ namespace ProfileCalibrService
         //public string Vnutr__profil__koridor = @"F:\o59m\ShablonKUPE\Profile_Calibr\242_Vnutr__profil__kupe_2021_10_18_16_43_58.Profile_Calibr";
         //Надо сделать по Трипайди
         //List<String> filePath = RdStructureService.GetProfileFilePath();
+
+    
         public string Vnutr__profil__kupe = RdStructureService.GetProfileFilePath().FirstOrDefault();
-        public string Vnutr__profil__koridor = RdStructureService.Get_Vnutr__profil__koridor().FirstOrDefault();
+        public string Vnutr__profil__koridor = RdStructureService.GetProfileFilePathKoridor().FirstOrDefault();
 
 
         //public string Vnutr__profil__kupe = @"F:\o59m\ShablonKORR\Profile_Calibr\228_Vnutr__profil__koridor_2021_10_16_14_29_54.Profile_Calibr";

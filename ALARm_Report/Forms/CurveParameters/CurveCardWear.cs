@@ -61,7 +61,7 @@ namespace ALARm_Report.Forms
                      new XAttribute("distance", ((AdmUnit)AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId)).Code),
                      new XAttribute("wear", wear));
                 int i = 1;
-
+                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
                 var trips = RdStructureService.GetMainParametersProcesses(period, parentId, true);
                 foreach (var trip in trips)
                 {

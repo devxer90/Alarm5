@@ -56,7 +56,7 @@ namespace ALARm_Report.Forms
         private float ProsRightPosition = 124.5f;
 
         private float ProsLeftPosition = 138.5f;
-       
+
         public static float koef_level_mash = 3.8f;
         public override void Process(long parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
@@ -96,20 +96,22 @@ namespace ALARm_Report.Forms
                 {
                     foreach (var track_id in admTracksId)
                     {
+
                         var trackName = AdmStructureService.GetTrackName(track_id);
 
                         tripProcess.Track_Id = track_id;
 
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
-                        if (kilometers.Count==0) continue;
+                        if (kilometers.Count == 0) continue;
 
                         ////Выбор километров по проезду-----------------
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
 
@@ -122,7 +124,7 @@ namespace ALARm_Report.Forms
 
                         kilometers = kilometers.Where(Km => ((float)(float)filters[0].Value <= Km.Number && Km.Number <= (float)(float)filters[1].Value)).ToList();
                         kilometers = (tripProcess.Travel_Direction == Direction.Reverse ? kilometers.OrderBy(o => o.Number) : kilometers.OrderByDescending(o => o.Number)).ToList();
-                        if (kilometers.Count==0) continue;
+                        if (kilometers.Count == 0) continue;
                         //--------------------------------------------
 
                         progressBar.Maximum = kilometers.Count;
@@ -183,12 +185,12 @@ namespace ALARm_Report.Forms
                             StrightAvgTrapezoid.Add(StrightAvgTrapezoid[StrightAvgTrapezoid.Count - 1]);
                             for (int i = 0; i < LevelAvgTrapezoid.Count; i++)
                             {
-                               // kilometer.TrapezoidLevel +=$"{LevelAvgTrapezoid[i] * kilometer.StrightKoef:0.00},{kilometer.Meters[i]} ";
+                                // kilometer.TrapezoidLevel +=$"{LevelAvgTrapezoid[i] * kilometer.StrightKoef:0.00},{kilometer.Meters[i]} ";
                             }
                             //zero line data
                             kilometer.GetZeroLines(outData, tripProcess, MainTrackStructureService.GetRepository());
                             kilometer.LoadTrackPasport(MainTrackStructureRepository, tripProcess.Trip_date);
-                            
+
                             // добавление ПрУ и натурные значения кривой
                             kilometer.Digressions = new List<DigressionMark> { };
 
@@ -215,16 +217,18 @@ namespace ALARm_Report.Forms
                                                                         kilometer.Trip.Id,
                                                                         sect.Start_Km * 1000 + sect.Start_M,
                                                                         sect.Final_Km * 1000 + sect.Final_M);
+                                        Console.WriteLine("ПРоверка метров если есть в бд CheckVerifyKm1.Any()в Level.cs" + CheckVerifyKm.Last().Start_M);
                                         if (CheckVerifyKm.Any())
                                         {
+                                            Console.WriteLine("Зашло в процедуру CheckVerifyKm1.Any()в Level.cs" + CheckVerifyKm.Last().Start_M);
                                             //curve
                                             var curve_msg = $"КУ: параметр уровень в норме_" +
-                                                            $"(МО: {sect.Avg_level:0.0}/{CheckVerifyKm.First().Trip_mo_level:0.0})";
+                                                            $"(МО: {sect.Avg_level * (1):0.0}/{CheckVerifyKm.First().Trip_mo_level:0.0})";
                                             var diff_curve = Math.Abs(sect.Avg_level - CheckVerifyKm.First().Trip_mo_level);
                                             if (diff_curve >= 2)
                                             {
                                                 curve_msg = $"КУ: превыш. допуска смещения_" +
-                                                      $"({diff_curve:0.0}) пар. уровень (МО: {sect.Avg_level:0.0}/{CheckVerifyKm.First().Trip_mo_level:0.0})!";
+                                                      $"({diff_curve:0.0}) пар. уровень (МО: {sect.Avg_level * (1):0.0}/{CheckVerifyKm.First().Trip_mo_level:0.0})!";
                                             }
                                             //gauge
                                             var gauge_msg = $"КУ: параметр шаблон в норме_" +
@@ -256,7 +260,7 @@ namespace ALARm_Report.Forms
                             }
 
                             kilometer.Digressions.AddRange(ku);
-                            kilometer.LoadDigresions(RdStructureRepository, MainTrackStructureRepository, tripProcess, CNI:"Level");
+                            kilometer.LoadDigresions(RdStructureRepository, MainTrackStructureRepository, tripProcess, CNI: "Level");
 
                             var sector_station = MainTrackStructureService.GetSector(track_id, kilometer.Number, tripProcess.Trip_date);
                             var fragment = MainTrackStructureService.GetMtoObjectsByCoord(tripProcess.Trip_date, kilometer.Number, MainTrackStructureConst.Fragments, kilometer.Direction_name, $"{trackName}") as Fragment;
@@ -282,26 +286,26 @@ namespace ALARm_Report.Forms
 
                             }
 
-                            var style =        "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.3";
-                            //var styletext = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.3";
-                            var styleAverage = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.7; stroke-dasharray:0.7 0.6;";
+                            var style = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.5";
+                            var styleAverage = "fill:none;stroke:black;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:1; stroke-dasharray:0.7 0.6;";
+                            var styleAvg = "fill:none;stroke:dimgray;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-width:0.5; stroke-dasharray:4 2;stroke:dodgerblue";
 
                             var linesElem = new XElement("lines",
                                 new XElement("line",
                                     new XAttribute("style", style),
                                     level),
-                                new XElement("line", 
+                                new XElement("line",
                                     new XAttribute("style", styleAverage),
                                     averageLevel),
                                 new XElement("line",
-                                    new XAttribute("style", style), 
+                                    new XAttribute("style", style),
                                     zeroLevel)
                                 );
-                            
+
 
                             kmlist.Add(linesElem);
                             //------------------------------------------------------------
-                            
+
                             var svgLength = kilometer.GetLength() < 1000 ? 1000 : kilometer.GetLength();
                             var xp = (-kilometer.Start_m - svgLength - 50) + (svgLength + 105) - 52;
                             var direction = AdmStructureRepository.GetDirectionByTrack(kilometer.Track_id);
@@ -315,14 +319,14 @@ namespace ALARm_Report.Forms
                                 XElement addParam = new XElement("addparam",
                                         new XAttribute("top-title",
                                             (direction != null ? $"{direction.Name} ({direction.Code})" : "Неизвестный") + " Путь: " +
-                                            kilometer.Track_name + $" Класс: {(trackclasses.Any() ? trackclasses.First().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
+                                            kilometer.Track_name + $" Класс: {(!trackclasses.Any() || trackclasses.First().Class_Id.ToString() == "6" ? "-" : trackclasses.First().Class_Id.ToString())} Км:" + kilometer.Number + " " +
                                             (kilometer.PdbSection.Count > 0 ? $" ПЧ-{kilometer.PdbSection[0].Distance}" : " ПЧ-") + " Уст: " + " " +
                                             (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")),
                                         //new XAttribute("common", common),
 
                                         new XAttribute("right-title",
                                             copyright + ": " + "ПО " + softVersion + "  " +
-                                            systemName + ":" + tripProcess.Car + "(" + tripProcess.Chief.Trim() + ") (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" + 
+                                            systemName + ":" + tripProcess.Car + "(" + tripProcess.Chief.Trim() + ") (БПД от " + MainTrackStructureRepository.GetModificationDate() + ") <" +
                                             (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].RoadAbbr : "НЕИЗВ") + ">" + "<" + kilometer.Passage_time.ToString("dd.MM.yyyy  HH:mm") + ">" +
                                             "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(tripProcess.Travel_Direction.ToString())) + ">" +
                                             "<" + Helper.GetShortFormInNormalString(Helper.GetResourceName(tripProcess.Car_Position.ToString())) + ">" +
@@ -354,39 +358,39 @@ namespace ALARm_Report.Forms
                                         new XAttribute("topf", xp + 8),
                                         new XAttribute("topx", -kilometer.Start_m - svgLength),
                                         new XAttribute("topx1", -kilometer.Start_m - svgLength - 30),
-                                        new XAttribute("topx2", -kilometer.Start_m - svgLength - 15-8),
+                                        new XAttribute("topx2", -kilometer.Start_m - svgLength - 15 - 8),
 
                                         new XAttribute("fragment", (kilometer.StationSection != null && kilometer.StationSection.Count > 0 ? "Станция: " + kilometer.StationSection[0].Station : (kilometer.Sector != null ? kilometer.Sector.ToString() : "")) + " Км:" + kilometer.Number),
 
-                                        new XAttribute("viewbox", $"-20 { (i == 0 ? (-kilometer.Start_m - svgLength - 50 - 26) : (-kilometer.Start_m - svgLength - 50)/2)} 830 {(svgLength + 105)/2}"),
+                                        new XAttribute("viewbox", $"-20 { (i == 0 ? (-kilometer.Start_m - svgLength - 50 - 26) : (-kilometer.Start_m - svgLength - 50) / 2)} 830 {(svgLength + 105) / 2}"),
                                         new XAttribute("minY", -kilometer.Start_m),
                                         new XAttribute("maxY", -kilometer.Final_m),
 
                                         RightSideChart(
-                                            tripProcess.Trip_date, 
-                                            kilometer, 
-                                            kilometer.Track_id, 
+                                            tripProcess.Trip_date,
+                                            kilometer,
+                                            kilometer.Track_id,
                                             new float[] { 109.2f, 146f, 152.5f, 155f, -592 }),
 
                                         new XElement("xgrid",
-                                            new XElement("x", MMToPixelChartString(LevelPosition - LevelStep*2), 
-                                            new XAttribute("dasharray", "0.5,2"), new XAttribute("stroke", "grey"), 
-                                            new XAttribute("label", "  –30"), 
-                                            new XAttribute("y", MMToPixelChartString(LevelPosition - (LevelStep - 0.5f)*2.2)), 
+                                            new XElement("x", MMToPixelChartString(LevelPosition - LevelStep * 2),
+                                            new XAttribute("dasharray", "0.5,2"), new XAttribute("stroke", "grey"),
+                                            new XAttribute("label", "  –30"),
+                                            new XAttribute("y", MMToPixelChartString(LevelPosition - (LevelStep - 0.5f) * 2.2)),
                                             new XAttribute("x", xp + 8)),
 
-                                            new XElement("x", MMToPixelChartString(LevelPosition), 
-                                            new XAttribute("dasharray", "3,3"), 
-                                            new XAttribute("stroke", "black"), 
-                                            new XAttribute("label", "      0"), 
-                                            new XAttribute("y", MMToPixelChartString(LevelPosition - 0.5f)), 
+                                            new XElement("x", MMToPixelChartString(LevelPosition),
+                                            new XAttribute("dasharray", "3,3"),
+                                            new XAttribute("stroke", "black"),
+                                            new XAttribute("label", "      0"),
+                                            new XAttribute("y", MMToPixelChartString(LevelPosition - 0.5f)),
                                             new XAttribute("x", xp + 8)),
 
-                                            new XElement("x", MMToPixelChartString(LevelPosition + LevelStep*2), 
-                                            new XAttribute("dasharray", "0.5,2"), 
-                                            new XAttribute("stroke", "grey"), 
-                                            new XAttribute("label", "    30"), 
-                                            new XAttribute("y", MMToPixelChartString(LevelPosition + (LevelStep - 0.5f)*2.1)), 
+                                            new XElement("x", MMToPixelChartString(LevelPosition + LevelStep * 2),
+                                            new XAttribute("dasharray", "0.5,2"),
+                                            new XAttribute("stroke", "grey"),
+                                            new XAttribute("label", "    30"),
+                                            new XAttribute("y", MMToPixelChartString(LevelPosition + (LevelStep - 0.5f) * 2.1)),
                                             new XAttribute("x", xp + 8))
                                             )
                                     );
@@ -441,9 +445,9 @@ namespace ALARm_Report.Forms
                             }
                             report.Add(kmlist);
                         }
-                     
+
                     }
-              
+
                 }
                 xdReport.Add(report);
                 XslCompiledTransform transform = new XslCompiledTransform();
@@ -453,10 +457,10 @@ namespace ALARm_Report.Forms
             try
             {
                 htReport.Save(Path.GetTempPath() + "/report.html");
-             
+
                 //htReport.Save($@"g:\form\5.Графические диаграммы ГД\ГД-ЦНИИ-2 Уровень.html");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 MessageBox.Show("Ошибка сохранения файлы" + e);
             }

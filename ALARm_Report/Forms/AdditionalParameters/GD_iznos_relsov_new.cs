@@ -33,8 +33,8 @@ namespace ALARm_Report.Forms
 
         private float iznosKoefBok = 11.8f / 20f;
         private float iznosKoefVert = 7.8f / 13f;
-        private float iznosKoefPriv= 9.8f / 16f;
-        private float iznosKoef45= 10.8f / 18f;
+        private float iznosKoefPriv = 9.8f / 16f;
+        private float iznosKoef45 = 10.8f / 18f;
 
         public override void Process(long parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
@@ -84,13 +84,14 @@ namespace ALARm_Report.Forms
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
 
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
-                        if (kilometers.Count==0) continue;
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
+                        if (kilometers.Count == 0) continue;
 
                         ////Выбор километров по проезду-----------------
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -161,7 +162,7 @@ namespace ALARm_Report.Forms
                                 new XAttribute("top-title",
                                     (direction != null ? $"{direction.Name} ({direction.Code} )" : "Неизвестный") + " Путь: " + kilometer.Track_name + " Км:" +
                                     kilometer.Number + " " + (kilometer.PdbSection.Count > 0 ? kilometer.PdbSection[0].ToString() : " ПЧ-/ПЧУ-/ПД-/ПДБ-") + " Уст: " + " " +
-                                            (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")  + $" Скор:{(int)kilometer.Speed.Average()}"),
+                                            (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-") + $" Скор:{(int)kilometer.Speed.Average()}"),
 
                                 new XAttribute("right-title",
                                     copyright + ": " + "ПО " + softVersion + "  " +
@@ -296,13 +297,13 @@ namespace ALARm_Report.Forms
                             addParam.Add(new XElement("polyline", new XAttribute("points", HeadWearLeft)));
                             addParam.Add(new XElement("polyline", new XAttribute("points", HeadWearRight)));
 
-                            
+
 
                             List<Digression> addDigressions = crossRailProfile.GetDigressions();
                             // заполняет таблицу с доп параметрами
                             if (addDigressions != null && addDigressions.Count != 0)
-                            { 
-                             var Insert_additional_param_state = AdditionalParametersService.Insert_additional_param_state(addDigressions, kilometer.Number);
+                            {
+                                var Insert_additional_param_state = AdditionalParametersService.Insert_additional_param_state(addDigressions, kilometer.Number);
                             }
 
                             var dignatur = new List<DigressionMark> { };
@@ -313,8 +314,8 @@ namespace ALARm_Report.Forms
                                 count += dig.Length % 4 > 0 ? 1 : 0;
 
                                 //if (count < 4) continue;
-                                if (dig.DigName == DigressionName.TreadTiltLeft || dig.DigName == DigressionName.TreadTiltRight || 
-                                     dig.DigName == DigressionName.DownhillLeft || dig.DigName == DigressionName.DownhillRight ) continue;
+                                if (dig.DigName == DigressionName.TreadTiltLeft || dig.DigName == DigressionName.TreadTiltRight ||
+                                     dig.DigName == DigressionName.DownhillLeft || dig.DigName == DigressionName.DownhillRight) continue;
 
                                 dignatur.Add(
                                         new DigressionMark()
@@ -369,7 +370,7 @@ namespace ALARm_Report.Forms
                                     ref fourStepOgrCoun,
                                     ref otherfourStepOgrCoun);
                             }
-                            addParam.Add( new XAttribute("speedlimit", "Кол. ст. - " + kilometer.GetdigressionsCount + " Огр: " + kilometer.SpeedLimit));
+                            addParam.Add(new XAttribute("speedlimit", "Кол. ст. - " + kilometer.GetdigressionsCount + " Огр: " + kilometer.SpeedLimit));
 
                             addParam.Add(digElemenets);
                             report.Add(addParam);

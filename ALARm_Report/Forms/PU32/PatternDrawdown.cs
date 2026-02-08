@@ -97,6 +97,7 @@ namespace ALARm_Report.Forms
 
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
                         if (kilometers.Count == 0) continue;
 
@@ -104,7 +105,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -136,8 +137,8 @@ namespace ALARm_Report.Forms
                             List<double> prevStrightAvgPart = new List<double>();
                             List<double> nextStrightAvgPart = new List<double>();
 
-                            int n = 200;
-                            int prevN = 200;
+                            int n = 500;
+                            int prevN = 500;
                             if (prevIndex > 0)
                             {
                                 var PrKm = TripKms[prevIndex - 1];
@@ -146,6 +147,10 @@ namespace ALARm_Report.Forms
                                 PrKm.AddDataRange(outData1, PrKm);
 
                                 n = PrKm.LevelAvg.Count > prevN ? prevN : PrKm.LevelAvg.Count;
+                                if (n == PrKm.LevelAvg.Count())
+                                {
+                                    n = n - 1;
+                                }
                                 prevLevelAvgPart = PrKm.LevelAvg.GetRange(PrKm.LevelAvg.Count - n - 1, n);
                                 prevStrightAvgPart = PrKm.StrightAvg.GetRange(PrKm.StrightAvg.Count - n - 1, n);
                             }
@@ -157,6 +162,7 @@ namespace ALARm_Report.Forms
                                 NxKm.AddDataRange(outData2, NxKm);
 
                                 n = NxKm.LevelAvg.Count > prevN ? prevN : NxKm.LevelAvg.Count;
+                             
                                 nextLevelAvgPart = NxKm.LevelAvg.GetRange(0, n);
                                 nextStrightAvgPart = NxKm.StrightAvg.GetRange(0, n);
                             }
@@ -228,7 +234,7 @@ namespace ALARm_Report.Forms
                                 XElement addParam = new XElement("addparam",
                                     new XAttribute("top-title",
                                             (direction != null ? $"{direction.Name} ({direction.Code})" : "Неизвестный") + " Путь: " +
-                                            kilometer.Track_name + $" Класс: {(trackclasses.Any() ? trackclasses.First().Class_Id.ToString() : "-")} Км:" + kilometer.Number + " " +
+                                            kilometer.Track_name + $" Класс: {(!trackclasses.Any() || trackclasses.First().Class_Id.ToString() == "6" ? "-" : trackclasses.First().Class_Id.ToString())} Км:" + kilometer.Number + " " +
                                             (kilometer.PdbSection.Count > 0 ? $" ПЧ-{kilometer.PdbSection[0].Distance}" : " ПЧ-") + " Уст: " + " " +
                                             (kilometer.Speeds.Count > 0 ? $"{kilometer.Speeds.First().Passenger}/{kilometer.Speeds.First().Freight}" : "-/-")),
                                         //new XAttribute("common", common),

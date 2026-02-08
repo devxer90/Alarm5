@@ -1,4 +1,4 @@
-using MainService;
+﻿using MainService;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,56 +40,118 @@ namespace NNService
                 Port = options.Value.Port,
             };
         }
-
         public override Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
                 _logger.LogInformation($"Connection try [{tryCount++}].");
+
                 _connection = _connectionFactory.CreateConnection();
                 _channel = _connection.CreateModel();
 
-
                 _channel.QueueDeclarePassive(QueueName);
-
-
-                //_channel.QueueDeclare(queue: QueueName,
-                //                   durable: false,
-                //                   exclusive: false,
-                //                   autoDelete: false,
-                //                   arguments: null);
-
                 _channel.BasicQos(0, 1, false);
-                _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
-                var consumer = new EventingBasicConsumer(_channel);
-               consumer.Received += async (model, ea) =>
-               // consumer.Received +=  (model, ea) =>
-               {
-                   var body = ea.Body.ToArray();
-                    var message = Encoding.UTF8.GetString(body).Replace("'", "\"").Replace("\\", "\\\\");
-                    JObject json = JObject.Parse(message);
-                    _logger.LogInformation(" [x] Received {0}", message);
 
-                    GetNN((string)json["TripId"], (int)json["Msg"]);
+                _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
+
+                var consumer = new EventingBasicConsumer(_channel);
+                consumer.Received += async (model, ea) =>
+                {
+                    try
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body)
+                                                   .Replace("'", "\"")
+                                                   .Replace("\\", "\\\\");
+
+                        _logger.LogInformation(" [x] Received {0}", message);
+
+                        JObject json = JObject.Parse(message);
+
+                        string tripId = (string)json["TripId"];
+                        int msg = (int)json["Msg"];
+
+                        _logger.LogInformation($" Calling GetNN with TripId={tripId}, Msg={msg}");
+
+                        try
+                        {
+                            GetNN(tripId, msg);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($" Ошибка в GetNN: {ex.Message}\n{ex.StackTrace}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($" Ошибка при разборе сообщения: {ex.Message}\n{ex.StackTrace}");
+                    }
                 };
-                _channel.BasicConsume(queue: QueueName,
-                                     autoAck: true,
-                                     consumer: consumer);
+
+                _channel.BasicConsume(queue: QueueName, autoAck: true, consumer: consumer);
 
                 return base.StartAsync(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
-                StartAsync(cancellationToken);
-                return base.StartAsync(cancellationToken);
+                _logger.LogError($"Ошибка при подключении к очереди: {ex.Message}\n{ex.StackTrace}");
+
+                // ⛔ ОСТОРОЖНО: рекурсивный вызов StartAsync может привести к бесконечному циклу.
+                // Лучше использовать механизм повтора с задержкой:
+                Task.Delay(3000, cancellationToken).Wait();
+                return StartAsync(cancellationToken);
             }
         }
+
+        //public override Task StartAsync(CancellationToken cancellationToken)
+        //{
+        //    try
+        //    {
+        //        _logger.LogInformation($"Connection try [{tryCount++}].");
+        //        _connection = _connectionFactory.CreateConnection();
+        //        _channel = _connection.CreateModel();
+
+
+        //        _channel.QueueDeclarePassive(QueueName);
+
+
+        //        //_channel.QueueDeclare(queue: QueueName,
+        //        //                   durable: false,
+        //        //                   exclusive: false,
+        //        //                   autoDelete: false,
+        //        //                   arguments: null);
+
+        //        _channel.BasicQos(0, 1, false);
+        //        _logger.LogInformation($"Queue [{QueueName}] is waiting for messages.");
+        //        var consumer = new EventingBasicConsumer(_channel);
+        //       consumer.Received += async (model, ea) =>
+        //       // consumer.Received +=  (model, ea) =>
+        //       {
+        //           var body = ea.Body.ToArray();
+        //            var message = Encoding.UTF8.GetString(body).Replace("'", "\"").Replace("\\", "\\\\");
+        //            JObject json = JObject.Parse(message);
+        //            _logger.LogInformation(" [x] Received {0}", message);
+
+        //            GetNN((string)json["TripId"], (int)json["Msg"]);
+        //        };
+        //        _channel.BasicConsume(queue: QueueName,
+        //                             autoAck: true,
+        //                             consumer: consumer);
+
+        //        return base.StartAsync(cancellationToken);
+        //    }
+        //    catch
+        //    {
+        //        StartAsync(cancellationToken);
+        //        return base.StartAsync(cancellationToken);
+        //    }
+        //}
 
         private void GetNN(string TripId, int parameters2)
         {
             Process pr = new Process();
             ProcessStartInfo prs = new ProcessStartInfo();
-            prs.FileName = @"C:\ObjectRecRW\Source\rwdet_project1\x64\Release\rwdet_gpu.exe";
+            prs.FileName = @"E:\ObjectRecRW\Source\rwdet_project1\x64\Release\rwdet_gpu.exe";
             prs.Arguments = $"{TripId} {parameters2}";
             pr.StartInfo = prs;
 
@@ -99,7 +161,7 @@ namespace NNService
 
             var pr2 = new Process();
             var prs2 = new ProcessStartInfo();
-            prs2.FileName = @"C:\ObjectRecRW\Source\rwdet_project1\x64\Release\rwdet_gpu.exe";
+            prs2.FileName = @"E:\ObjectRecRW\Source\rwdet_project1\x64\Release\rwdet_gpu.exe";
             prs2.Arguments = $"{TripId} {parameters2 + 1}";
             pr2.StartInfo = prs2;
 

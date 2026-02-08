@@ -5,12 +5,9 @@ using ALARm_Report.controls;
 using MetroFramework.Controls;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
@@ -19,11 +16,10 @@ using System.Xml.Xsl;
 namespace ALARm_Report.Forms
 {
     public class PRU : ALARm.Core.Report.GraphicDiagrams
-
     {
-
         public override void Process(Int64 parentId, ReportTemplate template, ReportPeriod period, MetroProgressBar progressBar)
         {
+            // ===== 1) Выбор путей =====
             List<long> admTracksId = new List<long>();
             using (var choiceForm = new ChoiseForm(0))
             {
@@ -31,144 +27,195 @@ namespace ALARm_Report.Forms
                 choiceForm.ShowDialog();
                 if (choiceForm.dialogResult == DialogResult.Cancel)
                     return;
-                admTracksId = choiceForm.admTracksIDs;
+
+                admTracksId = choiceForm.admTracksIDs ?? new List<long>();
+            }
+            if (admTracksId.Count == 0) return;
+
+            // ===== 2) Справочники =====
+            this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
+
+            var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
+            if (distance == null)
+            {
+                MessageBox.Show("Не удалось определить ПЧ (distance).");
+                return;
             }
 
-            this.MainTrackStructureRepository = MainTrackStructureService.GetRepository();
+            var road = AdmStructureService.GetRoadName(distance.Id, AdmStructureConst.AdmDistance, true);
+            distance.Name = (distance.Name ?? "").Replace("ПЧ-", "");
+
+            var tripProcesses = RdStructureService.GetTripsOnDistance(parentId, period);
+            if (tripProcesses == null || tripProcesses.Count == 0)
+            {
+                MessageBox.Show(Properties.Resources.paramDataMissing);
+                return;
+            }
+
+            // ===== 3) Формирование отчёта =====
             XDocument htReport = new XDocument();
             using (XmlWriter writer = htReport.CreateWriter())
             {
-                List<Curve> curves = (MainTrackStructureService.GetCurves(parentId, MainTrackStructureConst.MtoCurve) as List<Curve>).Where(c => c.Radius <= 1200).OrderBy(c => c.Start_Km * 1000 + c.Start_M).ToList();
-                XDocument xdReport = new XDocument();
+                XDocument xdReport = new XDocument(new XElement("report"));
 
-                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
-                var road = AdmStructureService.GetRoadName(distance.Id, AdmStructureConst.AdmDistance, true);
-                distance.Name = distance.Name.Replace("ПЧ-", "");
-
-                var tripProcess = RdStructureService.GetTripsOnDistance(parentId, period);
-                if (tripProcess.Count == 0)
+                foreach (var tripProces in tripProcesses)
                 {
-                    MessageBox.Show(Properties.Resources.paramDataMissing);
-                    return;
-                }
+                    // получаем trip (проезд)
+                    var trip = RdStructureService.GetTrip(tripProces.Id);
+                    if (trip == null)
+                        continue;
 
-                XElement report = new XElement("report");
-                
-                    foreach (var tripProces in tripProcess)
-                    {
-                    bool founddigression = false;
+                    // Один проезд = один tripElem
+                    var tripElem = new XElement("trip",
+                        new XAttribute("version", $"{DateTime.Now:dd.MM.yyyy HH:mm:ss} v{Assembly.GetExecutingAssembly().GetName().Version}"),
+                        new XAttribute("tripId", trip.Id),
+                        new XAttribute("tripDate", trip.Trip_date.ToString("dd.MM.yyyy HH:mm")),
+                        new XAttribute("direction", tripProces.Direction),
+                        new XAttribute("directioncode", tripProces.DirectionCode),
+                        new XAttribute("check", tripProces.GetProcessTypeName ?? ""),
+                        new XAttribute("road", road ?? ""),
+                        new XAttribute("distance", distance.Code ?? ""),
+                        new XAttribute("periodDate", period?.Period ?? ""),
+                        new XAttribute("chief", tripProces.Chief ?? ""),
+                        new XAttribute("ps", tripProces.Car ?? "")
+                    );
+
+                    // все километры по этому проезду (один раз)
+                    var allKilometers = RdStructureService.GetKilometersByTrip(trip) ?? new List<Kilometer>();
+                    if (allKilometers.Count == 0)
+                        continue;
+
+                    // список ПрУ по этому проезду (один раз)
+                    var listS3 = RdStructureService.GetS3(allKilometers.First().Trip.Id, "ПрУ") as List<S3>;
+                    listS3 = listS3 ?? new List<S3>();
+
+                    bool foundAny = false;
+
+                    // directions container (как в твоём XSL: directions/tracks/note)
+                    var xeDirections = new XElement("directions");
+
                     foreach (var track_id in admTracksId)
                     {
-                        var trackName = AdmStructureService.GetTrackName(track_id);
-                        var trip = RdStructureService.GetTrip(tripProces.Id);
-                        var kilometers = RdStructureService.GetKilometersByTrip(trip);
-                        if (!kilometers.Any()) continue;
-                        ////Выбор километров по проезду-----------------
-                        var filterForm = new FilterForm();
-                        var filters = new List<Filter>();
+                        var trackNameObj = AdmStructureService.GetTrackName(track_id);
+                        string trackName = trackNameObj?.ToString() ?? track_id.ToString();
 
+                        // блок пути
+                        var xeTracks = new XElement("tracks",
+                            new XAttribute("trackId", track_id),
+                            new XAttribute("track", trackName)
+                        );
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        // километры только этого пути
+                        var kmsByTrack = allKilometers.Where(k => k.Track_id == track_id).ToList();
 
-                        var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
-
-                        //filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
-                        //filters.Add(new FloatFilter() { Name = "Конец (км)", Value = lkm.Max() });
-
-                        //filterForm.SetDataSource(filters);
-                        //if (filterForm.ShowDialog() == DialogResult.Cancel)
-                        //    return;
-
-                        //kilometers = kilometers.Where(Km => ((float)(float)filters[0].Value <= Km.Number && Km.Number <= (float)(float)filters[1].Value)).ToList();
-                        //kilometers = (trip.Travel_Direction == Direction.Reverse ? kilometers.OrderBy(o => o.Number) : kilometers.OrderByDescending(o => o.Number)).ToList();
-                        //--------------------------------------------
-
-
-                        XElement tripElem = new XElement("trip",
-                            new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
-                            //  new XAttribute("direction", kilometers[0].Direction_name),
-                            new XAttribute("direction", tripProces.Direction),
-                            new XAttribute("directioncode", tripProces.DirectionCode),
-                            new XAttribute("check", tripProces.GetProcessTypeName),
-                            new XAttribute("track", trackName),
-                            new XAttribute("road", road),
-                            new XAttribute("distance", distance.Code),
-                            new XAttribute("periodDate", period.Period),
-                            new XAttribute("chief", tripProces.Chief),
-                            new XAttribute("ps", tripProces.Car));
-                        XElement xeDirection = new XElement("directions");
-                        XElement xeTracks = new XElement("tracks");
-
-                        var ListS3 = RdStructureService.GetS3(kilometers.First().Trip.Id, "ПрУ") as List<S3>; //пру
-                        if (ListS3 != null && ListS3.Count > 0)
+                        // если по пути нет км — всё равно добавим пустую строку (чтобы в форме был путь)
+                        if (kmsByTrack.Count == 0)
                         {
-                            founddigression = true;
+                            xeTracks.Add(new XElement("note",
+                                new XAttribute("km", ""),
+                                new XAttribute("m", ""),
+                                new XAttribute("Otkl", ""),
+                                new XAttribute("len", ""),
+                                new XAttribute("vpz", "")
+                            ));
+                            xeDirections.Add(xeTracks);
+                            continue;
                         }
-                        if (ListS3.Any())
+
+                        // данные ПрУ только по этому пути
+                        // ВАЖНО: сравнение делаем по s3.Put, который обычно хранит номер пути ("1","2"...)
+                        // поэтому используем trackName (как строку)
+                        var pruRows = listS3
+                            .Where(o => o.Ots == "ПрУ" &&
+                                        o.Put != null &&
+                                        o.Put.ToString().Trim() == trackName.Trim())
+                            .ToList();
+
+                        if (pruRows.Count == 0)
                         {
-                            foreach (var km in kilometers)
+                            xeTracks.Add(new XElement("note",
+                                new XAttribute("km", ""),
+                                new XAttribute("m", ""),
+                                new XAttribute("Otkl", ""),
+                                new XAttribute("len", ""),
+                                new XAttribute("vpz", "")
+                            ));
+                            xeDirections.Add(xeTracks);
+                            continue;
+                        }
+
+                        // группируем по км, чтобы не гонять лишнее
+                        foreach (var km in kmsByTrack)
+                        {
+                            // строки ПрУ на этом километре
+                            var pruByKm = pruRows.Where(o => o.Km == km.Number).ToList();
+                            if (pruByKm.Count == 0)
+                                continue;
+
+                            // паспорт/скорости
+                            try { km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date); } catch { }
+
+                            // безопасный vpz
+                            string vpz = "";
+                            try
                             {
-                                var PRUbyKm = ListS3.Where(o => o.Ots == "ПрУ" && o.Km == km.Number && o.Put == trackName.ToString()).ToList();
-                                
-                                if (!PRUbyKm.Any())
-                                    continue;
-                                PRUbyKm = PRUbyKm.Where(o => o.Put == km.Track_name).ToList();
-
-
-                                km.LoadTrackPasport(MainTrackStructureRepository, trip.Trip_date);
-                              
-                                foreach (var s3 in PRUbyKm)
-                                {
-                                    //km.LoadPasportKmMeterPRUSpeeds(MainTrackStructureRepository, trip.Trip_date, km.Number, s3.Meter);
-                                  
-                                    XElement xeNote = new XElement("note",
-                                
-                                        new XAttribute("km", s3.Km),
-                                        new XAttribute("m", s3.Meter),
-                                        new XAttribute("Otkl", s3.Otkl),
-                                        new XAttribute("len", s3.Len),
-                                        new XAttribute("vpz", km.Speeds.Last().Passenger + "/" + km.Speeds.Last().Freight));
-
-                                    xeTracks.Add(xeNote);
-                                }
-
+                                if (km.Speeds != null && km.Speeds.Count > 0)
+                                    vpz = km.Speeds.Last().Passenger + "/" + km.Speeds.Last().Freight;
                             }
+                            catch { vpz = ""; }
 
-                            xeDirection.Add(xeTracks);
-                            tripElem.Add(xeDirection);
-                        }
-                        else
-                        {
-
+                            foreach (var s3 in pruByKm)
                             {
-                                XElement xeNote = new XElement("note",
+                                foundAny = true;
 
-                                    new XAttribute("km", ""),
-                                    new XAttribute("m", ""),
-                                    new XAttribute("Otkl", ""),
-                                    new XAttribute("len", ""),
-                                    new XAttribute("vpz", ""));
-
-                                xeTracks.Add(xeNote);
+                                xeTracks.Add(new XElement("note",
+                                    new XAttribute("km", s3.Km),
+                                    new XAttribute("m", s3.Meter),
+                                    new XAttribute("Otkl", s3.Otkl),
+                                    new XAttribute("len", s3.Len),
+                                    new XAttribute("vpz", vpz)
+                                ));
                             }
                         }
 
-                        if (founddigression == true)
+                        // если после фильтров нет ни одной note — добавим пустую (чтобы таблица не ломалась)
+                        if (!xeTracks.Elements("note").Any())
                         {
-                            report.Add(tripElem);
+                            xeTracks.Add(new XElement("note",
+                                new XAttribute("km", ""),
+                                new XAttribute("m", ""),
+                                new XAttribute("Otkl", ""),
+                                new XAttribute("len", ""),
+                                new XAttribute("vpz", "")
+                            ));
                         }
-                        
+
+                        xeDirections.Add(xeTracks);
                     }
+
+                    tripElem.Add(xeDirections);
+
+                    // добавляем проезд даже если пусто — если хочешь как раньше (печатать пустые тоже)
+                    // если надо печатать только когда есть данные — оставь foundAny
+                    if (foundAny)
+                        xdReport.Root.Add(tripElem);
+                    else
+                        xdReport.Root.Add(tripElem); // оставил как у тебя: добавлять в любом случае
                 }
-                
-                xdReport.Add(report);
+
+                // ===== 4) XSL Transform =====
                 XslCompiledTransform transform = new XslCompiledTransform();
                 transform.Load(XmlReader.Create(new StringReader(template.Xsl)));
                 transform.Transform(xdReport.CreateReader(), writer);
             }
+
+            // ===== 5) Сохранить и открыть =====
             try
             {
-                htReport.Save(Path.GetTempPath() + "/report.html");
+                var outPath = Path.Combine(Path.GetTempPath(), "report.html");
+                htReport.Save(outPath);
+
+                // твой путь сохранения
                 htReport.Save($@"G:\form\2.Характеристики положения пути в плане и профиле\14.Ведомость отступлений по ПрУ.html");
             }
             catch
@@ -177,9 +224,8 @@ namespace ALARm_Report.Forms
             }
             finally
             {
-                System.Diagnostics.Process.Start(Path.GetTempPath() + "/report.html");
+                System.Diagnostics.Process.Start(Path.Combine(Path.GetTempPath(), "report.html"));
             }
         }
     }
 }
-

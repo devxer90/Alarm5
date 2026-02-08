@@ -37,7 +37,7 @@ namespace ALARmSocketServer
         public Main()
         {
             InitializeComponent();
-            
+
         }
         protected override void OnDeactivate(EventArgs e)
         {
@@ -46,7 +46,7 @@ namespace ALARmSocketServer
             lastDeactivateValid = true;
             this.Hide();
             StartListening();
-            
+
         }
 
         private void notifyIcon_MouseClick(object sender, MouseEventArgs e)
@@ -56,12 +56,13 @@ namespace ALARmSocketServer
             this.Activate();
         }
 
-       
 
-       
+
+
 
         private void Main_Paint(object sender, EventArgs e)
-        {   if (firstLoading)
+        {
+            if (firstLoading)
             {
                 this.Hide();
                 firstLoading = false;
@@ -70,7 +71,7 @@ namespace ALARmSocketServer
         }
         public static ManualResetEvent allDone = new ManualResetEvent(false);
 
-    
+
 
         public static void StartListening()
         {
@@ -97,7 +98,7 @@ namespace ALARmSocketServer
                     allDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
-                    Status.AppendText("Waiting for a connection...");
+                    //Status.AppendText("Waiting for a connection...");
                     listener.BeginAccept(
                         new AsyncCallback(AcceptCallback),
                         listener);
@@ -133,44 +134,97 @@ namespace ALARmSocketServer
                 new AsyncCallback(ReadCallback), state);
         }
 
+        //public static void ReadCallback(IAsyncResult ar)
+        //{
+        //    String content = String.Empty;
+
+        //    // Retrieve the state object and the handler socket  
+        //    // from the asynchronous state object.  
+        //    StateObject state = (StateObject)ar.AsyncState;
+        //    Socket handler = state.workSocket;
+
+        //    // Read data from the client socket.
+        //    int bytesRead = handler.EndReceive(ar);
+
+        //    if (bytesRead > 0)
+        //    {
+        //        // There  might be more data, so store the data received so far.  
+        //        state.sb.Append(Encoding.ASCII.GetString(
+        //            state.buffer, 0, bytesRead));
+
+        //        // Check for end-of-file tag. If it is not there, read
+        //        // more data.  
+        //        content = state.sb.ToString();
+        //        if (content.IndexOf("<EOF>") > -1)
+        //        {
+        //            // All the data has been read from the
+        //            // client. Display it on the console.  
+        //            Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
+        //                content.Length, content);
+        //            // Echo the data back to the client.  
+        //            Send(handler, content);
+        //        }
+        //        else
+        //        {
+        //            // Not all data received. Get more.  
+        //            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+        //            new AsyncCallback(ReadCallback), state);
+        //        }
+        //    }
+        //}
         public static void ReadCallback(IAsyncResult ar)
         {
             String content = String.Empty;
 
-            // Retrieve the state object and the handler socket  
-            // from the asynchronous state object.  
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
 
-            // Read data from the client socket.
             int bytesRead = handler.EndReceive(ar);
 
             if (bytesRead > 0)
             {
-                // There  might be more data, so store the data received so far.  
-                state.sb.Append(Encoding.ASCII.GetString(
-                    state.buffer, 0, bytesRead));
-
-                // Check for end-of-file tag. If it is not there, read
-                // more data.  
+                state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
                 content = state.sb.ToString();
+
+                // ✅ Лог в консоль
+                Console.WriteLine($"[SERVER] Received {content.Length} bytes: {content}");
+
+                // ✅ Лог в окно формы (если есть TextBox с именем Status)
+                if (Application.OpenForms["Main"] is Main mainForm)
+                {
+                    mainForm.Invoke((MethodInvoker)(() =>
+                    {
+                        mainForm.Status.AppendText($"[SERVER] Received: {content}\r\n");
+                    }));
+                }
+
                 if (content.IndexOf("<EOF>") > -1)
                 {
-                    // All the data has been read from the
-                    // client. Display it on the console.  
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-                        content.Length, content);
-                    // Echo the data back to the client.  
-                    Send(handler, content);
+                    if (content.Contains("start"))
+                    {
+                        Console.WriteLine("[SERVER] command 'start' detected.");
+
+                        var form = Application.OpenForms["Main"] as Main;
+                        if (form != null)
+                        {
+                            form.Invoke((MethodInvoker)(() =>
+                            {
+                                form.Status.AppendText($"[SERVER] Detected command: start\r\n");
+                            }));
+                        }
+                    }
+
+                    Send(handler, "[SERVER] OK<EOF>");
                 }
                 else
                 {
-                    // Not all data received. Get more.  
+                    // Ждём следующую часть сообщения
                     handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
+                        new AsyncCallback(ReadCallback), state);
                 }
             }
         }
+
 
         private static void Send(Socket handler, String data)
         {
@@ -204,3 +258,5 @@ namespace ALARmSocketServer
         }
     }
 }
+
+

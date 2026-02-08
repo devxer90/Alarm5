@@ -187,7 +187,7 @@ namespace ALARm_Report.Forms
                                                                  track_profile.Select(p => p.Deviation).ToList(),
 
                                                                  //repers
-                                                                 RefPoints.Select(p => (double)p.Mark).ToList(),
+                                                                 RefPoints.Select(p => p.Mark).ToList(),
                                                                  x_RefPoints,
 
                                                                  yr,

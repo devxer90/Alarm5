@@ -57,6 +57,13 @@
             this.metroPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
+            // mdtDate
+            // 
+            this.mdtDate.Location = new System.Drawing.Point(0, 0);
+            this.mdtDate.Name = "mdtDate";
+            this.mdtDate.Size = new System.Drawing.Size(200, 20);
+            this.mdtDate.TabIndex = 0;
+            // 
             // mpFinalM
             // 
             this.mpFinalM.Controls.Add(this.passenger);
@@ -295,30 +302,6 @@
             this.catalogListBox.UseSelectable = true;
             this.catalogListBox.Visible = false;
             // 
-            ////  ДАта
-
-
-            //// mdtDate
-            //// 
-            //this.mdtDate.Dock = System.Windows.Forms.DockStyle.Fill;
-            //this.mdtDate.Location = new System.Drawing.Point(145, 5);
-            //this.mdtDate.MinimumSize = new System.Drawing.Size(0, 29);
-            //this.mdtDate.Name = "mdtDate";
-            //this.mdtDate.Size = new System.Drawing.Size(251, 29);
-            //this.mdtDate.TabIndex = 2;
-            //// 
-            //// metroLabel2
-            //// 
-            //this.metroLabel2.Dock = System.Windows.Forms.DockStyle.Left;
-            //this.metroLabel2.Location = new System.Drawing.Point(5, 5);
-            //this.metroLabel2.Name = "metroLabel2";
-            //this.metroLabel2.Size = new System.Drawing.Size(140, 29);
-            //this.metroLabel2.TabIndex = 1;
-            //this.metroLabel2.Text = "Дата";
-            //this.metroLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            //// 
-
-
             // coordControl
             // 
             this.coordControl.AutoSize = true;

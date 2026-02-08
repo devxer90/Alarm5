@@ -13,6 +13,7 @@ namespace ALARm.Core
         public int Lastochka { get; set; }
         public int Strig { get; set; }
         public string Reason { get; set; }
+        public string canseled { get; set; }
         public override string ToString()
         {
             return Passenger + "/" + Freight;

@@ -51,6 +51,8 @@ namespace ALARm_Report.Forms
                 XDocument xdReport = new XDocument();
                 XElement report = new XElement("report", new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
                                                          new XAttribute("distance", ((AdmUnit)AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId)).Code));
+
+                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
                 int i = 1;
                 foreach (var tripProcess in tripProcesses)
                 {
@@ -62,15 +64,16 @@ namespace ALARm_Report.Forms
 
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
-                        kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
+                        kilometers = kilometerssort.Where(o => o.Track_id == track_id).ToList();
 
                         if (kilometers.Count == 0) continue;
-
+                    
                         ////Выбор километров по проезду-----------------
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
@@ -92,6 +95,10 @@ namespace ALARm_Report.Forms
 
                         foreach (var curve in filter_curves)
                         {
+                            if (curve.Straightenings.Count != 1 || curve.Elevations.Count != 1)
+                            {
+                                continue;
+                            }
                             List<RDCurve> rdcs = RdStructureService.GetRDCurves(curve.Id, trip.Id);
                             List<Speed> speed = MainTrackStructureService.GetMtoObjectsByCoord(tripProcess.Date_Vrem, curve.Start_Km, MainTrackStructureConst.MtoSpeed, subs.Any() ? subs.First() : "", trackName.ToString()) as List<Speed>;
                             // латание дырок
@@ -124,42 +131,38 @@ namespace ALARm_Report.Forms
 
                             }
                             var curve_center_ind = rdcs.Count / 2;
-                            var rightCurve = new List<RDCurve>();
-                            var leftCurve = new List<RDCurve>();
-                            //басын аяғын тауып алу Рихтовка
-                            for (int cInd = curve_center_ind; cInd < rdcs.Count; cInd++)
-                            {
-                                rightCurve.Add(rdcs[cInd]);
-                                if (Math.Abs(rdcs[cInd].Trapez_str) < 0.1)
-                                    break;
-                            }
-                            for (int cInd = curve_center_ind; cInd > 0; cInd--)
-                            {
-                                leftCurve.Add(rdcs[cInd]);
-                                if (Math.Abs(rdcs[cInd].Trapez_str) < 0.1)
-                                    break;
-                            }
-                            var strData = rdcs.Where(o => leftCurve.Last().X <= o.X && o.X <= rightCurve.Last().X).ToList();
+                            var curveStrStartCoord = curve.Straightenings.First().Start_Km * 10000 + curve.Straightenings.First().Start_M;
+                            var curveStrFinalCoord = curve.Straightenings.Last().Final_Km * 10000 + curve.Straightenings.Last().Final_M;
+                            var strData = rdcs.Where(o => (o.Km * 10000 + o.M) >= (curveStrStartCoord) && (o.Km * 10000 + o.M) <= (curveStrFinalCoord)).ToList();
+
+                            //var strData = rdcs.Where(o => leftCurve.Last().X <= o.X && o.X <= rightCurve.Last().X).ToList();
 
                             //кривойдан баска жерлерды тазалау
                             for (int clearInd = 0; clearInd < rdcs.Count; clearInd++)
                             {
-                                if (rdcs[clearInd].X < leftCurve.Last().X)
+                                var coords = rdcs[clearInd].Km * 10000 + rdcs[clearInd].M;
+                                if (coords < curveStrStartCoord)
                                 {
                                     rdcs[clearInd].Trapez_str = 0;
                                     rdcs[clearInd].Avg_str = 0;
+                                    rdcs[clearInd].Radius = 0;
+                                    rdcs[clearInd].PassBoost = 0;
+                                    rdcs[clearInd].FreightBoost = 0;
                                 }
-                                if (rdcs[clearInd].X > rightCurve.Last().X)
+                                if (coords > curveStrFinalCoord)
                                 {
                                     rdcs[clearInd].Trapez_str = 0;
                                     rdcs[clearInd].Avg_str = 0;
+                                    rdcs[clearInd].Radius = 0;
+                                    rdcs[clearInd].PassBoost = 0;
+                                    rdcs[clearInd].FreightBoost = 0;
                                 }
                             }
 
                             // трапециядан туынды алу
-                            for (int fi = 0; fi < strData.Count - 4; fi++)
+                            for (int fi = 0; fi < strData.Count; fi++)
                             {
-                                var temp = Math.Abs(strData[fi + 4].Trapez_str - strData[fi].Trapez_str);
+                                var temp = (fi < strData.Count - 4) ? Math.Abs(strData[fi + 4].Trapez_str - strData[fi].Trapez_str) : Math.Abs(strData[fi - 4].Trapez_str - strData[fi].Trapez_str);
                                 strData[fi].FiList = temp;
                             }
                             //накты вершиналарды табу
@@ -170,7 +173,7 @@ namespace ALARm_Report.Forms
                             var flagPerehod = true;
                             var flagKrug = false;
 
-                            for (int versh = 3; versh < strData.Count - 4; versh++)
+                            for (int versh = 0; versh < strData.Count; versh++)
                             {
                                 if (strData[versh].FiList > 0.01 && flagPerehod)
                                 {
@@ -236,11 +239,16 @@ namespace ALARm_Report.Forms
                                 if (Math.Abs(rdcs[cInd].Trapez_level) < 0.1)
                                     break;
                             }
-                            var LvlData = rdcs.Where(o => leftCurveLvl.Last().X <= o.X && o.X <= rightCurveLvl.Last().X).ToList();
+                            var curveElevStartCoord = curve.Elevations.First().Start_Km * 10000 + curve.Elevations.First().Start_M;
+                            var curveElevFinalCoord = curve.Elevations.Last().Final_Km * 10000 + curve.Elevations.Last().Final_M;
+                            var LvlData = rdcs.Where(o => (o.Km * 10000 + o.M) >= (curveElevStartCoord) && (o.Km * 10000 + o.M) <= (curveElevFinalCoord)).ToList();
+
+                            //var LvlData = rdcs.Where(o => leftCurveLvl.Last().X <= o.X && o.X <= rightCurveLvl.Last().X).ToList();
                             //кривойдан баска жерлерды тазалау
                             for (int clearInd = 0; clearInd < rdcs.Count; clearInd++)
                             {
-                                if (rdcs[clearInd].X < leftCurveLvl.Last().X)
+                                var coords = rdcs[clearInd].Km * 10000 + rdcs[clearInd].M;
+                                if (coords < curveElevStartCoord)
                                 {
                                     rdcs[clearInd].Trapez_level = 0;
                                     rdcs[clearInd].Avg_level = 0;
@@ -251,7 +259,7 @@ namespace ALARm_Report.Forms
                                     rdcs[clearInd].FreightBoost_anp = 0;
                                     rdcs[clearInd].FreightBoost = 0;
                                 }
-                                if (rdcs[clearInd].X > rightCurveLvl.Last().X)
+                                if (coords > curveElevFinalCoord)
                                 {
                                     rdcs[clearInd].Trapez_level = 0;
                                     rdcs[clearInd].Avg_level = 0;
@@ -265,9 +273,9 @@ namespace ALARm_Report.Forms
                             }
 
                             // трапециядан туынды алу
-                            for (int fi = 0; fi < LvlData.Count - 4; fi++)
+                            for (int fi = 0; fi < LvlData.Count; fi++)
                             {
-                                var temp = Math.Abs(LvlData[fi + 4].Trapez_level - LvlData[fi].Trapez_level);
+                                var temp = (fi < LvlData.Count - 4) ? Math.Abs(LvlData[fi + 4].Trapez_level - LvlData[fi].Trapez_level) : Math.Abs(LvlData[fi - 4].Trapez_level - LvlData[fi].Trapez_level);
                                 LvlData[fi].FiList2 = temp;
                             }
                             //накты вершиналарды табу
@@ -278,7 +286,7 @@ namespace ALARm_Report.Forms
                             var flagPerehodLVL = true;
                             var flagKrugLVL = false;
 
-                            for (int versh = 3; versh < LvlData.Count - 4; versh++)
+                            for (int versh = 0; versh < LvlData.Count; versh++)
                             {
                                 if (LvlData[versh].FiList2 > 0.1 && flagPerehodLVL)
                                 {
@@ -329,9 +337,9 @@ namespace ALARm_Report.Forms
 
 
 
-                            if (StrPoins.Count < 4)
+                            if (StrPoins.Count != 4)
                                 continue;
-                            if (LevelPoins.Count < 4)
+                            if (LevelPoins.Count != 4)
                                 continue;
 
                             var LevelMax = rdcs.Select(o => o.Trapez_level).ToList();
@@ -422,7 +430,8 @@ namespace ALARm_Report.Forms
                             {
                                 x1R = MainTrackStructureService.GetDistanceBetween2Coord(curve.Start_Km, curve.Start_M, stCurve.Start_Km, stCurve.Start_M, curve.Track_Id, curve.Start_Date) + 50;
                                 x2R = x1R + stCurve.Transition_1;
-                                int rH = Convert.ToInt32(17860 / stCurve.Radius);
+
+                                int rH = Convert.ToInt32(17860 /( stCurve.Radius+0.00001) );
                                 if (stCurve.Start_Km == 710)
                                     {
                                      xf = stCurve.Final_Km;
@@ -488,39 +497,6 @@ namespace ALARm_Report.Forms
                                 levelH = lH;
                             }
 
-                            //кривойдан баска жерлерды тазалау
-                           // var curve_center_ind = rdcs.Count / 2;
-                           // var rightCurve = new List<RDCurve>();
-                          //  var leftCurve = new List<RDCurve>();
-                            //басын аяғын тауып алу Рихтовка
-                            for (int cInd = curve_center_ind; cInd < rdcs.Count; cInd++)
-                            {
-                                rightCurve.Add(rdcs[cInd]);
-                                if (Math.Abs(rdcs[cInd].Trapez_str) < 0.1)
-                                    break;
-                            }
-                            for (int cInd = curve_center_ind; cInd > 0; cInd--)
-                            {
-                                leftCurve.Add(rdcs[cInd]);
-                                if (Math.Abs(rdcs[cInd].Trapez_str) < 0.1)
-                                    break;
-                            }
-                           // var strData = rdcs.Where(o => leftCurve.Last().X <= o.X && o.X <= rightCurve.Last().X).ToList();
-
-                            //кривойдан баска жерлерды тазалау
-                            for (int clearInd = 0; clearInd < rdcs.Count; clearInd++)
-                            {
-                                if (rdcs[clearInd].X < leftCurve.Last().X)
-                                {
-                                    rdcs[clearInd].Trapez_str = 0;
-                                    rdcs[clearInd].Avg_str = 0;
-                                }
-                                if (rdcs[clearInd].X > rightCurve.Last().X)
-                                {
-                                    rdcs[clearInd].Trapez_str = 0;
-                                    rdcs[clearInd].Avg_str = 0;
-                                }
-                            }
 
 
                             //Аг пасс
@@ -621,7 +597,7 @@ namespace ALARm_Report.Forms
 
 
                             if (curve.Straightenings.Count > 0)
-                                radiusH = Convert.ToInt32(17860 / curve.Straightenings.Min(s => s.Radius));
+                                radiusH = Convert.ToInt32(17860 /( curve.Straightenings.Min(s => s.Radius) + 0.00001));
 
                             if (curve.Elevations.Count > 0)
                                 levelH = Convert.ToInt32(curve.Elevations.Max(e => Math.Abs(e.Lvl)));
@@ -780,7 +756,7 @@ namespace ALARm_Report.Forms
 
 
                             if (curve.Straightenings.Count > 0)
-                                radiusH = Convert.ToInt32(17860 / curve.Straightenings.Min(s => s.Radius));
+                                radiusH = Convert.ToInt32(17860 / (curve.Straightenings.Min(s => s.Radius) + 0.00001));
 
                             if (curve.Elevations.Count > 0)
                                 levelH = Convert.ToInt32(curve.Elevations.Max(e => Math.Abs(e.Lvl)));
@@ -1552,7 +1528,8 @@ namespace ALARm_Report.Forms
                             }
                             catch (Exception e)
                             {
-                                System.Console.WriteLine(e.Message);
+                                //System.Console.WriteLine(e.Message);
+                                System.Console.WriteLine("Curve card1:" + e.Message);
                             }
                         }
                     }

@@ -98,23 +98,23 @@ namespace MainService
                     }
 
 
-                    //if (processed.Where(o => o.file.Km == file.Km).Any())
-                    //{
-                    //    processed.Where(o => o.file.Km == file.Km).First().Number++;
-                    //}
-                    //else
-                    //{
-                    //    processed.Add(new ProcessedKm(file, 1, message));
-                    //}
-                    //if (processed.Where(o => o.file.Km == file.Km).First().Number == 4)
-                    //{
-                    //    Thread.Sleep(20000);
-                    //    ALARm.Core.Helper.SendMessageToRabbitMQExchange(_connection, "alarm", message);
-                    //    _logger.LogInformation(res != null ? res.ToString() : "processed km " + file.Km.ToString());
-                    //}
+                   if (processed.Where(o => o.file.Km == file.Km).Any())
+                   {
+                       processed.Where(o => o.file.Km == file.Km).First().Number++;
+                   }
+                   else
+                   {
+                       processed.Add(new ProcessedKm(file, 1, message));
+                   }
+                   if (processed.Where(o => o.file.Km == file.Km).First().Number == 4)
+                   {
+                       Thread.Sleep(20000);
+                       ALARm.Core.Helper.SendMessageToRabbitMQExchange(_connection, "alarm", message);
+                       _logger.LogInformation(res != null ? res.ToString() : "processed km " + file.Km.ToString());
+                   }
 
 
-                };
+               };
                 _channel.BasicConsume(queue: QueueName,
                                      autoAck: true,
                                      consumer: consumer);

@@ -18,7 +18,7 @@ namespace AlarmPP.Web.Pages
     {
         [Inject]
         public IRdStructureRepository RdStructureRepository { get; set; }
-        
+
         [Parameter]
         public MatTheme MainTheme { get; set; } = new MatTheme()
         {
@@ -44,7 +44,7 @@ namespace AlarmPP.Web.Pages
         }
 
         bool VideoDialog { get; set; } = false;
-        bool FinishProcessingDialog { get; set ;} = false;
+        bool FinishProcessingDialog { get; set; } = false;
         public MatMenu digFilterMenu { get; set; }
         public ForwardRef digFilterMenuRef { get; set; } = new ForwardRef();
         public void OnDigFilterMenuClick(MouseEventArgs e)
@@ -182,7 +182,8 @@ namespace AlarmPP.Web.Pages
                     AppData.ShowFasteners = false;
                     AppData.ShowDefShpals = false;
                     AppData.ShowPerShpals = false;
-                    if (AppData.ShowDangerousDigressions) {
+                    if (AppData.ShowDangerousDigressions)
+                    {
                         AppData.DigressionChecked = true;
                         AppData.ShowDigressions = true;
                     }
@@ -190,7 +191,7 @@ namespace AlarmPP.Web.Pages
                     {
                         AppData.DigressionChecked = false;
                     }
-                        
+
                     break;
                 case ShowButtons.DangerousForEmtyWagon:
                     AppData.ShowDangerousForEmtyWagon = !AppData.ShowDangerousForEmtyWagon;
@@ -230,14 +231,14 @@ namespace AlarmPP.Web.Pages
                     AppData.ShowPerShpals = false;
                     if (AppData.ShowCloseToDangerous)
                     {
-                        
+
                         AppData.DigressionChecked = true;
                     }
                     else
                     {
                         AppData.DigressionChecked = false;
                     }
-                       
+
                     break;
                 case ShowButtons.GapCloseToDangerous:
 
@@ -254,14 +255,14 @@ namespace AlarmPP.Web.Pages
                     AppData.ShowPerShpals = false;
                     if (AppData.ShowGapsCloseToDangerous)
                     {
-                        
+
                         AppData.DigressionChecked = true;
                     }
                     else
                     {
                         AppData.DigressionChecked = false;
                     }
-                        
+
                     break;
                 case ShowButtons.FirstDegreeDigression:
                     AppData.Show1DegreeDigressions = !AppData.Show1DegreeDigressions;
@@ -281,7 +282,7 @@ namespace AlarmPP.Web.Pages
                     {
                         AppData.DigressionChecked = false;
                     }
-                        
+
                     break;
                 case ShowButtons.SecondDegreeDigression:
                     AppData.Show2DegreeDigressions = !AppData.Show2DegreeDigressions;
@@ -435,7 +436,7 @@ namespace AlarmPP.Web.Pages
                     if (AppData.ShowPerShpals)
                     {
                         AppData.DigressionChecked = true;
-                        
+
                     }
                     else
                     {
@@ -458,7 +459,7 @@ namespace AlarmPP.Web.Pages
                     if (AppData.ShowDefShpals)
                     {
                         AppData.DigressionChecked = true;
-                        
+
                     }
                     else
                     {

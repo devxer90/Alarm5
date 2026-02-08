@@ -1,4 +1,4 @@
-﻿ unit FuncsProcs;
+﻿                                  unit FuncsProcs;
 
 interface
 
@@ -33,7 +33,7 @@ end;
 OtsInf = record st, bel, L0, Lm, Leng, count, v, vg, vop, vog, Vrp, Vrg,
   transitionIndex: integer;
 s3, val: real;
-flg, isriht, onswitch, isEqualTo4, isEqualTo3, isLong, iso_joint: boolean;
+flg, isriht, onswitch, isEqualTo4, isEqualTo3, isLong, iso_joint,is_most_checked: boolean;
 
 prim:
 string;
@@ -66,7 +66,7 @@ Matrix3 = array [1 .. 2, 1 .. 2, 1 .. 5] of integer; // v2
 Matrix4 = array [0 .. 1, 1 .. 2, 1 .. 6] of integer; // v3
 MatrixLevDrawSkew = array [1 .. 4, 1 .. 5] of integer;
 Matrix5 = array [1 .. 3, 1 .. 5] of integer;
-MatrixGauge = array [1 .. 4, 1 .. 3, 1 .. 5] of integer;
+MatrixGauge = array [1 .. 5, 1 .. 3, 1 .. 5] of integer;
 // Altynbek
 MatrixR8 = array [1 .. 3] of integer;
 
@@ -350,7 +350,11 @@ procedure SaveToUvedomlenie(ogranichenie_v, tip: integer; s: string;
 
                                         ((18, 14, 14, 10, 7),
                                         (22, 16, 16, 11, 8),
-                                        (26, 22, 16, 13, 8)));
+                                        (26, 22, 16, 13, 8)),
+
+                                        ((18, 14, 14, 10, 7),
+                                        (22, 22, 16, 11, 8),
+                                        (28, 24, 18, 13, 8)));
 
                                         DeltaSuj: MatrixGauge =
                                         (((6, 8, 8, 8, 16), (7, 10, 10, 12, 18),
@@ -366,7 +370,12 @@ procedure SaveToUvedomlenie(ogranichenie_v, tip: integer; s: string;
 
                                         ((6, 10, 10, 14, 16),
                                         (7, 11, 14, 16, 18),
-                                        (8, 12, 15, 18, 20)));
+                                        (8, 12, 15, 18, 20)),
+
+                                         ((6, 10, 12, 14, 16),
+                                        (7, 11, 16, 16, 20),
+                                        (8, 12, 18, 23, 28))
+                                        );
                                         // Altinbek remont km ushin
                                         RDeltaPer: MatrixR8 = (20, 25, 30);
                                         RDeltaUrb: MatrixR8 = (20, 30, 40);
@@ -404,8 +413,8 @@ procedure SaveToUvedomlenie(ogranichenie_v, tip: integer; s: string;
                                         (15, 20, 25, 35, 45));
                                         DeltaPro_UR_Per
                                         : MatrixUR_Per = ((8, 10, 12, 14, 16),
-                                        (12, 16, 20, 25, 30),
-                                        (16, 20, 25, 30, 50));
+                                        (12, 17, 20, 25, 30),
+                                        (17, 20, 25, 30, 50));
                                         // новая матрица  перекоса вычисляемая с помощью процедуры просадок в случе двух вершин и без ступенек
                                         // DeltaPro_Riht: Matrix_Riht=((10,10,15,15,20,25),(15,25,35,35,40,50),(25,35,40,40,50,65)); // новая матрица  рихтовки вычисляемая с помощью процедуры просадок в случе двух вершин и без ступенек
                                         // переделка по размерности согласно полетке
@@ -561,7 +570,7 @@ procedure SaveToUvedomlenie(ogranichenie_v, tip: integer; s: string;
                                         F0_Pr1, F0_Pr2, F0_Rh1, F0_Rh2, F0_urb,
                                         F_fluk, f_fluk_notriht, Fluk_right,
                                         Fluk_left: mas; // r;
-                                        F_Sh_sred, F0_Sh, F_Sht, F_Sht11, Urob,
+                                        F_Sh_sred,F0_Sh0, F0_Sh,F0_ShD, F_Sht, F_Sht11, Urob,
                                         Fxxx, TrpzStr, TrapezLevel,
                                         SideWearLeft, SideWearRight: masr;
                                         F_Norm, S_Norm, Pros1, Pros2, Shirina,
@@ -1152,7 +1161,7 @@ end;
 // ------------------------------------------------------------------------------
 function V_ogr_ush(Pv, v, pnorm, push: integer): integer;
 var
-  i, j, k, p, m, vtemp: integer;
+ pp, i, j, k, p, m, vtemp: integer;
 begin
   k := GIndexSpeedShab(Pv, v);
   j := GIndexNorm(pnorm);
@@ -1160,15 +1169,17 @@ begin
   vtemp := 0;
 
   m := 0;
-  for i := k to 4 do
+  for i := k to 5 do
   begin
     p := pnorm + DeltaUsh[i, 3, j];
+         pp:=  DeltaUsh[i, 3, j];
     // if push <= p then//02.10.2012
     if push <= p then
     begin
       m := i;
+
       vtemp := GOgrSpeedShab(Pv, m);
-      break;
+     break;
     end;
   end;
 
@@ -1224,16 +1235,16 @@ begin
   k := GIndexSpeed_UPP(Pv, v);
 
   j := 0;
-  for i := k to 4 do
+  for i := k to 5 do
   begin
 
     case g of
       1:
-        p := DeltaPro[3, i + 1];
+        p := DeltaPro[4, i ];
       2:
-        p := DeltaPer[3, i + 1];
+        p := DeltaPer[4, i ];
       3:
-        p := DeltaUrb[3, i + 1];
+        p := DeltaUrb[4, i ];
     else
       if Flag_sablog then
         System.writeln('error V_ogr_UPP');
@@ -2359,14 +2370,14 @@ Begin
     Lm4 := 0;
     flg4st := false;
 
-    FG[Low(FG)] := F0_Sh[Low(FG)]; // 1520;
-    FG[High(FG)] := F0_Sh[High(FG)]; // 1520;
+    FG[Low(FG)] := F0_ShD[Low(FG)]; // 1520;
+    FG[High(FG)] := F0_ShD[High(FG)]; // 1520;
     max4 := 0;
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]); // F_Norm[i];
-      Fh := round(FG[i] - F0_Sh[i]);
+      Nms1 := round(F0_ShD[i]); // F_Norm[i];
+      Fh := round(FG[i] - F0_ShD[i]);
       Rds1 := Prds[i];
       fkm := FGm[i];
       k := AlpS(Nms1, Rds1);
@@ -2466,6 +2477,8 @@ end;
 // ------------------------------------------------------------------------------
 // Уширение для 4 степени
 // ------------------------------------------------------------------------------
+// Уширение для 4 степени
+// ------------------------------------------------------------------------------
 procedure GUsh_4;
 label 1;
 var
@@ -2500,8 +2513,8 @@ Begin
 
     flg4st := false;
 
-    FG[Low(FG)] := F0_Sh[Low(FG)]; // 1520;
-    FG[High(FG)] := F0_Sh[High(FG)]; // 1520;
+    FG[Low(FG)] := F0_ShD[Low(FG)]; // 1520;
+    FG[High(FG)] := F0_ShD[High(FG)]; // 1520;
 
     j := G_Ind1(PasGruzSkor, GlobPassSkorost);
 
@@ -2509,12 +2522,12 @@ Begin
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]);
+      Nms1 := round(F0_ShD[i]);
       Norma := F_Norm[i];
       // Fh:= round(Fg[i] - F0_sh[i]);
 
       // Fh := round(F_Sht[i] - F_Wear[i] - F0_Sh[i]);
-      Fh := round(F_Sht[i] - F0_Sh[i]);
+      Fh := round(F_Sht[i] - F0_ShD[i]);
 
       Rds1 := Prds[i];
       fkm := FGm[i];
@@ -2540,7 +2553,7 @@ Begin
         Fhr := round(FG[i0]);
 
         // Fh:= round(Fg[i0] - F0_sh[i0]);
-        Fh := round(F_Sht[i0] - F_Wear[i] - F0_Sh[i0]);
+        Fh := round(F_Sht[i0] - F_Wear[i] - F0_ShD[i0]);
         Norma := F_Norm[i];
         L04 := FGm[i];
         Lm4 := FGm[i0];
@@ -2744,8 +2757,8 @@ Begin
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]);
-      Fh := round(F_Sht[i] - F0_Sh[i]);
+      Nms1 := round(F0_ShD[i]);
+      Fh := round(F_Sht[i] - F0_ShD[i]);
       if Fh < 0 then
       begin
         i := i + 1;
@@ -2846,6 +2859,7 @@ var
   xxxx, ogr_min, fff, fff1549, imax, i0, vt, vtg, vr, Vrg, PasGruzSkor, v1, v2,
     Norma: integer;
   ogr_flg, not_ots: boolean;
+        comment: string;
 Begin
   Try
     // SabLog('GUsh - Определение Отс, степен, величина откл., нач. и конеч. коорд. отступления по уширению');
@@ -2871,16 +2885,16 @@ Begin
     PasGruzSkor := 0;
 
     flg4st := false;
-    FG[Low(FG)] := F0_Sh[Low(FG)]; // 1520;
-    FG[High(FG)] := F0_Sh[High(FG)]; // 1520;
+    FG[Low(FG)] := F0_ShD[Low(FG)]; // 1520;
+    FG[High(FG)] := F0_ShD[High(FG)]; // 1520;
 
     // j:= G_Ind1(PasGruzSkor,GlobPassSkorost);
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]); // Nms1:= F_Norm[i];
+      Nms1 := floor(F0_ShD[i]); // Nms1:= F_Norm[i];
       // Fh:= round(Fg[i] - F0_sh[i]);//1520 );  F_Norm[i] F0_sh[i]
-      Fh := round(F_Sht[i] - F0_Sh[i]);
+      Fh := round(F_Sht[i] - F0_ShD[i]);
 
       if Fh < 0 then
       begin
@@ -2891,9 +2905,14 @@ Begin
       Rds1 := Prds[i];
       fkm := FGm[i];
       k := AlpS(Nms1, Rds1);
+         if i=515then
+           Fh := round(F_Sht[i] - F0_ShD[i]);
+
 
       vt := F_V[i1];
       vtg := F_Vg[i1];
+    v1 := -1;
+          v2 := -1;
       j := G_Ind1(PasGruzSkor, vt);
       s3 := DeltaUsh[j, 3, k];
 
@@ -2925,69 +2944,81 @@ Begin
       xa := L04;
       xb := Lm4;
 
-      if (L04 > 0) and (Lm4 > 0) and (abs(L04 - Lm4) > 0) and (max4 > 0) and
-        (fff > 1534) then
+
+      if (L04 > 0) and (Lm4 > 0)  and (max4 > 0) and
+        (s3 <  max4 ) then
       begin
+
+
         // -------------------------
         Leng := k3; // round(abs(xb - xa));
         bolshek := 0;
-        if Leng mod 4 > 0 then
+        if (Leng  > 0 )and (Leng div 4 =0)then
           bolshek := 1;
+
         count := Leng div 4 + bolshek;
         if count = 0 then
           count := 1;
 
-        if fff > 1548 then
+        if Nms1+max4 > 1548 then
         begin
           v1 := 0;
           v2 := 0;
 
         end
-        else if fff <> 1548 then
+
+        else if (Nms1  <> 1535 )and ( s3 <  max4   )then
         begin
-          v1 := V_ogr_ush(0, vt, Nms1, fff);
-          v2 := V_ogr_ush(1, vtg, Nms1, fff);
+             if (i=826 )or (i=827) or (i=828 )then
+             Fh:=  Fh  ;
+
+          v1 := V_ogr_ush(0, vt, Nms1, Nms1+max4);
+          v2 := V_ogr_ush(1, vtg, Nms1, Nms1+max4);
         end;
 
+
+
+
+
         // ---------------------------------------------
-        if (fff = 1548) and (Norma = 1535) and (vt > 25) and (vt <= 60) then
+        if (Nms1+max4 = 1548) and (Nms1= 1535) and (vt > 25) and (vt <= 60) then
         begin
           v1 := -1;
           stv := 3
         end;
 
-        if (fff = 1548) and (Norma = 1535) and (vtg > 25) and (vtg <= 60) then
+        if (Nms1+max4 = 1548) and (Nms1 = 1535) and (vtg > 25) and (vtg <= 60) then
         begin
           stv := 3;
           v2 := -1;
         end;
         // ---------------------------------------------
-        if (fff = 1548) and (Norma = 1535) and (vt > 60) then
+        if (Nms1+max4  = 1548) and (Nms1 = 1535) and (vt > 60) then
         begin
           v1 := 60;
           stv := 4;
         end;
 
-        if (fff = 1548) and (Norma = 1535) and (vtg > 60) then
+        if (Nms1+max4  = 1548) and (Nms1 = 1535) and (vtg > 60) then
         begin
           stv := 4;
           v2 := 60;
         end;
 
         // ------------------------------------------
-        if (fff = 1548) and (Norma < 1540) and (vt <= 25) then
+        if (Nms1+max4  = 1548) and (Nms1 < 1540) and (vt <= 25) then
         begin
           stv := 3;
           v1 := -1;
         end;
 
-        if (fff = 1548) and (Norma < 1540) and (vtg <= 25) then
+        if (Nms1+max4 = 1548) and (Nms1 < 1540) and (vtg <= 25) then
         begin
           stv := 3;
           v2 := -1;
         end;
         // -------------------------------------------
-        if (Norma = 1540) and (fff = 1548) // 24.10.2012
+        if (Nms1 = 1540) and (Nms1+max4 = 1548) // 24.10.2012
           and (vt > 25) and (vt < 101) and (vtg > 25) and (vtg < 81) then
         begin
           stv := 2;
@@ -2995,8 +3026,13 @@ Begin
           v2 := -1;
         end;
 
+
+               if   ( max4 > s3 )  then
+               begin
+
+
         WUsh[ns].st := 4;
-        WUsh[ns].bel := fff; // max4; fff
+        WUsh[ns].bel :=max4 + Nms1; // max4; fff
         WUsh[ns].L0 := L04;
         WUsh[ns].Lm := Lm4;
         WUsh[ns].v := vt;
@@ -3004,25 +3040,34 @@ Begin
         WUsh[ns].count := count;
         WUsh[ns].Leng := Leng;
         WUsh[ns].prim := '';
+
+                 WUsh[ns].vop := v1;
+          WUsh[ns].vog := v2;
         // WUsh[ns].onswitch := ProberkaNaStrelku(L04,L04, 1);
         // if not(WUsh[ns].onswitch) then
         ush_s4 := ush_s4 + count;
 
         glbCount_Ush4s := glbCount_Ush4s + 1;
         xxxx := L04 div 100 + 1;
-
+          pik:=xxxx;
         if (WUsh[ns].st = 4) then
-          WRT_UBEDOM(L04, Lm4 + 1, 4, ' V=' + V_shekti(v1, v2) + ' пк' +
-            inttostr(xxxx) + ' Уш ' + inttostr(fff)+'/'+  inttostr(Leng) + ';  ', v1, v2);
+      //    WRT_UBEDOM(L04, Lm4 + 1, 4, ' V=' + V_shekti(v1, v2) + ' пк' +
+       //    inttostr(xxxx) + ' Уш; ', v1, v2);
+
+          comment := 'V=' + V_shekti(v1, v2) + ' пк' + inttostr(xxxx)
+              + ' Уш ';
+                  WRT_UBEDOM(L04, Lm4, 4, comment, v1, v2);
+
 
         for j := 0 to high(FGm) do
           if ((L04 <= FGm[j]) and (FGm[j] <= Lm4)) or
             ((L04 >= FGm[j]) and (FGm[j] >= Lm4)) then
-            F_Sht[j] := 1520; // F0_sh[j];
+            F_Sht[j] := F0_ShD[i]; // F0_sh[j];
         // сброс флагов
         flg4st := false;
 
         ns := ns + 1;
+               end;
 
       end;
 
@@ -3047,7 +3092,7 @@ Begin
     // ------------------------------------------------------------------------------
     str_p := '';
 
-    // ------------------------------------------------------------------------------
+    // ---------W1Ush---------------------------------------------------------------------
     Setlength(WUsh, ns);
     MTmp := Nil;
   except
@@ -3060,7 +3105,7 @@ end;
 // ------------------------------------------------------------------------------
 procedure GUsh_3;
 var
-  i, j, k, kk, beta1, fkm, vt, vtg: integer;
+  i, j, k, kk, beta1, fkm,v1, vt, vtg: integer;
   k1, k2, k3, dl2, dl3, dl4, Len2, Len3, len4: integer;
   Fh, OtklUsh, L02, Lm2, L03, Lm3, Lm33, L04, Lm4, Lmv: integer;
   flg2st, flg3st, flg4st, startWhile, flg2st1, flg3st1, flg4st1: boolean;
@@ -3093,16 +3138,16 @@ Begin
     PasGruzSkor := 0;
 
     flg4st := false;
-    FG[Low(FG)] := F0_Sh[Low(FG)]; // 1520;
-    FG[High(FG)] := F0_Sh[High(FG)]; // 1520;
+    FG[Low(FG)] := F0_ShD[Low(FG)]; // 1520;
+    FG[High(FG)] := F0_ShD[High(FG)]; // 1520;
 
     // j:= G_Ind1(PasGruzSkor,GlobPassSkorost);
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]); // Nms1:= F_Norm[i];
+      Nms1 := round(F0_ShD[i]); // Nms1:= F_Norm[i];
       // Fh:= round(Fg[i] - F0_sh[i]);//1520 );  F_Norm[i] F0_sh[i]
-      Fh := round(F_Sht[i] - F0_Sh[i]);
+      Fh := round(F_Sht[i] - F0_ShD[i]);
 
       if Fh < 0 then
       begin
@@ -3111,18 +3156,25 @@ Begin
       end;
 
       Rds1 := Prds[i];
+       //  Rds1 :=320;
       fkm := FGm[i];
       k := AlpS(Nms1, Rds1);
+      if i=30 then
+      begin
+            i := i ;
+      end;
 
-      vt := F_V[i];
+
+      v1 := F_V[i];
       vtg := F_Vg[i];
-      j := G_Ind1(PasGruzSkor, vt);
+
+      j := G_Ind1(PasGruzSkor, v1);
 
       s1 := DeltaUsh[j, 1, k];
       s2 := DeltaUsh[j, 2, k];
       s3 := DeltaUsh[j, 3, k];
 
-      if (s2 < Fh) and (Fh <= s3) then
+      if (s2 < Fh)  then
       begin
         OtklUsh := Fh; // round(fg[i]);
         k3 := k3 + 1;
@@ -3149,7 +3201,7 @@ Begin
       xa := L04;
       xb := Lm4;
 
-      if (L04 > 0) and (Lm4 > 0) and (abs(L04 - Lm4) > 0) and (max4 > 0) and
+      if (L04 > 0) and (Lm4 > 0) and (abs(L04 - Lm4) >0) and (max4 > 0) and
         (fff > 1534) and (fff < 1548) then
       begin
         // -------------------------
@@ -3160,12 +3212,12 @@ Begin
         count := Leng div 4 + bolshek;
         if count = 0 then
           count := 1;
-
+                 ;
         WUsh[ns].st := 3;
         WUsh[ns].bel := Nms1+max4; // max4; fff
         WUsh[ns].L0 := L04;
         WUsh[ns].Lm := Lm4;
-        WUsh[ns].v := vt;
+        WUsh[ns].v := v1;
         WUsh[ns].vg := vtg;
         WUsh[ns].count := count;
         WUsh[ns].Leng := Leng;
@@ -3178,7 +3230,7 @@ Begin
         for j := 0 to high(FGm) do
           if ((L04 <= FGm[j]) and (FGm[j] <= Lm4)) or
             ((L04 >= FGm[j]) and (FGm[j] >= Lm4)) then
-            F_Sht[j] := 1520; // F0_sh[j];
+            F_Sht[j] :=F0_ShD[i]; // F0_sh[j];
         // сброс флагов
         flg4st := false;
 
@@ -3212,7 +3264,7 @@ var
   Fh, OtklUsh, L02, Lm2, L03, Lm3, Lm33, L04, Lm4, Lmv: integer;
   flg2st, flg3st, flg4st, startWhile, flg2st1, flg3st1, flg4st1: boolean;
   stv, belv, L0v: integer;
-  Nms1, Rds1, Vk, max2, max3, max33, max4, s1, s2, s3, LenMs, vt, vtg: integer;
+  Nms1, Rds1, Vk, max2, max3, max33, max4, s1, s2, s3, LenMs, vt, v1,vtg: integer;
   xxxx: integer;
   fff, imax: integer;
   xa, xb, Leng, bolshek, count: integer;
@@ -3248,8 +3300,8 @@ Begin
 
     while i <= High(FG) do
     begin
-      Nms1 := round(F0_Sh[i]); // Nms1:= F_Norm[i];
-      // Fh:= round(Fg[i]-F0_sh[i]);//1520;  - F_Norm[i]);
+      Nms1 := round(F0_ShD[i]); // Nms1:= F_Norm[i];
+       Fh:= round(Fg[i]-F0_shD[i]);//1520;  - F_Norm[i]);
 
       // 1520;  - F_Norm[i]);
 
@@ -3265,28 +3317,29 @@ Begin
       else
         beta1 := 0; // and (k < 5)
 
-      vt := F_V[i];
+      v1 := F_V[i];
       vtg := F_Vg[i];
-      if( vt = 40) then
-      vt :=40;
+      if( v1 = 40) then
+      v1 :=40;
 
-      j := G_Ind1(PasGruzSkor, vt);
+      j := G_Ind1(PasGruzSkor, v1);
 
       s1 := DeltaUsh[j, 1, k] + beta1;
       s2 := DeltaUsh[j, 2, k];
       s3 := DeltaUsh[j, 3, k];
 
-      Fh := round(F_Sht[i] - F0_Sh[i]);
+      Fh := round(F_Sht[i] - F0_ShD[i]);
       if fh > 18 then
       Fh:=fh;
 
       if ((F_Norm[i] = 1520) or (F_Norm[i] = 1524))
         and (Fh <= s2) and ( F_V[i]>60) then
-        Fh := round(F_Sht[i] - F_Wear[i] - F0_Sh[i])
+        Fh := round(F_Sht[i] - F_Wear[i] - F0_ShD[i] )
       else
-        Fh := round(F_Sht[i] - F0_Sh[i]);
+        Fh := round(F_Sht[i] - F0_ShD[i]);
 
-      if (s1 < Fh) and (Fh <= s2) then
+      //if (s1 < Fh) and (Fh <= s2) then
+             if (s1 < Fh)  then
       begin
         OtklUsh := Fh; // round(fg[i]);
         k3 := k3 + 1;
@@ -3313,7 +3366,7 @@ Begin
       // if  KrvFlag(xa,xb) then
       // sablog('krvflag = ' + inttostr(GlbKmTrue));
 
-      if (L04 > 0) and (Lm4 > 0) and (abs(L04 - Lm4) > 0) and (max4 > 0) and
+      if (L04 > 0) and(max4 >s1) and (Lm4 > 0) and (abs(L04 - Lm4) >2 ) and (max4 > 0) and
         (fff < 1548) and not KrvFlag(xa, xb) then
       begin
         // -------------------------
@@ -3342,7 +3395,7 @@ Begin
         WUsh[ns].val := max4;
         WUsh[ns].L0 := L04;
         WUsh[ns].Lm := Lm4;
-        WUsh[ns].v := vt;
+        WUsh[ns].v := v1;
         WUsh[ns].vg := vtg;
         // sablog('kmtrue=' + inttostr(GlbKmTrue) + ' L04=' + inttostr(xa) + ' Lm4=' + inttostr(xb));
         WUsh[ns].count := count;
@@ -3390,8 +3443,8 @@ Begin
 
   while i <= High(FG) do
   begin
-    Nms1 := round(F0_Sh[i]);
-    Fh := round(F_Sht[i] - F0_Sh[i]); // 1520;  - F_Norm[i]);
+    Nms1 := round(F0_ShD[i]);
+    Fh := round(F_Sht[i] - F0_ShD[i]); // 1520;  - F_Norm[i]);
 
     if Fh < 0 then
       Fh := 0;
@@ -3974,7 +4027,7 @@ begin
     x4a := 0;
     x4b := 0;
 
-    Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
+     Fh := abs(abs(Furb1[j]) - sqrt(abs(Trapezlevel[j] * Furb_sr[j] )));
 
 
 
@@ -3989,8 +4042,8 @@ begin
 
     while (j <= high(F_mtr)) and (s0 < Fh) do
     begin
-      Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
-
+      //Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
+        Fh := abs(abs(Furb1[j]) - sqrt(abs(Trapezlevel[j] * Furb_sr[j] )));
       if Urob[j] <> 0 then
         Fh := 0;
       vt := F_V[j];
@@ -4089,8 +4142,8 @@ begin
     x4a := 0;
     x4b := 0;
 
-    Fh := abs(abs(Furb1[i]) - abs(Trapezlevel[i]));
-
+    //Fh := abs(abs(Furb1[i]) - abs(Trapezlevel[i]));
+        Fh := abs(abs(Furb1[i]) - sqrt(abs(Trapezlevel[i] * Furb_sr[i] )));
     //if NecorrPasportFlag then
      // Fh := abs(Furb1[i]) - abs(Furbpersred[i]);
 
@@ -4105,8 +4158,8 @@ begin
 
     while (j <= high(F_mtr)) and (s0 < Fh) do
     begin
-      Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
-
+    //  Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
+           Fh := abs(abs(Furb1[j]) - sqrt(abs(Trapezlevel[j] * Furb_sr[j] )));
       if Urob[j] <> 0 then
         Fh := 0;
 
@@ -4210,7 +4263,7 @@ begin
     x4a := 0;
     x4b := 0;
 
-    Fh := abs(abs(Furb1[i]) - abs(Trapezlevel[i])); // F_urb_Per
+    Fh := abs(abs(Furb1[i]) - sqrt(abs(Trapezlevel[i] * Furb_sr[i] ))); // F_urb_Per
 
     // Fh :=  abs(F_urb_Per[i]);         //      Fh := abs(abs(Furb1[i]) - abs(F_urb_Per_sr[i]));
     if NecorrPasportFlag then
@@ -4227,7 +4280,7 @@ begin
 
     while (j <= high(F_mtr)) and (s0 < Fh) do
     begin
-      Fh := abs(abs(Furb1[j]) - abs(Trapezlevel[j]));
+      Fh :=  abs(abs(Furb1[j]) - sqrt(abs(Trapezlevel[j] * Furb_sr[j] )));
 
       if Urob[j] <> 0 then
         Fh := 0;
@@ -5444,7 +5497,7 @@ Begin
         continue;
       end; // if
       // ----------------------------------------------------------------------------
-      if (L04 > 0) and (Lm4 > 0) and (CVSredKm > 5) then
+      if (L04 > 0) and (Lm4 > 0)  then
       begin
 
         stv := 4;
@@ -5456,7 +5509,7 @@ Begin
         // сброс флагов
         flg4st := false;
         flg_add_ubed := true;
-
+                 fff:= Nms1-   belv;
         v1 := V_ogr_suj(0, vt, Nms1, math.Floor(fff));
         v2 := V_ogr_suj(1, vtg, Nms1, math.Floor(fff));
 
@@ -5511,7 +5564,6 @@ Begin
 
   end; // try
 end;
-
 procedure GetFsuj_3(FG: masr; FGm, Prds, Shp: mas; var WSuj: masots);
 var
   i, j, ij, k, kk, beta1, fkm: integer;
@@ -6498,7 +6550,7 @@ procedure WriteTempOtsToProsOts(var temp: masots; pg: integer; D: real;
 var
   Ln: real;
   vtg, vr, Vrg, jj, belv, L0v, Lmv, tempIndex, v1, v2, xxxx, stv: integer;
-  is2to3, iso_joint, otsf: boolean;
+  is2to3, iso_joint, otsf,VL,VP: boolean;
   ots: string;
 begin
   tempIndex := length(temp) - 1;
@@ -6522,17 +6574,28 @@ begin
           iso_joint :=false;
     iso_joint := CheckForIsoJoint(L0v, Lmv);
     WPro[ns].prim := '';
-            WPro[ns].prim :='';
 
-               if (iso_joint )then
-      begin
-        WPro[ns].prim := WPro[ns].prim + 'ис';
-      end;
-      if ((iso_joint )and (belv >=18 ))then
+
+
+      if ((iso_joint ) )then
       begin
              WPro[ns].prim := '';
-        WPro[ns].prim := WPro[ns].prim + 'ис?; ';
+         WPro[ns].prim := WPro[ns].prim + 'ис; ';
       end;
+
+
+        if ((iso_joint ) )then
+      begin
+             WPro[ns].prim := '';
+         WPro[ns].prim := WPro[ns].prim + 'ис; ';
+      end;
+
+           if ((iso_joint) and (s2+ 2  < belv) and
+     (belv <= s3) ) then
+    begin
+          WPro[ns].prim := '';
+         WPro[ns].prim := WPro[ns].prim + 'ис?; ';
+    end;
 
 
     if (belv >= s0) and (belv <= s1) then
@@ -6579,7 +6642,10 @@ begin
     begin
       is2to3 := (iso_joint and (s1 < belv) and (belv <= s2) and (s2 < belv + 2)
         and (belv + 2 <= s3));
+
       stv := 3;
+      //if  iso_joint   then   WPro[ns].prim := WPro[ns].prim + 'ис?; ';
+
       if (not(iso_joint)) then
       begin
         pro_s3 := pro_s3 + 1;
@@ -6620,10 +6686,26 @@ begin
       otsf := false;
 
     end;
-    if ((stv = 4) or ((stv = 3) and iso_joint and not(is2to3))) then
+
+
+
+
+
+
+
+
+    if ((stv = 4) or ((stv = 3) and iso_joint and not(is2to3)))
+       then
     begin
-      v1 := V_ogr_UPP(0, vt, belv, 1, iso_joint);
-      v2 := V_ogr_UPP(1, vtg, belv, 1, iso_joint);
+    VP:=  Most_Tonnel(WPro, 'Пр.п');
+    VL:= Most_Tonnel(WPro, 'Пр.л');
+     v1 := vt;
+              v2 :=vtg;
+        if not ( Most_Tonnel(WPro, 'Пр.п')or Most_Tonnel(WPro, 'Пр.л') )  then
+          begin
+                          v1 := V_ogr_UPP(0, vt, belv, 1, iso_joint);
+                      v2 := V_ogr_UPP(1, vtg, belv, 1, iso_joint);
+          end;
 
 
       if GlbFlagRemontKm and (RemTab9 > 0) then
@@ -6635,7 +6717,7 @@ begin
         if v2 = -1 then
           v2 := V_ogr_UPP(1, vtg, belv, 1);
       end;
-      if ((v1 >= 0) and (v1 < vt)) or ((v2 >= 0) and (v2 < vtg)) then
+      if ((v1 >= 0) and (v1 <= vt)) or ((v2 >= 0) and (v2 <= vtg)) then
       begin
         if (v1 >= vr) then
           v1 := -1;
@@ -6649,7 +6731,8 @@ begin
         // xxxx:= (((L0v + Lmv) div 200) mod 1000) div 100 + 1;
         xxxx := L0v div 100 + 1;
         // 0909
-        WPro[ns].st := stv;
+
+          WPro[ns].st := stv;
         WPro[ns].bel := belv;
         WPro[ns].L0 := L0v;
         WPro[ns].Lm := Lmv;
@@ -6667,8 +6750,9 @@ begin
           WPro[ns].prim := GlbTempTipRemontKm;
         ns := ns + 1;
          ots:= inttostr(belv)+'/'+inttostr(abs(L0v- Lmv)) ;
-        if (V_shekti(v1, v2)<> '-/-')then
 
+                         if( (V_shekti(v1, v2)<> '-/-')and not
+                           (Most_Tonnel(WPro, 'Пр.п') or  Most_Tonnel(WPro, 'Пр.л')))then
         WRT_UBEDOM(L0v, Lmv, stv, 'V=' + V_shekti(v1, v2) + ' пк' +
           inttostr(xxxx) + ' Пр.' + nt +ots+ ';  ', v1, v2);
 
@@ -6690,9 +6774,9 @@ var
   i, j, L, m, i1, i2, xxxx, pg, k1, jj, jalauCount: integer;
   H, Ln, mx: real;
 
-  stv, belv, L0v, Lmv, ogranichenie1, a, b, xa, xb, vtg, v1, v2, vr,
+  stv, belv, L0v, Lmv, ogranichenie1, a, b, xa, xb, vtg, v1, v2, vr ,
     Vrg: integer;
-  z1, z2, imin, imax, tran_length, tempIndex: integer;
+  z1, z2, imin, imax, tran_length, tempIndex, indexV: integer;
   minx, maxx: real;
   otsf, jalau: boolean;
   transitions: array of integer;
@@ -6765,12 +6849,17 @@ begin
 
         end;
 
-        vt := F_V[e1.index];
-        vtg := F_Vg[e1.index];
+                           indexV:=  e2.index;
+                          vtg := F_Vg[e1.index];
+                  v1 :=  F_V[e1.index];
         vr := F_Vrp[e1.index];
         Vrg := F_Vrg[e1.index];
-        jj := G_Ind2(pg, vt);
-
+        jj := G_Ind2(pg, v1);
+           if (i>750 ) then
+           begin
+             i:=i;
+                v1:=v1;
+           end;
         belv := round(H);
         if (H - belv < 0.5) and (H - belv > 0) then
           belv := belv ;
@@ -6797,14 +6886,14 @@ begin
           end;
           Setlength(temp, 0);
         end;
-              if ( Lmv >= 600) then
+              if ( belv>= 20) then
           Lmv:=Lmv;
         tempIndex := length(temp);
         Setlength(temp, tempIndex + 1);
         temp[tempIndex].bel := belv;
         temp[tempIndex].L0 := L0v;
         temp[tempIndex].Lm := Lmv;
-        temp[tempIndex].v := vt;
+        temp[tempIndex].v := v1;
         temp[tempIndex].vg := vtg;
         temp[tempIndex].Vrp := vr;
         temp[tempIndex].Vrg := Vrg;
@@ -6928,22 +7017,7 @@ begin
           (delta <=20) then
         begin
 
-               if (delta<=10)and (belv>18)  then
-           begin
-           comment_gr:= '';
-           v1:=500;
-           v2:=60;
-                     xxxx := L0v div 100 + 1;
 
-          WRT_UBEDOM(L0v, Lmv, stv, 'V=' + V_shekti(v1, v2)+ 'пк' +
-          inttostr(xxxx) + 'П'+ots  +'гр' +'; ', v1, v2);
-                    comment_gr:='гр';
-             // WPer[ns].prim comment_gr
-             //     WRT_UBEDOM(L0v, Lmv, stv, 'V=' + V_shekti(v1, v2) + ' пк' +
-          //inttostr(xxxx) + ' П' + nt + '; ', v1, v2);
-
-             ////
-             end;
 
           stv := 3;
           per_s3 := per_s3 + 1;
@@ -6975,16 +7049,35 @@ begin
               Urob[j] := 1;
             end;
           end;
+          if not(Most_Tonnel(W1Per, 'П')) then
+          begin
+
+          if (delta<=10)and (belv>18)  then
+           begin
+           comment_gr:= '';
+           v1:=500;
+           v2:=60;
+                     xxxx := L0v div 100 + 1;
+
+          WRT_UBEDOM(L0v, Lmv, stv, 'V=' + V_shekti(v1, v2)+ 'пк' +
+          inttostr(xxxx) + 'П'+ots  +'гр' +'; ', v1, v2);
+                    comment_gr:='гр';
+              WPer[ns-1].prim :=comment_gr;
+
+             ////
+             end;
+          end;
         end;
     if (s3 < belv) and (Ln <= D) then
       stv := 4;
-    if otsf then
-    begin
+
 
 
 
 
     ////
+     if ((stv = 4 ) and ((Most_Tonnel(W1Per, 'П'))) ) then
+     begin
       WPer[ns].st := stv;
       WPer[ns].s3 := s2;
       WPer[ns].bel := belv;
@@ -6998,10 +7091,12 @@ begin
       WPer[ns].Vrg := Vrg;
       WPer[ns].flg := false;
       WPer[ns].isLong := temp[tempIndex].isLong;
-      ns := ns + 1;
-      otsf := false;
+       end;
 
-    end;
+
+        ns := ns + 1;
+       glbCount_Per4s := glbCount_Per4s + 1;
+
 
           for j := i to high(F_urb_Per1 ) do
           begin
@@ -7013,13 +7108,10 @@ begin
               Urob[j] := 1;
             end;
           end;
+         iso_joint :=Most_Tonnel(WPer, 'П');
+             iso_joint :=false;
 
-    if (stv = 4) then
-    begin
-
-       v1 := V_ogr_UPP(0, vt, belv, 2);
-          v2 := V_ogr_UPP(1, vtg, belv, 2);
-               for j := i to high(F_urb_Per1 ) do
+                 for j := i to high(F_urb_Per1 ) do
           begin
             if ((xa_ <= F_urb_Per1[j]) and (F_urb_Per1[j] <= xb_)) or
               ((xa_ >= F_urb_Per1[j]) and (F_urb_Per1[j] >= xb_)) then
@@ -7029,6 +7121,12 @@ begin
               Urob[j] := 1;
             end;
           end;
+
+    if ((stv = 4 ) and (not(Most_Tonnel(W1Per, 'П'))) ) then
+    begin
+
+       v1 := V_ogr_UPP(0, vt, belv, 2);
+          v2 := V_ogr_UPP(1, vtg, belv, 2);
 
          if GlbFlagRemontKm and (RemTab9 > 0) then
               begin
@@ -7051,7 +7149,7 @@ begin
        // if nt = 'п' then
            // glbCount_Per4s  := glbCount_Per4s + 1;
         //if nt = 'л' then
-         glbCount_Per4s := glbCount_Per4s + 1;
+
         // xxx   glbCount_Per4s := 0;x:= (((L0v + Lmv) div 200) mod 1000) div 100 + 1;
         xxxx := L0v div 100 + 1;
         // 0909
@@ -7072,7 +7170,7 @@ begin
         if (v1 = -1) and (v2 = -1) then
           WPer[ns].prim := GlbTempTipRemontKm;
         ns := ns + 1;
-        if V_shekti(v1, v2) <> '-/-'then
+        if V_shekti(v1, v2) <> '-/-'  then
 
         WRT_UBEDOM(L0v, Lmv, stv, 'V=' + V_shekti(v1, v2) + ' пк' + inttostr(xxxx) + ' П'  +ots+ ';  ', v1, v2);
       end;
@@ -7097,7 +7195,7 @@ var
      stv, belv, L0v, Lmv, ogranichenie1, a, b, xa, xb, vtg, v1, v2, vr,
     Vrg: integer;
  ip1,ip, z1, z2, imin, imax, tran_length, tempIndex: integer;
- H3,H4,Hh0,h0, minx, maxx: real;
+ Hcos1,Hcos2,Hsin1,Hsin2,H1,H3,H4,Hh0,h0, minx, maxx: real;
   otsf, jalau: boolean;
  H_trans,Index_Trans, H_extr,extr,transitions: array of integer;
   e1, e2,e3,e4: Extremum;
@@ -7190,121 +7288,119 @@ begin
       e3 := GetExtremum(Fm, transitions[i ], transitions[i+1]);
       e4:= GetExtremum(Fm, transitions[i+1], transitions[i + 2]) ;
 
-                dTrap1:= abs(Fm[e1.index] +FmAvgTr[e1.index])- abs(TrapezLevel[e1.index]);
-               dTrap2:= abs( Fm[e2.index] +FmAvgTr[e2.index])- abs(TrapezLevel[e2.index]);
-              // H:=0;
 
-                 df1:= Fm[e1.index] +FmAvgTr[e1.index]-TrapezLevel[e1.index ];
-                    df2:= Fm[e2.index] +FmAvgTr[e2.index]-TrapezLevel[e2.index] ;
-        // Index_Trans[e1.index] :=round(e1.index);
-        //if ( dTrap1* dTrap2<0) then
-               //    begin
-               H:= (abs(Fm[e1.index] - Fm[e2.index]+(FmAvgTr[e1.index] - FmAvgTr[e2.index]))) ;
+
+    if   abs(TrapezLevel[e1.index ]) <1 then
+    begin
+
+      H1:=abs(Furb1[e1.index]-Furb1[e2.index]) ;
+         H:= H1;
+                   end ;
+        if   abs(TrapezLevel[e1.index ]) >=1 then
+    begin
+    H1:=(abs(Fm[e1.index]-Fm[e2.index]+(TrapezLevel[e1.index ] -TrapezLevel[e2.index ]))) ;
+                   end ;
+
                 Ln:= abs(FmK[e1.index] - FmK[e2.index]);
-               //   end;
-                if Ln<20 then  H_Trans[e1.index] :=round(abs(e1.value )+abs(e2.value ));
 
-               Ln2:= abs(FmK[e3.index] - FmK[e4.index]);
-                 H2 := (abs(Fm[e3.index] - Fm[e4.index]+(FmAvgTr[e3.index] - FmAvgTr[e4.index])));
+                                H3:=0;
+                       if Ln<=20 then
+                           begin
+                            Hsin1:=abs(TrapezLevel[e1.index]- TrapezLevel[e2.index]  );
+                                H2:=  ( abs(H1)- 1.0*abs(Hsin1));
+                                      if  H2<0 then  H2:=0;
 
-          if  i=High(transitions)-2 then
-          begin
-                  e1 := GetExtremum(Fm, transitions[i - 1], transitions[i]);
-           e2 := GetExtremum(Fm, transitions[i], high(F_mtr)-1);
-                H:= (abs(Fm[e1.index] - Fm[e2.index]+(FmAvgTr[e1.index] - FmAvgTr[e2.index]))) ;
-                Ln:= abs(FmK[e1.index] - FmK[e2.index]);
-                H2:=H;
-          end;
+
+                                   H:=min(H2,H1);
+                           end;
+
 
 
 
             popr:=exp(-2*abs(h-10))  ;
-            if H <11 then     H:=H+1;
-               if H2 <11 then     H2:=H2+1;
+            if H <12 then     H:=H+popr;
+
                 h0:= abs(TrapezLevel[e1.index]- TrapezLevel[e2.index]  );
-            //if (h>13)and (h0<=1)  then  H:=H/1.15;
-              if (h2>15)and (h0<=1)   then  H2:=H2/1.15;
-
-
-//      if H2>H then
-//      begin
-//         H:=H2;
-//         e1:=e3;
-//            e2:=e4;
-//               Ln:= abs(FmK[e1.index] - FmK[e2.index]);
-//               //i:=i+1;
-//      end;
 
 
 
-     // if  Ln<3 then    H:=H/10.0;
 
-
-      //i := i + 1;
       isLong := false;
-      if (H > 7) and (Ln <= 30) and( Ln>2)then
+      if (H >7) and (Ln <= 30) and( Ln>2)then
       begin
         if (Ln > 20) then
         begin
           isLong := true;
           if (abs(Fm[e1.index] - Fm[e1.index + 20]) <
             abs(Fm[e2.index] - Fm[e2.index - 20])) then
-          begin
-            H := abs(Fm[e2.index] - Fm[e2.index - 20]);
-            e1.index := e2.index - 20;
+//
+
+
+           begin
+              e1.index := e2.index - 20;
+
+              // H1:=(abs(Fm[e1.index]-Fm[e2.index]+(FmAvgTr[e1.index] - FmAvgTr[e2.index]))) ;
+              //   H3:= (abs(Fm[e1.index])+ abs(Fm[e2.index]) )/1.1 ;
+                if   abs(TrapezLevel[e1.index ]) <1 then
+              begin
+
+               H1:=abs(Furb1[e1.index]-Furb1[e2.index]) ;
+
+            H3:= (abs(Fm[e1.index]-Fm[e2.index]));
+                end;
+
+               if   abs(TrapezLevel[e1.index ]) >=1 then
+               begin
+              H1:= (abs(Fm[e1.index] - Fm[e2.index]+(TrapezLevel[e1.index] - TrapezLevel[e2.index]))) ;
+
+               end;
+
+           Hsin1:=abs(TrapezLevel[e1.index]- TrapezLevel[e2.index ]  );
+                      H2:=   abs( abs(H1)- 1.0*abs(Hsin1));
+
+
+                   H:=min(H2,H1);
+
           end
           else
           begin
-            H := abs(Fm[e1.index] - Fm[e1.index + 20]);
+            //H := abs(Fm[e1.index] - Fm[e1.index + 20]);
             e2.index := e1.index + 20;
+
+             //  H1:=(abs(Fm[e1.index]-Fm[e2.index]+(FmAvgTr[e1.index] - FmAvgTr[e2.index]))) ;
+                    H3:= (abs(Fm[e1.index]-Fm[e2.index]) ) ;
+           if   abs(TrapezLevel[e1.index ]) <1 then
+          begin
+
+      H1:=abs(Furb1[e1.index]-Furb1[e2.index]) ;
+               H:= H1;
+          end;
+                  if   abs(TrapezLevel[e1.index ]) >=1 then
+          begin
+             H1:= (abs(Fm[e1.index] - Fm[e2.index]+1.0*(TrapezLevel[e1.index] - TrapezLevel[e2.index]))) ;
+               Hsin1:=abs(TrapezLevel[e1.index]- TrapezLevel[e2.index ]  );
           end;
 
+                H2:=   abs( abs(H1)- 1.0*abs(Hsin1));
+                            H3:=abs(Fm[e1.index]-Fm[e2.index]);
+
+                                     H:=min(H1,H3);
+
+
+          end;
         end;
-           Hh0:=0;
-           h0:=0;
-          h0:= abs(TrapezLevel[e1.index]- TrapezLevel[e2.index]  );
-                  dTrap1:= (Fm[e1.index] +FmAvgTr[e1.index])- (TrapezLevel[e1.index]);
-               dTrap2:= ( Fm[e2.index] +FmAvgTr[e2.index])- (TrapezLevel[e2.index]);
-               // if (( h0>1 )  and (Fm[e1.index]*Fm[e2.index]<0) )  then
-                  // begin
-                //  if  (dTrap1*dTrap1<0) then
-                     if  (Fm[e1.index]*Fm[e2.index]<=0) then
-                       begin
-                        Hh0:=  abs((Fm[e1.index] +FmAvgTr[e1.index])- (TrapezLevel[e1.index]) );
-                       Hh0:=Hh0+  abs( (Fm[e2.index] +FmAvgTr[e2.index])- (TrapezLevel[e2.index]) );
-                          H2:= abs (Fm[e1.index] )+  abs (Fm[e2.index]);
-                         end;
 
-             H3:= abs((Fm[e1.index] +FmAvgTr[e1.index])-( Fm[e2.index] +FmAvgTr[e2.index]));
-              // H:=0;
-                 df2:=0;
-                 ip:=-10;
-                     df1:=0;
-              while ip < 20 do
-              begin
-                 df1:= abs(TrapezLevel[e1.index+ip ]-TrapezLevel[e1.index +ip+2 ]);
-                 if (df1>df2) then
-                 begin
-                  df2:=df1;
-                  ip1:=abs(ip);
-                    end;
-                    ip:=ip+1;
-                 end;
 
-                    H4:=0;
-                    H:=0;
-               if ( h0>0.01) then H:=0;
-          if ( h0>0.01   )    then
-           H4:=min(Hh0/1.15,H2/1.15);
 
-           //if ( (H>20) and (df2>2) )    then    H:=0;   //  and (dTrap1*dTrap2<0)    H:=min(Hh0/1.15,H2);
 
-           //  and (dTrap1*dTrap2<0)    H:=min(Hh0/1.15,H2);
+
+
+
           if Ln<3 then  H:=0;
-            if ( h0< 0.01   )  and (H3>11 )  then    H:=H3;
-               if ( h0< 0.01   )  and (H3<=11 )  then    H:=H3+exp(-2*abs(h-10));
-         if ( h0>0.01   ) then
-           H:=min(H4,H3);
+
+          if ( ( H>12) and   (abs(TrapezLevel[ max(  e1.index-5,0)]-TrapezLevel[max(  e2.index+5,high(TrapezLevel)) ]  )>0.1 )   )
+           then H:=H/1.2-1;
+            if ( ( H>15) and   (abs(TrapezLevel[e1.index-10]-TrapezLevel[e2.index+10 ]  ) <0.1   )) then H:=H/1.01;
         vt := F_V[e1.index];
         vtg := F_Vg[e1.index];
        vr := F_Vrp[e1.index];
@@ -7318,8 +7414,9 @@ begin
         jj := G_Ind2(pg, vr);
 
         belv := Ceil(H);
-        if (H - belv < 0.7 ) and (H - belv > 0) then
+        if (H - belv < 0.7 ) and (H - belv > 0)and (H < 13) then
           belv := belv + 1;
+            if ( H < 12 ) then       belv := belv + 1;
         L0v := FmK[e1.index];
         Lmv := FmK[e2.index];
 
@@ -7327,6 +7424,11 @@ begin
         s1 := DeltaPer[2, jj];
         s2 := DeltaPer[3, jj];
         s3 := DeltaPer[4, jj];
+
+                 if (Lmv< 350 )then
+            begin
+                belv:=belv;
+                         end;
 
         if (s0 >= belv) then
           continue;
@@ -7336,6 +7438,7 @@ begin
         begin
           WriteTempOtsToPerOts(temp, pg, D, nt, ns, WPer);
           if (temp[length(temp) - 1].bel > belv) and
+      (isLong = false)  and
             (i - temp[length(temp) - 1].transitionIndex = 1) then
           begin
             Setlength(temp, 0);
@@ -7367,227 +7470,6 @@ begin
 
 end;
 
-// = = = = = = = = = = = = = = = = = = = = = = = = ============================================================================================================
-// ------------------------------------------------------------------------------
-// процедура Перекоса 12-09-2010
-// ------------------------------------------------------------------------------
-{procedure GetPerekos;
-  const
-  d = 20.0; //metr
-  Dl_per = 10; // 5 m
-  var
-  i,j,l,m,i1,i2, xxxx, pg,k1, s11,s21,s31:integer;
-  h, Ln, mx:real;
-  Ikf, stv, belv, L0v, Lmv, ogranichenie1, a,b,xa,xb,xa_,xb_,vtg, v1, v2, vr, vrg:integer;
-  otsf, flagv, filter, Filter_Siezd:boolean;
-  rem_inf:string;
-  begin
-  try
-  otsf:= false;
-  Setlength(WPro,3000);
-  pg:= 0;
-  Ikf:= NAPR_DBIJ;
-  m:= 20;  p:= 0;
-
-  while p <= high(Fm)/20 do
-  begin
-  mx:= 0; i1:= 0;  i2:= 0;  i:= 0;
-
-  while i <= high(Fm) - m do
-  begin
-  for j:= i + 1 to i + m do
-  begin
-  //h:= abs(Fm[i] - Fm[j]);
-  h:= abs(F_urb_Per1[i] - F_urb_Per1[j]);
-  if mx < h then begin
-  mx:= h;
-  Ln:= abs(Fmk[i] - Fmk[j])/100;
-  i1:= i;
-  i2:= j;
-  end;
-  end;
-  i:= i + 1;
-  end;
-
-  vt:= F_V[i1];
-  vtg:= F_Vg[i1];
-  vr:=  F_Vrp[i1];   vrg:= F_Vrg[i1];
-
-  j:= G_Ind2(pg, vt);
-  s1:= DeltaPro_UR_per[1,j];
-  s2:= DeltaPro_UR_per[2,j];
-  s3:= DeltaPro_UR_per[3,j];
-
-  if (2 < Ln) and (Ln <= d) and ((mx > s1) or (mx > s11))  then
-  begin
-  // for l:= i1 to i2 do F_urb_Per1[l]:= 0; //Fm[l]:= 0;
-  a:= Fmk[i1];     b:= Fmk[i2];
-  L0v:= min(a,b);  Lmv:= max(a,b);
-  belv:= round(mx);
-  filter:= false;
-
-  if NAPR_DBIJ < 0 then
-  begin
-  L0v:= max(a,b);  Lmv:= min(a,b);
-  end;
-
-  if L0v <= 0 then L0v := 1;
-  if Lmv <= 0 then Lmv := 1;
-
-  xa:= L0v; // - NAPR_DBIJ*Dl_per;
-  xb:= Lmv; // + NAPR_DBIJ*Dl_per;
-  xa_:= L0v - NAPR_DBIJ*Dl_per;
-  xb_:= Lmv + NAPR_DBIJ*Dl_per;
-
-  if (L0v div 100) mod 1000 > 995 then xa:= L0v;
-  if (Lmv div 100) mod 1000 > 995 then xb:= Lmv;
-
-  Filter_Siezd:= not FlagSiezd(L0v div 100, Lmv div 100);
-  //------------------------------------------------------------------------------
-  if (s1 < belv) and (belv <= s2)
-  then begin   //and not GlbFlagRemontKm
-  stv:= 2;
-  GetV_Remont(2, xa, xb, vt, vtg, belv);
-
-  per_s2:= per_s2 + 1;
-
-  WPro[ns].st:= stv;
-  WPro[ns].bel:= belv;
-  WPro[ns].L0:= xa;
-  WPro[ns].Lm:= xb;
-  WPro[ns].v := vt;
-  WPro[ns].vg := vtg;
-  WPro[ns].vop:= -1;
-  WPro[ns].vog:= -1;
-  WPro[ns].vrp:= vr;
-  WPro[ns].vrg:= vrg;
-  WPro[ns].flg:= false;
-  ns:= ns + 1;
-
-  for j:= 0 to high(FmK) do begin
-  if ((xa_ <= FmK[j]) and (FmK[j] <= xb_))
-  or ((xa_ >= FmK[j]) and (FmK[j] >= xb_)) then
-  begin
-  F_urb_Per1[j]:= 0;
-  Furb1[j]:= 0;//Furb_sr[j]; //18.06.2013
-  end;
-  end;
-  end;
-
-  if (s2 < belv) and (belv <= s3)
-  then begin     //and not GlbFlagRemontKm
-  stv:= 3;
-  GetV_Remont(2, xa, xb, vt, vtg, belv);
-
-  per_s3:= per_s3 + 1;
-  WPro[ns].st:= stv;
-  WPro[ns].bel:= belv;
-  WPro[ns].L0:= xa;
-  WPro[ns].Lm:= xb;
-  WPro[ns].v := vt;
-  WPro[ns].vg := vtg;
-  WPro[ns].vop:= -1;
-  WPro[ns].vog:= -1;
-  WPro[ns].vrp:= vr;
-  WPro[ns].vrg:= vrg;
-  WPro[ns].flg:= false;
-  WPro[ns].prim:= '';
-  ns:= ns + 1;
-
-  for j:= 0 to high(FmK) do begin
-  if ((xa_ <= FmK[j]) and (FmK[j] <= xb_))
-  or ((xa_ >= FmK[j]) and (FmK[j] >= xb_)) then
-  begin
-  F_urb_Per1[j]:= 0;
-  Furb1[j]:= 0;//Furb_sr[j]; //18.06.2013
-  end;
-  end;
-  end;
-
-  if (s3 < belv) then
-  begin
-  stv:= 4;
-  otsf:= true;
-  end;
-
-  if otsf and (stv = 4) and Filter_Siezd then
-  begin
-  otsf:= false;
-  v1:= V_ogr_UPP(0, vt, belv, 2);
-  v2:= V_ogr_UPP(1, vtg, belv, 2);
-
-  if GlbFlagRemontKm and (RemTab9 > 0) then
-  begin
-  v1:= VTab9(2, belv, vt);
-  v2:= VTab9(2, belv, vtg);
-
-  if v1 = -1 then v1:= V_ogr_UPP(0, vt, belv, 2);
-  if v2 = -1 then v2:= V_ogr_UPP(1, vtg, belv, 2);
-  end;
-
-
-  if ((v1 >= 0) and (v1 < vt))
-  or ((v2 >= 0) and (v2 < vtg)) then
-  begin
-
-  if (v1 >= vr) then v1:= -1;
-  if (v2 >= vrg) then v2:= -1;
-
-  filter:= false;
-  glbCount_Per4s:= glbCount_Per4s + 1;
-
-  //xxxx:= (((L0v + Lmv) div 200) mod 1000) div 100 + 1;
-  xxxx:= ((L0v div 100) mod 1000) div 100 + 1;
-  //0909
-  WPro[ns].st:= 4;
-  WPro[ns].bel:= belv;
-  WPro[ns].L0:= xa;
-  WPro[ns].Lm:= xb;
-  WPro[ns].v := vt;
-  WPro[ns].vg := vtg;
-  WPro[ns].vop:= v1; //ogranichenie1;
-  WPro[ns].vog:= v2; //ogranichenie1;
-  WPro[ns].vrp:= vr;
-  WPro[ns].vrg:= vrg;
-  WPro[ns].flg:= false;
-
-  if GlbFlagRemontKm  then WPro[ns].prim:= GlbTempTipRemontKm;
-
-  ns:= ns + 1;
-  //0909
-  WRT_UBEDOM(L0v, Lmv, 4 ,
-  'П п'+ inttostr(xxxx)+ ' v=' + v_shekti(v1, v2) + ';' , v1, v2); //FormatFloat('0.00',belv)
-
-
-  for j:= 0 to high(FmK) do begin
-  if ((xa_ <= FmK[j]) and (FmK[j] <= xb_))
-  or ((xa_ >= FmK[j]) and (FmK[j] >= xb_)) then
-  begin
-  F_urb_Per1[j]:= 0;
-  Furb1[j]:= 0;//Furb_sr[j]; //18.06.2013
-  end;
-  end;
-
-  end;
-
-  // VTab9(typeots, value, speed: integer)
-
-  stv:= 0;
-  end;
-  i:= i2 + 1;
-  end;
-  stv:= 0;
-
-  p:= p + 1;
-  end;
-
-  Setlength(WPro,ns);
-  except
-  end;
-  end;
-  }
-// ------------------------------------------------------------------------------
-// Жана процедура Рихтовка 13-08-2015
 // ------------------------------------------------------------------------------
 function CoordinateToReal(km, meter: integer): real;
 begin
@@ -8090,7 +7972,7 @@ begin
             xxxx := (L0v div 100) + 1;
             comment := 'V=' + V_shekti(v1, v2) + ' пк' + inttostr(xxxx)
               + ' П; ';
-
+                  WRT_UBEDOM(L0v, Lmv, 4, comment, v1, v2);
             WPer[ns].st := 4;
             WPer[ns].bel := belv;
             WPer[ns].L0 := L0v;
@@ -8106,7 +7988,7 @@ begin
             if GlbFlagRemontKm then
               WPer[ns].prim := GlbTempTipRemontKm;
             ns := ns + 1;
-            WRT_UBEDOM(L0v, Lmv, 4, comment, v1, v2);
+
 
             for j := 0 to high(FmK) do
               if ((xa_ <= FmK[j]) and (FmK[j] <= xb_)) or
@@ -8323,7 +8205,7 @@ const
   D = 20; // metr
 var
  i01, i02, k,i, j, m, i1, i2, Ln,Ln2, tran_length, tempIndex: integer;
-h20, H00,hprom,Hstr1,Hstr2,Hh0 ,H,H2,H3,H4 ,s0, s1, s2, s3, h0,h_per: real;
+h20, H00,hprom,Hstr1,Hstr2,Hh0 ,H,H2,H3,H4,Hsin ,s0, s1, s2, s3, h0,h_per: real;
   belv, L0v, Lmv, vtg, v1, v2, vr, Vrg: integer;
   H_Trans_ext,H_Trans,transitions: array of integer;
   ee0,ee1, ee2, ee3,ee4,e1, e2, e3,e4,e5,e6,b1, b2: Extremum;
@@ -8331,6 +8213,10 @@ h20, H00,hprom,Hstr1,Hstr2,Hh0 ,H,H2,H3,H4 ,s0, s1, s2, s3, h0,h_per: real;
   temp: masots;
   isnotcorrect,isLong: boolean;
 begin
+
+
+
+
 
   // if  then
       Setlength(WRih, 3000);
@@ -8410,6 +8296,7 @@ begin
 
               H:=0;
               H2:=0;
+
        h0:=  abs(FmTrapez[e1.index]-FmTrapez[e2.index]);
           h20:=  abs(FmTrapez[e3.index]-FmTrapez[e4.index]);
             Ln:= abs(FmK[e1.index] -FmK[e2.index]) ;
@@ -8427,26 +8314,46 @@ begin
                    //H:=H2;
                   // Ln:=Ln2;
                  end;
+                if (( i> 950)or (i<40)) then
+                begin
+                      H:=H;
+                      H2:=H2;
+                  end;
 
 
-                   h0:=  abs(FmTrapez[e1.index]-FmTrapez[e2.index]);
-          Hh0:=   Fm[e1.index] +FmTrapez[e1.index] -(Fm[e2.index] +FmTrapez[e2.index]);
+
+                     H2:=0;
+                        H3:=0;
+
+               if (  (Ln<=20)  ) then
+               begin
+                    H1:=  abs( Fm[e1.index] +2*FmTrapez[e1.index] -(Fm[e2.index] +2*FmTrapez[e2.index]));
+                       Hsin:= 2*abs( FmTrapez[e1.index]-  FmTrapez[e2.index]);
+                         H2:=H1-Hsin;
+                        if H2<0 then     H2:=0;
+                           H:=H2;
+               //H3:= (abs(Fm[e1.index]-Fm[e2.index])) ;
+                // H:=min(H2,H3);
+                        end;
+
+
         //  Hh0:=Hh0+  abs(abs (Fm[e2.index] +FmTrapez[e2.index])- abs(FmTrapez[e2.index]) );  ;
 
        //  if ( h0>1 ) then    H:=abs( Fm[e1.index])+ abs( Fm[e2.index]);
            //   if ( h0>1 ) then    H:= min(H,Hh0);
 
 
-                 Hstr1:=   100;
-      Hstr2:=   100;
-      if  (abs(FmTrapez[e1.index-10])>40) or (abs(FmTrapez[e1.index+10])>40 ) or ( abs(FmTrapez[e2.index+10])>40 )
-      or ( abs(FmTrapez[e2.index-10])>40 )   then
-         begin
-      Hstr1:=   abs(Fm[e1.index]-FmTrapez[e1.index] ) ;
-       Hstr2:=   abs(Fm[e2.index]-FmTrapez[e2.index] ) ;
-         H := min (abs(Fm[e1.index]) ,abs(Fm[e2.index]));
-            H := min (abs(Fm[e1.index]) ,10);
-      end;
+//                 Hstr1:=   100;
+//      Hstr2:=   100;
+//      if  (abs(FmTrapez[e1.index-10])>40) or (abs(FmTrapez[e1.index+10])>40 ) or ( abs(FmTrapez[e2.index+10])>40 )
+//      or ( abs(FmTrapez[e2.index-10])>40 )   then
+//         begin
+//      Hstr1:=   abs(Fm[e1.index]-FmTrapez[e1.index] ) ;
+//       Hstr2:=   abs(Fm[e2.index]-FmTrapez[e2.index] ) ;
+//         H := min (abs(Fm[e1.index]) ,abs(Fm[e2.index]));
+//            H := min (abs(Fm[e1.index]) ,10);
+//      end;
+//
 
 
           isLong := false;
@@ -9429,5 +9336,7 @@ end;
 
 end.
   ///  Aset
+
+
 
 

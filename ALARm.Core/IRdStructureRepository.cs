@@ -16,7 +16,8 @@ namespace ALARm.Core
         List<VideoObject> GetRdObject(int object_id, int km, Int64 file_id);
         List<VideoObject> GetRdObject(string object_id, string trip_files);
         List<string> GetProfileFilePath(long trip_id = -1);
-        List<string> Get_Vnutr__profil__koridor(long trip_id = -1);
+        List<string> GetProfileFilePathKoridor(long trip_id = -1);
+        
         List<VideoObject> GetRdObjectKm(string km, string trip_files);
         List<VideoObject> GetRdObjectKm(string object_id, string km, string trip_files);
         List<VideoObject> GetVideoObjects(string obj_name, MainParametersProcess process);
@@ -28,7 +29,10 @@ namespace ALARm.Core
         void InsertEscort(Escort escort, long trip_id);
         RdClasses GetRdClasses(int class_i);
         List<Kilometer> GetKilometersByTrip(Trips trip);
-       
+        List<Kilometer> GetKilometersByTrip(Trips trip, String direction_code, string track_name);
+        List<Kilometer> GetKilometersByTripdistanceperiod(Trips trip, Int64 distance, Int64 trackname);
+        List<Kilometer> GetKilometersByTripdistanceperiodstring(Trips trip, Int64 distance, string trackname);
+        
         List<VideoObjectCount> GetRdObjectCount(Int64 trip_files_id);
         List<VideoObjectCount> GetRdObjectCount(List<Int64> fileIDs);
         object GetAdmDirection(List<Int64> directionIDs);
@@ -102,6 +106,7 @@ namespace ALARm.Core
         SiteInfo GetSiteInfo(long trackId, int startKm, int finalKm);
         List<AdmTrack> GetTracksOnTrip(long tripId);
         List<Trips> GetTripsOnDistance(long distanceId, ReportPeriod period);
+       
         List<Curve> GetCurvesAsTripElems(long trackId, DateTime date, int start_km, int start_m, int final_km, int final_m);
         object GetTripSections(long trackId, DateTime date, int type);
         object GetTripSections(long trackId, DateTime date, int start_km, int start_m, int final_km, int final_m, int type);
@@ -182,9 +187,13 @@ namespace ALARm.Core
         public string GetPrimech(DigressionMark digression); // берет примечание по километру из bedemost
 
         public int InsertRating(int km, string rating, string put); //вставляет рейтинг на км
-        public List<Kilometer> GetBedemostKilometers();
+        public List<Kilometer> GetBedemostKilometers(long trip_id);
         public int FinishProcessing(long trip_id);
         void SetFileID(int km, long fileid, long trip_id);
         public List<long> GetFileID(long trip_id, int num);
+        List<ImportListCurveID> Get_list_St_IDs_Curves(string startKM, string startM, string finalKM, string finalM, int oldDirectionID, string oldTrackID, int first_len, int last_len, int t);
+        object DropTable(int startnumber,int endnumber);
+        List<ImportListCurveID> GetFirstGapKmAndMeter(long tripId);
+
     }
 }

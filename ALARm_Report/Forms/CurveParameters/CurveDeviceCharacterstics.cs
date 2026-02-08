@@ -97,8 +97,9 @@ namespace ALARm_Report.Forms
                         var tr = trips.Where(t => t.Id == tripProcess.Trip_id).ToList().First();
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
-                        var trackName = AdmStructureService.GetTrackName(track_id);
 
+                        var trackName = AdmStructureService.GetTrackName(track_id);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
 
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
 
@@ -108,7 +109,7 @@ namespace ALARm_Report.Forms
                         var filterForm = new FilterForm();
                         var filters = new List<Filter>();
 
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         filters.Add(new FloatFilter() { Name = "Начало (км)", Value = lkm.Min() });
                         filters.Add(new FloatFilter() { Name = "Конец (км)", Value = lkm.Max() });

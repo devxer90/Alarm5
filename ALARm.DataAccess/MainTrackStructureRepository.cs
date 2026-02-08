@@ -255,13 +255,40 @@ namespace ALARm.DataAccess
                             "where PERIOD_ID=" + periodId + " order by tps.start_km * 1000 + tps.start_m, tps.final_km * 1000 + tps.final_m", commandType: CommandType.Text).ToList();
                         //station.type_id as point_id
                     case MainTrackStructureConst.MtoStationSection:
-                        return db.Query<StationSection>("Select ar.NAME as road, an.NAME as nod, ast.NAME as station, " +
+                        var mtostatsec = $@"Select ar.NAME as road, an.NAME as nod, ast.NAME as station, " +
+                          "cpot.NAME as point, tss.* from TPL_STATION_SECTION as tss " +
+                          "INNER JOIN adm_direction as ast on ast.ID = tss.STATION_ID " +
+                          "INNER JOIN ADM_NOD as an on an.ID = ast.ADM_NOD_ID " +
+                          "INNER JOIN ADM_ROAD as ar on ar.ID = an.ADM_ROAD_ID " +
+                          "INNER JOIN CAT_POINT_OBJECT_TYPE as cpot on cpot.ID = tss.POINT_ID " +
+                          "where PERIOD_ID=" + periodId + " order by tss.start_km * 1000 + tss.start_m, tss.final_km * 1000 + tss.final_m";
+
+                        List<StationSection> mtostationSections = db.Query<StationSection>(mtostatsec).ToList();
+                        if (mtostationSections.Count() < 1)
+                        {
+
+                            mtostatsec = $@"Select ar.NAME as road, an.NAME as nod, ast.NAME as station, " +
+                           "cpot.NAME as point, tss.* from TPL_STATION_SECTION as tss " +
+                           "INNER JOIN ADM_STATION as ast on ast.ID = tss.STATION_ID " +
+                           "INNER JOIN ADM_NOD as an on an.ID = ast.ADM_NOD_ID " +
+                           "INNER JOIN ADM_ROAD as ar on ar.ID = an.ADM_ROAD_ID " +
+                           "INNER JOIN CAT_POINT_OBJECT_TYPE as cpot on cpot.ID = tss.POINT_ID " +
+                           "where PERIOD_ID=" + periodId + " order by tss.start_km * 1000 + tss.start_m, tss.final_km * 1000 + tss.final_m";
+                        }
+                        mtostationSections = db.Query<StationSection>(mtostatsec).ToList();
+                        if (mtostationSections.Count() < 1)
+                        {
+                            mtostatsec = $@"Select ar.NAME as road, an.NAME as nod, ast.NAME as station, " +
                             "cpot.NAME as point, tss.* from TPL_STATION_SECTION as tss " +
-                            "INNER JOIN ADM_STATION as ast on ast.ID = tss.STATION_ID " +
+                            "INNER JOIN stw_park as ast on ast.ID = tss.STATION_ID " +
                             "INNER JOIN ADM_NOD as an on an.ID = ast.ADM_NOD_ID " +
                             "INNER JOIN ADM_ROAD as ar on ar.ID = an.ADM_ROAD_ID " +
                             "INNER JOIN CAT_POINT_OBJECT_TYPE as cpot on cpot.ID = tss.POINT_ID " +
-                            "where PERIOD_ID=" + periodId + " order by tss.start_km * 1000 + tss.start_m, tss.final_km * 1000 + tss.final_m", commandType: CommandType.Text).ToList();
+                            "where PERIOD_ID=" + periodId + " order by tss.start_km * 1000 + tss.start_m, tss.final_km * 1000 + tss.final_m";
+                        }
+
+
+                        return db.Query<StationSection>(mtostatsec).ToList();
                     case MainTrackStructureConst.MtoCrossTie:
                         return db.Query<CrossTie>("Select cct.NAME as CrossTie_type, ac.* from APR_CROSSTIE as ac " +
                            "INNER JOIN CAT_CROSSTIE_TYPE as cct on cct.ID = ac.CROSSTIE_TYPE_ID " +
@@ -295,6 +322,7 @@ namespace ALARm.DataAccess
                     case MainTrackStructureConst.MtoElCurve:
                         return db.Query<ElCurve>("Select aec.* from APR_ELCURVE as aec " +
                             "where aec.CURVE_ID=" + periodId + " order by aec.start_km * 1000 + aec.start_m, aec.final_km * 1000 + aec.final_m", commandType: CommandType.Text).ToList();
+                 
                     case MainTrackStructureConst.MtoStCurve:
                         return db.Query<StCurve>("Select stcurve.* from apr_stcurve as stcurve " +
                             "where stcurve.CURVE_ID=" + periodId + " order by stcurve.start_km * 1000 + stcurve.start_m, stcurve.final_km * 1000 + stcurve.final_m", commandType: CommandType.Text).ToList();
@@ -309,15 +337,52 @@ namespace ALARm.DataAccess
                            inner join gettablecoordbylen(aac.km, aac.meter, aac.len / -2, aperiod.adm_track_id, aperiod.start_date) as startcoords on true
                            inner join gettablecoordbylen(aac.km, aac.meter, aac.len / 2, aperiod.adm_track_id, aperiod.start_date) as finalcoords on true
                            where aac.PERIOD_ID={periodId} order by aac.km * 1000 + aac.meter", commandType: CommandType.Text).ToList();
+
+
                     case MainTrackStructureConst.MtoSwitch:
-                        return db.Query<Switch>("Select station.name as Station, cat.NAME as dir, smark.MARK as mark, cpot.NAME as point,  " +
+                        var aa = $@"Select ad.NAME AS Station, cat.NAME as dir, smark.MARK as mark, cpot.NAME as point,  " +
+                                  "sside.NAME as side, smark.LEN as legnth, tsw.* from TPL_SWITCH as tsw " +
+                                  "INNER JOIN CAT_SWITCH_DIR as cat on cat.ID = tsw.DIR_ID " +
+                                  "INNER JOIN CAT_CROSS_MARK as cpot on cpot.ID = tsw.MARK_ID " +
+                                  "INNER JOIN CAT_CROSS_MARK as smark on smark.ID = tsw.MARK_ID " +
+                                  "INNER JOIN CAT_SIDE as sside on sside.ID = tsw.SIDE_ID " +
+                                  "INNER JOIN adm_direction AS ad ON ad.ID = tsw.station_id  " +
+                                  "where tsw.PERIOD_ID=" + periodId + " order by tsw.km * 1000 + tsw.meter";
+                        List<StationSection> stationSections = db.Query<StationSection>(aa).ToList();
+                        if (stationSections.Count() < 1)
+                        {
+
+
+                            aa = $@"Select station.name as Station, cat.NAME as dir, smark.MARK as mark, cpot.NAME as point,  " +
                            "sside.NAME as side, smark.LEN as legnth, tsw.* from TPL_SWITCH as tsw " +
                            "INNER JOIN CAT_SWITCH_DIR as cat on cat.ID = tsw.DIR_ID " +
-                           "INNER JOIN CAT_POINT_OBJECT_TYPE as cpot on cpot.ID = tsw.POINT_ID " +
+                           "INNER JOIN CAT_CROSS_MARK as cpot on cpot.ID = tsw.MARK_ID " +
                            "INNER JOIN CAT_CROSS_MARK as smark on smark.ID = tsw.MARK_ID " +
                            "INNER JOIN CAT_SIDE as sside on sside.ID = tsw.SIDE_ID " +
                            "inner join adm_station as station on station.id = tsw.station_id " +
-                           "where tsw.PERIOD_ID=" + periodId + " order by tsw.km * 1000 + tsw.meter", commandType: CommandType.Text).ToList();
+                           "where tsw.PERIOD_ID=" + periodId + " order by tsw.km * 1000 + tsw.meter";
+                        }
+                        stationSections = db.Query<StationSection>(aa).ToList();
+                        if (stationSections.Count() < 1)
+                        {
+                            aa = $@"Select stw.NAME AS Station, cat.NAME as dir, smark.MARK as mark, cpot.NAME as point,  " +
+                                 "sside.NAME as side, smark.LEN as legnth, tsw.* from TPL_SWITCH as tsw " +
+                                 "INNER JOIN CAT_SWITCH_DIR as cat on cat.ID = tsw.DIR_ID " +
+                                 "INNER JOIN CAT_CROSS_MARK as cpot on cpot.ID = tsw.MARK_ID " +
+                                 "INNER JOIN CAT_CROSS_MARK as smark on smark.ID = tsw.MARK_ID " +
+                                 "INNER JOIN CAT_SIDE as sside on sside.ID = tsw.SIDE_ID " +
+                                 "INNER JOIN stw_park AS stw ON stw.ID = tsw.station_id   " +
+                                 "where tsw.PERIOD_ID=" + periodId + " order by tsw.km * 1000 + tsw.meter";
+                        }
+                        return db.Query<Switch>(aa).ToList();
+                    //return db.Query<Switch>("Select station.name as Station, cat.NAME as dir, smark.MARK as mark, cpot.NAME as point,  " +
+                    //   "sside.NAME as side, smark.LEN as legnth, tsw.* from TPL_SWITCH as tsw " +
+                    //   "INNER JOIN CAT_SWITCH_DIR as cat on cat.ID = tsw.DIR_ID " +
+                    //   "INNER JOIN CAT_POINT_OBJECT_TYPE as cpot on cpot.ID = tsw.POINT_ID " +
+                    //   "INNER JOIN CAT_CROSS_MARK as smark on smark.ID = tsw.MARK_ID " +
+                    //   "INNER JOIN CAT_SIDE as sside on sside.ID = tsw.SIDE_ID " +
+                    //   "inner join adm_station as station on station.id = tsw.station_id " +
+                    //   "where tsw.PERIOD_ID=" + periodId + " order by tsw.km * 1000 + tsw.meter", commandType: CommandType.Text).ToList();
                     case MainTrackStructureConst.MtoLongRails:
                         return db.Query<LongRails>("Select cl.name as Type, acu.* from APR_LONG_RAILS as acu " +
                             "inner join cat_longrails as cl on cl.id = acu.type_id " +
@@ -789,7 +854,7 @@ namespace ALARm.DataAccess
                         //    and {nkm} between tcs.start_km and tcs.final_km ";
                         //return db.Query<CheckSection>(txt4).ToList();
                         //int СдЕЛАТЬ ВЫБОРКУ ПО адм.ТРАК АЙДИ
-                        return db.Query<CheckSection>(@"Select tcs.* from tpl_check_sections as tcs 
+                        return db.Query<CheckSection>($@"Select tcs.* from tpl_check_sections as tcs 
                             INNER JOIN TPL_PERIOD as tp on tp.ID = tcs.PERIOD_ID 
                             INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID 
                             INNER JOIN ADM_DIRECTION as adn on adn.ID = atr.ADM_DIRECTION_ID 
@@ -1003,7 +1068,7 @@ namespace ALARm.DataAccess
                         dp.Add("stationid", ((StationSection)mtoobject).Station_Id);
                         dp.Add("axiskm", ((StationSection)mtoobject).Axis_Km);
                         dp.Add("axism", ((StationSection)mtoobject).Axis_M);
-                        dp.Add("pointid", ((StationSection)mtoobject).Point_Id);
+                        dp.Add("pointid", 4);
 
                         break;
                     case MainTrackStructureConst.MtoCurve:
@@ -1118,7 +1183,7 @@ namespace ALARm.DataAccess
                         dp.Add("periodid", ((RefPoint)mtoobject).Period_Id);
                         dp.Add("km", ((RefPoint)mtoobject).Km);
                         dp.Add("meter", ((RefPoint)mtoobject).Meter);
-                        dp.Add("mark", ((RefPoint)mtoobject).Mark.ToString("0.000"));
+                        dp.Add("mark", ((RefPoint)mtoobject).Mark);
                         break;
                     case MainTrackStructureConst.MtoRepairProject:
                         procedure = "insertrepairproject";
@@ -2077,7 +2142,7 @@ namespace ALARm.DataAccess
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
-                var filter = coord > 0 ? $" and coordinatetoreal(switch.km, switch.meter) {(direction == Direction.Direct ? ">" : "<")} {coord.ToString().Replace(",",".")}" : "";
+                var filter = coord > 0 ? $" and coordinatetoreal(switch.km, switch.meter) {(direction == Direction.Direct ? ">=" : "<=")} {coord.ToString().Replace(",",".")}" : "";
                 var order = (direction == Direction.Direct ? "asc" : "desc");
                 var sqlText = $@"
                 select 
@@ -2098,7 +2163,7 @@ namespace ALARm.DataAccess
             {
 
                 if (db.State == ConnectionState.Closed)
-                    db.Open();
+                    db.Open();               
                 return db.Query<AdmTrack>($@"
                     select track.id, track.code, 
                         concat(coalesce(direction.code, station.code),'-', coalesce(direction.name, coalesce(station.name, concat(pstation.name,park.name)))) as belong, 
@@ -2113,7 +2178,9 @@ namespace ALARm.DataAccess
 					left join stw_park as park on park.id = stp.stw_park_id
 				    left join adm_station as pstation on pstation.id = park.adm_station_id
                     where tps.num = (select num from tpl_switch where id = {switch_id})
-                        and tps.station_id = (select station_id from tpl_switch where id = {switch_id})").ToList();
+                        and tps.station_id = (select station_id from tpl_switch where id = {switch_id})
+                    "
+                        ).ToList();
             }
         }
 
@@ -2167,7 +2234,7 @@ namespace ALARm.DataAccess
                             INNER JOIN CAT_SIDE as cs on cs.ID = acu.SIDE_ID 
                             INNER JOIN TPL_PERIOD as tp on tp.ID = acu.PERIOD_ID 
                             INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID
-                            INNER JOIN ADM_DIRECTION as adn on adn.ID = atr.ADM_DIRECTION_ID
+                            INNER JOIN ADM_DIRECTION as adn on enadn.ID = atr.ADM_DIRECTION_ID
                             WHERE @travelDate BETWEEN tp.START_DATE and tp.FINAL_DATE 
                             and atr.CODE = @trackNum and adn.id = @directCode 
                             and acu.START_KM <= @ncurkm and acu.FINAL_KM >= @ncurkm order by acu.START_KM, acu.START_M", new { ncurkm = nkm, travelDate = date, trackNum = trackNumber, directCode = direction_id }).ToList();
@@ -2334,8 +2401,8 @@ namespace ALARm.DataAccess
                         {
                             curve.Straightenings = db.Query<StCurve>($@"
                              select stcurve.*, 
-                                getcoordbylen(stcurve.start_km, stcurve.start_m, stcurve.transition_1, period.adm_track_id, '{date:dd.MM.yyyy}') as firsttransitionend,
-                                getcoordbylen(stcurve.final_km, stcurve.final_m, -stcurve.transition_2, period.adm_track_id, '{date:dd.MM.yyyy}') as secondtransitionstart
+                                getcoordbylen(stcurve.start_km, stcurve.start_m, stcurve.transition_1,period.adm_track_id , '{date:dd.MM.yyyy}') as firsttransitionend,
+                                getcoordbylen(stcurve.final_km, stcurve.final_m, -stcurve.transition_2, period.adm_track_id , '{date:dd.MM.yyyy}') as secondtransitionstart
                              from apr_stcurve stcurve
                                 inner join apr_curve curve on curve.id = stcurve.curve_id
                                 inner join tpl_period period on period.id = curve.period_id
@@ -2355,6 +2422,10 @@ namespace ALARm.DataAccess
                         return curves;
 
                     case MainTrackStructureConst.MtoCurveBPD:
+                        if (nkm == 6950)
+                        {
+                            
+                        }
                         var curvesBPD = db.Query<Curve>(@"Select acu.curve_id as id, acu.start_km, acu.start_m, acu.final_km, acu.final_m, acu.radius, curve.period_id, curve.side_id, cs.NAME as Side
                             from apr_stcurve as acu 
 														INNER JOIN APR_CURVE as curve ON curve.id = acu.curve_id
@@ -2369,8 +2440,9 @@ namespace ALARm.DataAccess
                         {
                             curve.Straightenings = db.Query<StCurve>($@"
                              select stcurve.*, 
-                                getcoordbylen(stcurve.start_km, stcurve.start_m, stcurve.transition_1, period.adm_track_id, '{date:dd.MM.yyyy}') as firsttransitionend,
-                                getcoordbylen(stcurve.final_km, stcurve.final_m, -stcurve.transition_2, period.adm_track_id, '{date:dd.MM.yyyy}') as secondtransitionstart
+                                getcoordbylen(stcurve.start_km, stcurve.start_m, stcurve.transition_1, period.adm_track_id , '{date:dd.MM.yyyy}') as firsttransitionend,
+                                getcoordbylen(stcurve.final_km, stcurve.final_m, -stcurve.transition_2, period.adm_track_id , '{date:dd.MM.yyyy}') as 
+secondtransitionstart
                              from apr_stcurve stcurve
                                 inner join apr_curve curve on curve.id = stcurve.curve_id
                                 inner join tpl_period period on period.id = curve.period_id
@@ -2437,24 +2509,28 @@ namespace ALARm.DataAccess
 							inner join gettablecoordbylen(finalcoords.km, finalcoords.meter, case WHEN aac.len between 25 and 100 then 200 WHEN aac.len > 100 then 500 else 0 END, tp.adm_track_id, @travelDate) as finalentrance on true
                             WHERE @travelDate BETWEEN tp.START_DATE and tp.FINAL_DATE 
                             and atr.id = @trackId 
-                            and startentrance.km <= @ncurkm and finalentrance.km >= @ncurkm ", new { ncurkm = nkm, travelDate = date, trackId = track_id }).ToList();
+                            and startentrance.km <= @ncurkm and finalentrance.km >= @ncurkm  ", new { ncurkm = nkm, travelDate = date, trackId = track_id }).ToList();
                     case MainTrackStructureConst.MtoCrossTie:
-                        return db.Query<CrossTie>(@"Select aac.* from APR_CROSSTIE as aac 
-                            INNER JOIN TPL_PERIOD as tp on tp.ID = aac.PERIOD_ID 
-                            INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID 
-                            WHERE @travelDate BETWEEN tp.START_DATE and tp.FINAL_DATE 
-                            and atr.id = @trackId 
-                            and aac.START_KM <= @ncurkm and aac.FINAL_KM >= @ncurkm ", new { ncurkm = nkm, travelDate = date, trackId = track_id }).ToList();
+
+                        var crosrtie = $@"Select aac.*from APR_CROSSTIE as aac
+                            INNER JOIN TPL_PERIOD as tp on tp.ID = aac.PERIOD_ID
+                            INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID
+                            WHERE '{date:dd-MM-yyyy}' BETWEEN tp.START_DATE and tp.FINAL_DATE
+                            and atr.id = {track_id}
+                            and aac.START_KM <= {nkm} and aac.FINAL_KM >= {nkm}  order by start_km"
+                            ;
+
+                        return db.Query<CrossTie>(crosrtie).ToList();
                     case MainTrackStructureConst.MtoLongRails:
                         return db.Query<LongRails>(@"Select acu.* from APR_LONG_RAILS as acu 
                             INNER JOIN TPL_PERIOD as tp on tp.ID = acu.PERIOD_ID 
                             INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID 
                             WHERE @travelDate BETWEEN tp.START_DATE and tp.FINAL_DATE 
                             and atr.id = @trackId 
-                            and acu.START_KM <= @ncurkm and acu.FINAL_KM >= @ncurkm ", new { ncurkm = nkm, travelDate = date, trackId = track_id }).ToList();
+                            and acu.START_KM <= @ncurkm and acu.FINAL_KM >= @ncurkm and type_id= 3 ", new { ncurkm = nkm, travelDate = date, trackId = track_id }).ToList();
                     case MainTrackStructureConst.MtoSwitch:
                         var sqll = $@"
-                            SELECT * FROM
+                        SELECT * FROM
                             (SELECT 
 	                            tsw.*, ccm.len AS length, ccm.mark,
 	                            case when dir_id = {(int)SwitchDirection.Reverse} then tsw.km else minus.km END as start_km,
@@ -2466,8 +2542,8 @@ namespace ALARm.DataAccess
                             INNER JOIN cat_cross_mark as ccm on tsw.mark_id = ccm.id
                             INNER JOIN TPL_PERIOD as tp on tp.ID = tsw.PERIOD_ID 
                             INNER JOIN ADM_TRACK as atr on atr.ID = tp.ADM_TRACK_ID 
-                            INNER JOIN gettablecoordbylen(tsw.km, tsw.meter, -ccm.len, tp.adm_track_id, '{date:dd-MM-yyyy}') as minus on true
-                            INNER JOIN gettablecoordbylen(tsw.km, tsw.meter, ccm.len, tp.adm_track_id, '{date:dd-MM-yyyy}') as plus on true
+                             INNER JOIN gettablecoordbylen(tsw.km, tsw.meter, -ccm.len, tp.adm_track_id, '{date:dd-MM-yyyy}') as minus on tsw.km between {nkm - 1} and {nkm + 1} 
+                            INNER JOIN gettablecoordbylen(tsw.km, tsw.meter, ccm.len, tp.adm_track_id, '{date:dd-MM-yyyy}') as plus on tsw.km between {nkm - 1} and {nkm + 1}
 
                             WHERE 
 	                            '{date:dd-MM-yyyy}' BETWEEN tp.START_DATE and tp.FINAL_DATE and 
@@ -2625,7 +2701,6 @@ namespace ALARm.DataAccess
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
-                
                 var sqltext = $@"
                     SELECT
 	                    kms.kms AS NUMBER,
@@ -2658,19 +2733,69 @@ namespace ALARm.DataAccess
 	                    WHERE
 		                    tp.adm_track_id = { fragment.Track_Id } 
 	                    ) AS tnk ON tnk.km = kms.kms 
-                    WHERE
-	                    kms.kms NOT IN (
-	                    SELECT
-		                    km 
-	                    FROM
-		                    tpl_non_ext_km AS nonext
-		                    INNER JOIN tpl_period AS tp ON tp.ID = nonext.period_id 
-	                    WHERE
-		                    tp.adm_track_id = { fragment.Track_Id } 
-	                    ) 
+                   WHERE
+	                  kms.kms NOT IN (
+	                   SELECT
+		                   km 
+	                  FROM
+		                   tpl_non_ext_km AS nonext
+		                   INNER JOIN tpl_period AS tp ON tp.ID = nonext.period_id 
+	                   WHERE
+		                   tp.adm_track_id = { fragment.Track_Id } 
+	                   ) 
                     
                     ORDER BY
 	                    kms.kms { (direction == Direction.Direct ? "asc" : "desc") } ";
+
+                List<StationSection> stationSections = db.Query<StationSection>(sqltext).ToList();
+                if (stationSections.Count() < 1)
+                {
+                    sqltext = $@"
+                    SELECT
+	                    kms.kms AS NUMBER,
+	                    COALESCE (km.final, tnk.len, 1000 ) AS final_m,
+	                    COALESCE (abs(km.start-km.final), tnk.len, 1000 ) AS LENGTH, { fragment.Track_Id } AS track_id, { fragment.Id } AS fragment_id,
+	                    track.code AS track_name,
+                        km.start_index,
+	                    km.final_index,
+                        start_index is not null as IsPrinted,
+                        bed.ball as point,
+                        COALESCE(km.id,0) as id,
+                          concat(station.name, '(', station.code, ')') as direction_name,
+                        station.code as direction_code
+                    FROM
+	                    generate_series ( { fragment.Start_Km }, { fragment.Final_Km }, { (int)direction } ) AS kms
+	                    INNER JOIN adm_track AS track ON track.ID = { fragment.Track_Id }
+                         inner join adm_station as station on station.id = track.adm_station_id
+                        LEFT JOIN kilometers AS km ON km.track_id = track.ID 
+	                        AND km.trip_id = {trip_id} 
+	                        AND km.num = kms.kms
+                        LEFT JOIN bedemost AS bed ON km.track_id = bed.track_id AND km.num = bed.km and bed.trip_id = km.trip_id
+	                    LEFT JOIN (
+	                    SELECT
+		                    km,
+		                    len 
+	                    FROM
+		                    tpl_nst_km
+		                    INNER JOIN tpl_period AS tp ON tp.ID = tpl_nst_km.period_id 
+	                    WHERE
+		                    tp.adm_track_id = { fragment.Track_Id } 
+	                    ) AS tnk ON tnk.km = kms.kms 
+                   -- WHERE
+	                 --   kms.kms NOT IN (
+	                 --   SELECT
+		              --      km 
+	                  --  FROM
+		               --     tpl_non_ext_km AS nonext
+		                --    INNER JOIN tpl_period AS tp ON tp.ID = nonext.period_id 
+	                  --  WHERE
+		               --     tp.adm_track_id = { fragment.Track_Id } 
+	                  --  ) 
+                    
+                    ORDER BY
+	                    kms.kms { (direction == Direction.Direct ? "asc" : "desc") } ";
+
+                }
                 return db.Query<Kilometer>(sqltext).ToList();
             }
         }
@@ -2912,10 +3037,10 @@ namespace ALARm.DataAccess
                         }
                         else
                         {
-                            //Записать натурную кривую
-                            var query = $@"
-                                INSERT INTO s3(km, meter, trip_id, ots, primech, track_id, isadditional, typ )
-	                            VALUES ('{kilometer.Number}', '{item.Meter}', '{kilometer.Trip.Id}', '{item.Alert}', 'Натурная кривая', '{kilometer.Track_id}', 0,2)";
+                          
+                             var query = $@"
+                          INSERT INTO s3(km, meter, trip_id, ots, primech, track_id, isadditional, typ )
+                          VALUES ('{kilometer.Number}', '{item.Meter}', '{kilometer.Trip.Id}', '{item.Alert}', 'Натурная кривая', '{kilometer.Track_id}', 0,2)";
                             db.Execute(query);
                         }
 

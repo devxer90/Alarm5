@@ -35,6 +35,95 @@ namespace ALARm.DataAccess
         //    }
         //}
 
+        public object DropTable(int startNumber, int endNumber)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                try
+                {
+                    var query = $"DO $$ BEGIN ";
+
+                    for (int i = startNumber; i <= endNumber; i++)
+                    {
+                        var tableNamePattern = $"raw_data_{i}";
+                        query += $"EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident('{tableNamePattern}') || ' CASCADE';";
+                    }
+
+                    query += " END $$;";
+
+                    return db.Execute(query);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("DROP TABLE: " + e.Message);
+                    return null;
+                }
+            }
+        }
+
+
+
+
+        public List<ImportListCurveID> Get_list_St_IDs_Curves(string startKM, string startM, string finalKM, string finalM, int oldDirectionID, string oldTrackID, int first_len, int last_len, int t)
+        {
+
+
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                try
+                {
+                    //var sum_meter = int.Parse(finalM) + last_len;
+                    //var sum_meter_next = int.Parse(finalM) + last_len;
+                    //var final_km = int.Parse(finalKM) ;
+                    //if (sum_meter > 1000 && sum_meter <2000)
+                    //{
+                    //    final_km= int.Parse(finalKM) + 1;
+                    //    sum_meter_next = sum_meter - 1000;
+
+                    //}
+                    //if(sum_meter > 2000)
+                    //{
+                    //    final_km = int.Parse(finalKM) + 2;
+                    //    sum_meter_next = sum_meter - 2000;
+                    //}
+                    
+                    var txt = ($@"SELECT
+                                km,
+                                M,
+                                radius ,
+                                izn, 
+                                urov ,
+                                shab,up_nom as oldDirectionID,put_nom as oldTrackID,
+                                type
+                                FROM
+                                ekasui_plan_rightlevel 
+                                WHERE                           
+                                coordinatetoreal(km, m) BETWEEN coordinatetoreal({startKM}, {int.Parse(startM) }) and  
+                                coordinatetoreal({finalKM} , {int.Parse(finalM)  }) 
+                                AND TYPE = {t}
+                                AND up_nom = '{oldDirectionID}' 
+                                AND put_nom = '{oldTrackID}'
+                                ORDER BY 
+                               coordinatetoreal(km, m)");
+
+                    return db.Query<ImportListCurveID>(txt, commandType: CommandType.Text).ToList();
+                }
+                catch (Exception e)
+                {
+
+                    System.Console.WriteLine("Get_list_St_IDs_Curves:" + e.Message);
+                    return null;
+                }
+            }
+        }
+
+
+
+
 
         public List<RailFastener> GetRAilSole(long tripId, bool orderBySide, string pch, object trackName)
         {
@@ -138,20 +227,32 @@ namespace ALARm.DataAccess
             }
         }
 
-        public List<Int64> GetAdmDirectionIDs(Int64 distance_id)
+        public List<long> GetAdmDirectionIDs(long distance_id)
         {
-            System.Console.WriteLine(Helper.ConnectionString());
+            const string sql = @"
+SELECT admd.id
+FROM adm_direction admd
+INNER JOIN adm_track admt ON admt.adm_direction_id = admd.id
+INNER JOIN tpl_period tplp ON tplp.adm_track_id = admt.id
+INNER JOIN tpl_dist_section tplds ON tplds.period_id = tplp.id
+WHERE tplds.adm_distance_id = @distance_id;
+";
+
+            // 👇 ЭТА СТРОКА ДЛЯ ДЕБАГА
+            // Поставь breakpoint — sqlText будет доступна в Locals
+            string sqlText = sql;
+
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
-                return db.Query<Int64>("Select admd.id from adm_direction admd " +
-                    "inner join adm_track admt on admt.adm_direction_id = admd.id " +
-                    "inner join tpl_period tplp on tplp.adm_track_id = admt.id " +
-                    "inner join tpl_dist_section tplds on tplds.period_id = tplp.id " +
-                    "where tplds.adm_distance_id = " + distance_id.ToString(), commandType: CommandType.Text).ToList();
+
+                return db.Query<long>(sql, new { distance_id }).ToList();
             }
         }
+
+
+
 
         public List<Catalog> GetCatalog(int catType)
         {
@@ -435,7 +536,34 @@ namespace ALARm.DataAccess
                 return db.Query<VideoObject>(sqltext, commandType: CommandType.Text).ToList();
             }
         }
+        public List<Kilometer> GetKilometersByTrip(Trips trip, string direction_code, string track_name)
+        //public List<Kilometer> GetKilometersByTrip(Trips trip)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                string sqltext = @"
+                select distinct direction.id as direction_id,
+                direction.code AS direction_code,
+                concat(direction.name, '(', direction.code, ')') as direction_name, kilom.start as start_m, kilom.final as final_m,
+                track.id as track_id,track.code as track_name, kilom.*, kilom.num as number from kilometers as kilom
+                LEFT join rd_process as rdp on rdp.trip_id = kilom.trip_id
+                inner join adm_track as track on track.id = kilom.track_id
+                inner join adm_direction as direction on direction.id = track.adm_direction_id
+                where kilom.trip_id = " + trip.Id + " and num > 0 and direction.code = '" + direction_code + "' and track.code = '" + track_name + "' order by direction.id, track.id, kilom.id";
 
+                //where kilom.trip_id = " + trip.Id + " and num > 0  order by direction.id, track.id, kilom.id";
+
+
+                var result = db.Query<Kilometer>(sqltext).ToList();
+                foreach(var km in result)
+                {
+                    km.Trip = trip;
+                }
+                return result;
+            }
+        }
         public List<Kilometer> GetKilometersByTrip(Trips trip)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
@@ -450,9 +578,10 @@ namespace ALARm.DataAccess
                 LEFT join rd_process as rdp on rdp.trip_id = kilom.trip_id
                 inner join adm_track as track on track.id = kilom.track_id
                 inner join adm_direction as direction on direction.id = track.adm_direction_id
-                where kilom.trip_id = " + trip.Id + " and num > 0 order by direction.id, track.id, kilom.id";
-               
-                var result = db.Query<Kilometer>(sqltext).ToList();
+                where kilom.trip_id = " + trip.Id + " and num > 0  order by direction.id, track.id, kilom.id";
+
+
+        var result = db.Query<Kilometer>(sqltext).ToList();
                 foreach(var km in result)
                 {
                     km.Trip = trip;
@@ -460,7 +589,6 @@ namespace ALARm.DataAccess
                 return result;
             }
         }
-
        
 
 
@@ -474,7 +602,91 @@ namespace ALARm.DataAccess
                 return db.Query<VideoObject>(sqltext, commandType: CommandType.Text).ToList();
             }
         }
+        
+            public List<Kilometer> GetKilometersByTripdistanceperiodstring(Trips trip, Int64 distance, string trackname)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                string sqltext = @"
+                SELECT DISTINCT
+	                tp.adm_track_id,
+	                start_km,
+	                final_km,
+	                tds.adm_nod_id,
+	                tds.period_id,
+	                AT.code AS track,
+	                ad.code AS Ph,
+	                km.trip_id,
+	                km.start,
+                    km.final,
+	                km.num as number
+                FROM
 
+                    tpl_dist_section AS tds
+                    INNER JOIN adm_distance AS ad ON ad.ID = tds.adm_distance_id
+
+                    LEFT JOIN tpl_period AS tp ON tp.ID = tds.period_id
+
+                    INNER JOIN adm_track AS AT ON AT.ID = tp.adm_track_id
+
+                    INNER JOIN kilometers AS km ON km.track_id = tp.adm_track_id
+                WHERE
+
+                    ad.code = '" + distance + "'  AND AT.code = '" + trackname + "'   AND trip_id = " + trip.Id + "  AND km.num >= start_km   AND km.num <= final_km  ORDER BY   number   "
+                  ;
+
+                var result = db.Query<Kilometer>(sqltext).ToList();
+                //foreach(var km in result)
+                //{
+                //    km.Trip = trip;
+                //}
+                return result;
+            }
+        }
+        public List<Kilometer> GetKilometersByTripdistanceperiod(Trips trip, Int64 distance, Int64 trackname)
+        {
+            using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                if (db.State == ConnectionState.Closed)
+                    db.Open();
+                string sqltext = @"
+                SELECT DISTINCT
+	                tp.adm_track_id,
+	                start_km,
+	                final_km,
+	                tds.adm_nod_id,
+	                tds.period_id,
+	                AT.code AS track,
+	                ad.code AS Ph,
+	                km.trip_id,
+	                km.start,
+                    km.final,
+	                km.num as number
+                FROM
+
+                    tpl_dist_section AS tds
+                    INNER JOIN adm_distance AS ad ON ad.ID = tds.adm_distance_id
+
+                    LEFT JOIN tpl_period AS tp ON tp.ID = tds.period_id
+
+                    INNER JOIN adm_track AS AT ON AT.ID = tp.adm_track_id
+
+                    INNER JOIN kilometers AS km ON km.track_id = tp.adm_track_id
+                WHERE
+
+                    ad.code = '" + distance + "'  AND AT.code = '" + trackname + "'   AND trip_id = " + trip.Id + "  AND km.num >= start_km   AND km.num <= final_km  ORDER BY   number   "
+                  ;
+
+                var result = db.Query<Kilometer>(sqltext).ToList();
+                //foreach(var km in result)
+                //{
+                //    km.Trip = trip;
+                //}
+                return result;
+            }
+        }
         public object GetTrips(Int64 process_id)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
@@ -670,43 +882,101 @@ namespace ALARm.DataAccess
                     new { distance = distance_id, startDate = period.StartDate, finishDate = period.FinishDate }, commandType: CommandType.Text).ToList();
             }
         }
-        
         public List<MainParametersProcess> GetMainParametersProcess(ReportPeriod period, string distanceName)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
+
                 distanceName = distanceName.Replace("ПЧ-", "");
                 distanceName = distanceName.Replace("ДТЖ", "64");
-                return db.Query<MainParametersProcess>(
-                    @"SELECT DISTINCT
-	                    dir.ID AS DirectionID,
-	                    dir.code AS DirectionCode,
-	                    dir.NAME AS directionname,
-                        --dir.NAME || '(' || dir.code || ')' AS directionname,
-	                    trip.travel_direction AS direction,
-	                    trip.ID AS trip_id,
-	                    COALESCE ( trip.chief, 'неизвестный' ) AS chief,
-	                    COALESCE ( trip.car, 'неизвестный' ) AS car,
-	                    COALESCE ( to_char( trip.trip_date, 'dd.MM.yyyy hh:mm:ss' ), 'неизвестный' ) AS trip_date,
-	                    trip.trip_date AS date_vrem,
-            	        trip.car_position as carposition,
-	                    trip.* 
-                    FROM
-	                    trips AS trip
-	                    INNER JOIN kilometers AS km ON km.trip_id = trip.
-	                    ID INNER JOIN tpl_period AS period ON period.adm_track_id = km.track_id 
-	                    AND trip.trip_date BETWEEN period.start_date 
-	                    AND period.final_date
-	                    INNER JOIN tpl_dist_section AS distance ON distance.period_id = period.
-	                    ID INNER JOIN adm_distance ON adm_distance.ID = distance.adm_distance_id
-	                    INNER JOIN adm_direction AS dir ON dir.ID = trip.direction_id
 
-                    where trip.trip_date between @startDate and @finishDate and adm_distance.code = @distName",
-                    new { distName = distanceName, startDate = period.StartDate, finishDate = period.FinishDate }, commandType: CommandType.Text).ToList();
+                // Важно: лучше делать "до конца дня" через < nextDay,
+                // чтобы не зависеть от времени в FinishDate
+                var dateFrom = period.StartDate.Date;
+                var dateToExclusive = period.FinishDate.Date.AddDays(1);
+
+                var sql = @"
+SELECT DISTINCT
+    dir.ID AS DirectionID,
+    dir.code AS DirectionCode,
+    dir.NAME AS directionname,
+    trip.travel_direction AS direction,
+    trip.ID AS trip_id,
+    COALESCE(trip.chief, 'неизвестный') AS chief,
+    COALESCE(trip.car, 'неизвестный') AS car,
+    COALESCE(to_char(trip.trip_date, 'dd.MM.yyyy HH24:MI:SS'), 'неизвестный') AS trip_date,
+    trip.trip_date AS date_vrem,
+    trip.car_position as carposition,
+    trip.*
+FROM trips AS trip
+INNER JOIN kilometers AS km ON km.trip_id = trip.ID
+INNER JOIN tpl_period AS period ON period.adm_track_id = km.track_id
+    AND trip.trip_date BETWEEN period.start_date AND period.final_date
+INNER JOIN tpl_dist_section AS distance ON distance.period_id = period.ID
+INNER JOIN adm_distance ON adm_distance.ID = distance.adm_distance_id
+INNER JOIN adm_direction AS dir ON dir.ID = trip.direction_id
+WHERE trip.trip_date >= @dateFrom
+  AND trip.trip_date <  @dateToExclusive
+  AND adm_distance.code = @distanceCode
+ORDER BY trip.trip_date;
+";
+
+                return db.Query<MainParametersProcess>(
+                    sql,
+                    new
+                    {
+                        dateFrom = dateFrom,
+                        dateToExclusive = dateToExclusive,
+                        distanceCode = distanceName
+                    },
+                    commandType: CommandType.Text
+                ).ToList();
             }
         }
+
+
+        //public List<MainParametersProcess> GetMainParametersProcess(ReportPeriod period, string distanceName)
+        //{
+        //    using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+        //    {
+        //        if (db.State == ConnectionState.Closed)
+        //            db.Open();
+        //        distanceName = distanceName.Replace("ПЧ-", "");
+        //        distanceName = distanceName.Replace("ДТЖ", "64");
+        //        var txt = @"SELECT DISTINCT
+        //             dir.ID AS DirectionID,
+        //             dir.code AS DirectionCode,
+        //             dir.NAME AS directionname,
+        //                --dir.NAME || '(' || dir.code || ')' AS directionname,
+        //             trip.travel_direction AS direction,
+        //             trip.ID AS trip_id,
+        //             COALESCE ( trip.chief, 'неизвестный' ) AS chief,
+        //             COALESCE ( trip.car, 'неизвестный' ) AS car,
+        //             COALESCE ( to_char( trip.trip_date, 'dd.MM.yyyy hh:mm:ss' ), 'неизвестный' ) AS trip_date,
+        //             trip.trip_date AS date_vrem,
+        //    	        trip.car_position as carposition,
+        //             trip.* 
+        //            FROM
+        //             trips AS trip
+        //             INNER JOIN kilometers AS km ON km.trip_id = trip.
+        //             ID INNER JOIN tpl_period AS period ON period.adm_track_id = km.track_id 
+        //             AND trip.trip_date BETWEEN period.start_date 
+        //             AND period.final_date
+        //             INNER JOIN tpl_dist_section AS distance ON distance.period_id = period.
+        //             ID INNER JOIN adm_distance ON adm_distance.ID = distance.adm_distance_id
+        //             INNER JOIN adm_direction AS dir ON dir.ID = trip.direction_id
+
+        //            where trip.trip_date between '"+ period.StartDate +"' and '"+ period.FinishDate+"' and adm_distance.code = '"+ distanceName + "'" +
+        //            "ORDER BY trip.trip_date  ";
+        //        //DESC LIMIT 2
+
+        //        return db.Query<MainParametersProcess>(txt, commandType: CommandType.Text).ToList();
+
+
+        //    }
+        //}
 
         public List<MainParametersProcess> GetAdditionalParametersProcess(ReportPeriod period)
         {
@@ -717,7 +987,7 @@ namespace ALARm.DataAccess
 
                 return db.Query<MainParametersProcess>(
                     @"select distinct rdp.*, dir.id as DirectionID,dir.code as DirectionCode,
-                    trip.car_position as carposition, dir.name as directionname, trip.travel_direction as direction, 
+                  ( trip.car_position) as carposition, dir.name as directionname, trip.travel_direction as direction, 
                     coalesce(trip.chief, 'неизвестный') as chief,  coalesce(trip.car, 'неизвестный') as car, 
                     coalesce(to_char(trip.trip_date, 'DD.MM.YYYY'), 'неизвестный') as trip_date 
                     from rd_process as rdp
@@ -2457,7 +2727,7 @@ namespace ALARm.DataAccess
                         current, start_position, track_id, rail_profile, longitudinal_profile, short_irregularities, joint_gaps, georadar, 
                         dimensions, beacon_marks, embankment, rail_temperature, geolocation, rail_video_monitoring, video_monitoring, road_id, processed)
 
-                    VALUES( (SELECT MAX(id) FROM trips)+1, @direction_id, (select value from PARAMETER WHERE name = 'car' limit 1), @chief, @travel_direction, @car_position, @start_station, @final_station, @trip_type, @trip_date, 
+                    VALUES((SELECT MAX(id) FROM trips)+1, @direction_id, (select value from PARAMETER WHERE name = 'car' limit 1), @chief, @travel_direction, @car_position, @start_station, @final_station, @trip_type, @trip_date, 
                         true, @start_position, @track_id, @rail_profile, @longitudinal_profile, @short_irregularities, @joint_gaps, @georadar, 
                         @dimensions, @beacon_marks, @embankment, @rail_temperature, @geolocation, @rail_video_monitoring, @video_monitoring, @road_id, @processed) RETURNING id", new
                 {
@@ -2478,7 +2748,6 @@ namespace ALARm.DataAccess
                     joint_gaps = trip.Joint_Gaps,
                     georadar = trip.Georadar,
                     dimensions = trip.Dimensions,
-               
                     beacon_marks = trip.Beacon_Marks,
                     embankment = trip.Embankment,
                     rail_temperature = trip.Rail_Temperature,
@@ -2569,37 +2838,39 @@ namespace ALARm.DataAccess
                 )
                 ");
 
-                db.Execute(@"CREATE TABLE public.outdata_" + trip_id + @"
-                (                               ID serial,
-                                                trip_id SMALLINT,
-	                                            km SMALLINT,
-	                                            meter SMALLINT,
-	                                            pu_l REAL,
-	                                            pu_r REAL,
-	                                            vert_l REAL,
-	                                            vert_r REAL,
-	                                            bok_l REAL,
-	                                            bok_r REAL,
-	                                            npk_l REAL,
-	                                            npk_r REAL,
-	                                            shortwavesLeft REAL,
-	                                            shortwavesRight REAL,
-	                                            mediumwavesLeft REAL,
-	                                            mediumwavesRight REAL,
-	                                            longwavesLeft REAL,
-	                                            longWavesRight REAL,
-	                                            iz_45_l REAL,
-                                                iz_45_r REAL,
-                                                imp_left REAL,
-                                                imp_right REAL,
-                                                implen_left REAL,
-                                                implen_right REAL,
-                                                impthreat_left VARCHAR,
-                                                impthreat_right VARCHAR,
-                                                x_big_l REAL,
-                                                x_big_r REAL,
-                                                pointsright VARCHAR (10000),
-                                                pointsleft VARCHAR (10000)
+                db.Execute(@"CREATE TABLE public.profiledata_" + trip_id + @"
+                (
+                        id serial,
+                        trip_id SMALLINT, 
+	                    km SMALLINT,
+	                    meter SMALLINT,
+	                    pu_l REAL,
+	                    pu_r REAL,
+	                    vert_l REAL,
+	                    vert_r REAL,
+	                    bok_l REAL,
+	                    bok_r REAL,
+	                    npk_l REAL,
+	                    npk_r REAL,
+	                    ShortWavesLeft REAL,
+	                    ShortWavesRight REAL,
+	                    MediumWavesLeft REAL,
+	                    MediumWavesRight REAL,
+	                    LongWavesLeft REAL,
+	                    LongWavesRight REAL,
+	                    iz_45_l REAL,
+                        iz_45_r REAL,
+                        imp_left REAL,
+                        imp_right REAL,
+                        implen_left REAL,
+                        implen_right REAL,
+                        impthreat_left VARCHAR,
+                        impthreat_right VARCHAR,
+                        x_big_l REAL,
+                        x_big_r REAL,
+                        PointsRight VARCHAR (10000),
+                        PointsLeft VARCHAR (10000)
+                                               
                 )
                 ");
                 foreach (var fragment in trip.Route)
@@ -2644,9 +2915,10 @@ namespace ALARm.DataAccess
                 string sqltext = @"
                 SELECT trip.*, direction.name as direction_name FROM trips as trip 
                 INNER JOIN adm_direction as direction on direction.id = trip.direction_id
-               -- WHERE trip.id = 244
-             --  current = true 
-                 order by id desc limit 1";
+                 WHERE 
+          -- trip.id= 701
+               current = true  
+                order by id desc limit 1";
                 
                 try
                 {
@@ -3084,10 +3356,12 @@ namespace ALARm.DataAccess
 	                        left JOIN adm_direction ad ON ad.ID = track.adm_direction_id 
                         WHERE
 	                        adm_distance_id = {distanceId}  
+                            --and up_nom = 13808
 	                        AND daterange ( period.start_date, period.final_date ) && daterange ( '{period.StartDate:dd.MM.yyyy}', '{period.FinishDate:dd.MM.yyyy}' ) 
                         ORDER BY
 	                        track.ID", commandType: CommandType.Text).ToList();
 
+                tracks = (List<AdmTrack>)tracks.Where(o => o.Direction != "").ToList();
                 return tracks;
             }
         }
@@ -3131,6 +3405,7 @@ namespace ALARm.DataAccess
                 //    order by trips.trip_date", commandType: CommandType.Text).ToList();
             }
         }
+       
 
         public List<Curve> GetCurvesAsTripElems(long trackId, DateTime date, int start_km, int start_m, int final_km, int final_m)
         {
@@ -3287,7 +3562,7 @@ namespace ALARm.DataAccess
                 }
             }
         }
-        public List<Kilometer> GetBedemostKilometers()
+        public List<Kilometer> GetBedemostKilometers(long trip_id)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
             {
@@ -3295,12 +3570,8 @@ namespace ALARm.DataAccess
                     db.Open();
                 try
                 {
-
-                    var res = db.Query<Kilometer>($@"select km as number, pch as pchcode, pchu as pchucode,
-                    pd as pdcode, pdb as pdbcode, ots_iv_st as speedlim, primech as primech,put as track_name,rating as Rating_bedomost
-                     from bedemost", commandType: CommandType.Text).ToList();
-
-
+                    var res= db.Query<Kilometer>($@"select km as number, pch as pchcode, pchu as pchucode, pd as pdcode, pdb as pdbcode, ots_iv_st as speedlim, primech as primech, put as track_name, ball as Rating_bedomost from bedemost WHERE trip_id = {trip_id}", commandType: CommandType.Text).ToList();
+    
                     return res;
                 }
                 catch (Exception e)
@@ -3310,6 +3581,10 @@ namespace ALARm.DataAccess
             }
 
         }
+
+        // LEVEL + 1.0*(1.0+ 0.0*accelerometer_y_axis )*(-0.000062 *(1.051* (x101_kupe - 60)^3+1.085* (x101_kupe - 60)^2  +  0.95* (x102_koridor- 60  )^2         - 0.15* (x102_koridor- 65   )^3   
+        //gauge        -ABS(stright_avg )/40.0 *( 1  + (gauge-1530)/15.0 )   as  gauge 
+       //  1520.0   as  gauge,
         public List<OutData> GetNextOutDatas(int meter, int count, long trip_id)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
@@ -3318,13 +3593,83 @@ namespace ALARm.DataAccess
                 if (db.State == ConnectionState.Closed)
                     db.Open();
                 return db.Query<OutData>($@"
-                select 
-                    ROW_NUMBER( ) OVER ( ) x,
-                    outdata.id, speed, km, meter, gauge, x101_kupe, x102_koridor, y101_kupe, y102_koridor, gauge_correction, level*trip.car_position as level, 
-	                level_correction, stright_left*trip.car_position as stright_left, stright_right*trip.car_position as stright_right, stright_avg*trip.car_position as stright_avg, 
-	                stright_avg_70*trip.car_position stright_avg_70, stright_avg_100*trip.car_position stright_avg_100, stright_avg_120*trip.car_position as stright_avg_120, 
-	                stright_avg_150*trip.car_position as stright_avg_150, drawdown_left, drawdown_right, _meters, level_avg*trip.car_position as level_avg, level_avg_70*trip.car_position as level_avg_70, 
-	                level_avg_100*trip.car_position as level_avg_70, level_avg_120 *trip.car_position as level_avg_120, level_avg_150*trip.car_position as level_avg_150, drawdown_avg, drawdown_avg_70, drawdown_avg_100, 		   drawdown_avg_120, drawdown_avg_150, drawdown_left_sko, drawdown_right_sko, level_sko, skewness_pxi, skewness_sko, sssp_before, sssp_speed, latitude, longitude, heigth, level_zero*trip.car_position as level_zero, enc_on_meter_begin, val01, val02, val03, val04, val05, val06, val07, val08, val09, val10, level1, level2, level3, level4, level5, stright1, stright2, stright3, stright4, stright5, trip_id, rail_temp_kupe, rail_temp_koridor, ambient_temp, accelerometer_y_axis, correction 
+              SELECT ROW_NUMBER
+	            ( ) OVER ( ) x,
+	            outdata.ID,
+	            speed,
+	            km,
+	            meter,
+	            gauge    -ABS(stright_avg )/40.0 *( 1  + (gauge-1530)/15.0 )   as  gauge ,
+	            x101_kupe,
+	            x102_koridor,
+	            y101_kupe,
+	            y102_koridor,
+	            gauge_correction,
+		           (
+		LEVEL - 0.001 * ( y102_koridor - y101_kupe + 67 ) - 0.000160/ 1800 * 0.2 * speed * speed * stright_avg / 3.6 / 3.6 
+	) * 1  AS LEVEL,
+	
+	            level_correction,
+	            stright_left * 1  AS stright_left,
+	            stright_right * 1 AS stright_right,
+	            stright_avg * 1 AS stright_avg,
+	            stright_avg_70 * 1  stright_avg_70,
+	            stright_avg_100 * 1 stright_avg_100,
+	            stright_avg_120 * 1 AS stright_avg_120,
+	            stright_avg_150 * 1  AS stright_avg_150,
+	            drawdown_left,
+	            drawdown_right,
+	            _meters,
+	           	(
+		level_avg -0.00001 * ( y102_koridor - y101_kupe + 67 ) -0.00160 / 1800 * 0.2 * speed * speed * stright_avg / 3.6 / 3.6 
+	) * 1 AS level_avg,
+	            (level_avg_70  )* 1  AS level_avg_70,
+	            level_avg_100 * 1 AS level_avg_70,
+	            level_avg_120 * 1 AS level_avg_120,
+	            level_avg_150 * 1 AS level_avg_150,
+	            drawdown_avg,
+	            drawdown_avg_70,
+	            drawdown_avg_100,
+	            drawdown_avg_120,
+	            drawdown_avg_150,
+	            drawdown_left_sko,
+	            drawdown_right_sko,
+	            level_sko,
+	            skewness_pxi,
+	            skewness_sko,
+	            sssp_before,
+	            sssp_speed,
+	            latitude,
+	            longitude,
+	            heigth,
+	            level_zero * 1 AS level_zero,
+	            enc_on_meter_begin,
+	            val01,
+	            val02,
+	            val03,
+	            val04,
+	            val05,
+	            val06,
+	            val07,
+	            val08,
+	            val09,
+	            val10,
+	            level1,
+	            level2,
+	            level3,
+	            level4,
+	            level5,
+	            stright1,
+	            stright2,
+	            stright3,
+	            stright4,
+	            stright5,
+	            trip_id,
+	            rail_temp_kupe,
+	            rail_temp_koridor,
+	            ambient_temp,
+	            accelerometer_y_axis,
+	            correction
                 from outdata_{trip_id} outdata
                 inner join trips trip on trip.id = outdata.trip_id
                 where _meters > {meter}  order by id limit {count}
@@ -3402,9 +3747,9 @@ namespace ALARm.DataAccess
                                          INNER JOIN adm_station AS final_st ON final_st.ID = final_station
                                          INNER JOIN adm_direction direction ON direction.ID = trips.direction_id 
                                         ORDER BY
-                                         trip_date DESC limit {count}", commandType: CommandType.Text).ToList();
-               
-                //return db.Query<Trips>($@"SELECT * from trips WHERE id = 242", commandType: CommandType.Text).ToList();
+                                         trip_date", commandType: CommandType.Text).ToList();
+
+                //return db.Query<Trips>($@"SELECT * from trips WHERE id = 309", commandType: CommandType.Text).ToList();
             }
         }
         public int InsertKilometer(Kilometer km)
@@ -3418,6 +3763,7 @@ namespace ALARm.DataAccess
                     db.Open();
                 try
                 {
+                    
                     db.Execute($"Delete from kilometers where track_id = {km.Track_id} and num = {km.Number}");
                     km.Id =  db.QueryFirst<int>($@"
                     INSERT INTO kilometers(trip_id, direction_id, length, track_id, passage_time, start, final, start_index, final_index, num, correctionvalue, correctionmeter, correctiontype)
@@ -3841,7 +4187,6 @@ namespace ALARm.DataAccess
 	                            freightspeed,
 	                            km,
 	                            M,
-	
 	                            point_level,
 	                            point_str,
 	                            trapez_level,
@@ -3865,19 +4210,21 @@ namespace ALARm.DataAccess
                 if (db.State == ConnectionState.Closed)
                     db.Open();
                 return db.Query<String>($@"
-                      select file_name from trip_files where trip_id in ( {(trip_id> -1 ? trip_id.ToString() : "select id from trips where current=true order by id desc limit 1")}) and description = 'Vnutr. profil, kupe_Caliblovany' order by id desc, threat_id asc limit 2").ToList();
+                      select file_name from trip_files where trip_id in ( {(trip_id> -1 ? trip_id.ToString() : "select id from trips where current order by id desc limit")} and description in ('Vnutr. profil, kupe_Caliblovany') order by id desc, threat_id asc limit 2").ToList();
             }      
         }
-        public List<string>Get_Vnutr__profil__koridor(long trip_id = -1)
+
+        public List<string> GetProfileFilePathKoridor(long trip_id = -1)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
                 return db.Query<String>($@"
-                      select file_name from trip_files where trip_id in ( {(trip_id > -1 ? trip_id.ToString() : "select id from trips where current=true order by id desc limit 1")}) and description = 'Vnutr. profil, koridor_Caliblovany' order by id desc, threat_id asc limit 2").ToList();
+                      select file_name from trip_files where trip_id in ( {(trip_id > -1 ? trip_id.ToString() : "select id from trips where current order by id desc limit")} and description in ('Vnutr. profil, koridor_Caliblovany') order by id desc, threat_id asc limit 2").ToList();
             }
         }
+
 
         public List<Curve> GetCurvesInTrip(long tripId)
         {
@@ -3961,16 +4308,17 @@ namespace ALARm.DataAccess
                                                     FROM
 	                                                    outdata_{trip_id} 
                                                     WHERE
-	                                                    km * 1000+meter >= {start} 
-	                                                    AND km * 1000+meter <= {final} 
+	                                                    km * 1000+meter >= {start} +20
+	                                                    AND km * 1000+meter <= {final} -20
                                                     ORDER BY
 	                                                    km * 1000+meter) data
                                                     GROUP BY
 	                                                    km,
                                                         trip_id").ToList();
                 }
-                catch
+                catch(Exception e )
                 {
+                    Console.WriteLine("Произошла ошибка в запрое CheckVerify где метерначла ="+start +",а финал"+final);
                     return null;
                 }
             }
@@ -4725,6 +5073,34 @@ namespace ALARm.DataAccess
             }
 
         }
+        public List<ImportListCurveID> GetFirstGapKmAndMeter(long tripId)
+        {
+            using (var db = new NpgsqlConnection(Helper.ConnectionString()))
+            {
+                db.Open();
+                var result = db.QueryFirstOrDefault<(int km, int meter)>(
+                    @"SELECT km, MIN(meter) as meter
+              FROM report_bolts
+              WHERE trip_id = @tripId
+              GROUP BY km
+              ORDER BY km
+              LIMIT 1", new { tripId });
+
+                if (result == default) return null;
+
+                var gap = new ImportListCurveID
+                {
+                    Km = result.km.ToString(),
+                    M = result.meter.ToString()
+                };
+
+                return new List<ImportListCurveID> { gap };
+            }
+        }
+
+
+
+
         public void SetFileID(int num, long fileId, long trip_id)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))

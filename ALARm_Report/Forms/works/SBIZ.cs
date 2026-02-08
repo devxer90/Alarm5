@@ -57,6 +57,8 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kms = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
+
                         if (!kms.Any()) continue;
 
 
@@ -64,7 +66,7 @@ namespace ALARm_Report.Forms
                         kms = kms.Where(o => o.Track_id == track_id).ToList();
                         if (kms.Count == 0) continue;
                         trip.Track_Id = track_id;
-                        var lkm = kms.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
                         ////Выбор километров по проезду-----------------
@@ -92,7 +94,7 @@ namespace ALARm_Report.Forms
                         XElement tripElem = new XElement("trip",
                             new XAttribute("version", $"{DateTime.Now} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}"),
                             new XAttribute("date_statement", DateTime.Now.Date.ToShortDateString()),
-                            new XAttribute("direction", curvesAdmUnit.Direction),
+                            new XAttribute("direction", tripProcess.DirectionName),
                             new XAttribute("km", lkm.Min() + "-" + lkm.Max()),
                             new XAttribute("check", tripProcess.GetProcessTypeName),
                             new XAttribute("track", curvesAdmUnit.Track),

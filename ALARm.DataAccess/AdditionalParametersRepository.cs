@@ -5,19 +5,24 @@ using ALARm.Core;
 using ALARm.Core.AdditionalParameteres;
 using ALARm.Core.Report;
 using ALARm.DataAccess.Properties;
+using AlarmPP.IO;
 using Dapper;
+using Fizzler;
 using Newtonsoft.Json;
 using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-
+using System.Runtime.InteropServices;
 namespace ALARm.DataAccess
 {
     public class AdditionalParametersRepository : IAdditionalParametersRepository
@@ -1156,6 +1161,60 @@ namespace ALARm.DataAccess
 
             }
         }
+        private void InsertGapRow(IDbConnection db, Digression left, Digression right, long trip_id, int template_id, string mode,
+                          string zabeg, string vdop, string otst_l, string otst_r)
+        {
+            var gap = mode == "RIGHT_ONLY" ? right : left;
+
+            var sql = new StringBuilder();
+            sql.AppendLine("INSERT INTO report_gaps (");
+            sql.AppendLine("trip_id, pdb_section, fragment, km, piket, M, vpz, zazor_r, zazor_l, temp, zabeg, vdop, otst_r, otst_l,");
+            sql.AppendLine("file_id, fnum, ms, r_file_id, r_fnum, r_ms, template_id, x, y, h, x_r, y_r, h_r)");
+            sql.AppendLine("VALUES (");
+            sql.AppendLine("@trip_id, @pdb, @fragment, @km, @piket, @m, @vpz, @zr, @zl, @temp, @zabeg, @vdop, @otst_r, @otst_l,");
+            sql.AppendLine("@file_id, @fnum, @ms, @r_file_id, @r_fnum, @r_ms, @template_id, @x, @y, @h, @x_r, @y_r, @h_r)");
+
+            var parameters = new
+            {
+                trip_id,
+                pdb = gap.Pdb_section,
+                fragment = gap.Fragment,
+                km = gap.Km,
+                piket = (gap.Meter / 100 + 1),
+                m = gap.Meter,
+                vpz = gap.FullSpeed,
+                zr = right?.Zazor ?? -999,
+                zl = left?.Zazor ?? -999,
+                temp = gap.temp,
+                zabeg,
+                vdop,
+                otst_r,
+                otst_l,
+                file_id = gap.Fileid,
+                fnum = gap.Fnum,
+                ms = gap.Ms,
+                r_file_id = right?.Fileid ?? -999,
+                r_fnum = right?.Fnum ?? -999,
+                r_ms = right?.Ms ?? -999,
+                template_id,
+                x = gap.X,
+                y = gap.Y,
+                h = gap.H,
+                x_r = right?.X ?? -999,
+                y_r = right?.Y ?? -999,
+                h_r = right?.H ?? -999
+            };
+
+            try
+            {
+                db.Execute(sql.ToString(), parameters);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"❌ Ошибка записи ({mode}) gap {gap.Km}_{gap.Meter}: {e.Message}");
+            }
+        }
+
         public string Insert_gap(long trip_id, int template_id, List<Digression> gaps)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
@@ -1163,259 +1222,347 @@ namespace ALARm.DataAccess
                 if (db.State == ConnectionState.Closed)
                     db.Open();
 
-                int i = 1;
+                int i = 0;
+                int inserted = 0;
+
                 try
                 {
                     var gap_l = gaps.Where(o => o.Threat == Threat.Left).ToList();
                     var gap_r = gaps.Where(o => o.Threat == Threat.Right).ToList();
+                    var processed = new HashSet<string>(); // KM+Meter для контроля
 
-                    var Dig_r = "";
-                    var Dig_l = "";
                     foreach (var gap in gap_l)
                     {
-                        var zabeg = "-999";
-                        var Vdop = "";
-                        var Ots = "";
+                        var pair = gap_r.FirstOrDefault(o => o.Km == gap.Km && Math.Abs(o.Meter - gap.Meter) <= 1);
+                        string key = $"{gap.Km}_{gap.Meter}";
 
-                        var r = gap_r.Where(o => o.Km == gap.Km && (o.Meter >= gap.Meter - 1 && o.Meter <= gap.Meter + 1)).ToList();
-                        if (r.Any())
+                        if (processed.Contains(key))
+                            continue;
+
+                        string zabeg = "-999";
+                        string vdop = gap.AllowSpeed;
+                        string otst_l = gap.DigName.Name == "неизвестный" ? "" : gap.DigName.Name;
+                        string otst_r = "";
+
+                        if (pair != null)
                         {
-                            
-                            if (gap.Zazor == -1)
+                            // синхронизация Zazor
+                            if (gap.Zazor == -1 && pair.Zazor > 0)
                             {
-                                double k = (double)gap.H / (double)r.First().H;
-                                gap.Zazor = (int)(r.First().Zazor * k);
+                                double k = (double)gap.H / (double)pair.H;
+                                gap.Zazor = (int)(pair.Zazor * k);
                                 gap.GetDigressions436();
                             }
-                            if (r.First().Zazor == -1)
+
+                            if (pair.Zazor == -1 && gap.Zazor > 0)
                             {
-                                double k = (double)r.First().H / (double)gap.H;
-                                r.First().Zazor = (int)(gap.Zazor * k);
-                                r.First().GetDigressions436();
+                                double k = (double)pair.H / (double)gap.H;
+                                pair.Zazor = (int)(gap.Zazor * k);
+                                pair.GetDigressions436();
                             }
 
-                            zabeg = (gap.Koord - r.First().Koord).ToString();
-                            Vdop = gap.Zazor < r.First().Zazor ? r.First().AllowSpeed : gap.AllowSpeed;
-                            Ots = gap.DigName.Name == "неизвестный" ? r.First().DigName.Name : gap.DigName.Name;
-                        }
-                        if (gap.Zazor == -1)
-                        {
-                            double k = (double)gap.H / (double)r.First().H;
-                            gap.Zazor = (int)(r.First().Zazor * k);
-                            gap.GetDigressions436();
+                            zabeg = (gap.Koord - pair.Koord).ToString();
+                            vdop = gap.Zazor < pair.Zazor ? pair.AllowSpeed : gap.AllowSpeed;
+                            otst_r = pair.DigName.Name == "неизвестный" ? "" : pair.DigName.Name;
                         }
 
-                        Dig_l = gap.DigName.Name == "неизвестный" ? "" : gap.DigName.Name;
-                        if (r.Count > 0)
+                        InsertGapRow(db, gap, pair, trip_id, template_id, "LEFT", zabeg, vdop, otst_l, otst_r);
+                        inserted++;
+
+                        if (pair != null)
                         {
-                            Dig_r = r.First().DigName.Name == "неизвестный" ? "" : r.First().DigName.Name;
+                            InsertGapRow(db, gap, pair, trip_id, template_id, "RIGHT", zabeg, vdop, otst_l, otst_r);
+                            inserted++;
+                            processed.Add($"{pair.Km}_{pair.Meter}");
                         }
-                       
+
+                        processed.Add(key);
                         i++;
-                        if (Dig_r != "" && Dig_l != "")
-                        {
-                            var txt1 = $@"INSERT INTO report_gaps (
-	                                        trip_id,
-	                                        pdb_section,
-	                                        fragment,
-	                                        km,
-	                                        piket,
-	                                        M,
-	                                        vpz,
-	                                        zazor_r,
-	                                        zazor_l,
-                                            temp,
-	                                        zabeg,
-	                                        vdop,
-                                            otst_l,
-	                                        file_id,
-	                                        fnum,
-	                                        ms,
-	                                        r_file_id,
-	                                        r_fnum,
-	                                        r_ms,
-	                                        template_id ,x ,y ,h ,
-                                                         x_r ,y_r ,h_r
-                                        )
-                                        VALUES
-	                                       (
-                                            '{trip_id}', 
-                                            '{gap.Pdb_section}', 
-                                            '{gap.Fragment}',
-                                            '{gap.Km}',
-                                            '{(gap.Meter / 100 + 1)}',
-                                            '{gap.Meter}',
-                                            '{gap.FullSpeed}',
-                                            '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
-                                            '{gap.Zazor}',
-                                            '{gap.temp}',
-                                            '{zabeg}',
-                                            '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
-                                            
-                                            '{ Dig_l }',                                         
-                                            '{gap.Fileid}',
-                                            '{gap.Fnum}',
-                                            '{gap.Ms}',
-                                            '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
-                                            '{template_id}',
-                                            '{gap.X}',
-                                            '{gap.Y}',
-                                            '{gap.H}',
-                                            '{(r.Any() ? r.First().X.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().Y.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().H.ToString() : "-999")}');";
-
-                            try
-                            {
-                                db.Execute(txt1);
-                            }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
-                            }
-                            var txt2 = $@"INSERT INTO report_gaps (
-	                                        trip_id,
-	                                        pdb_section,
-	                                        fragment,
-	                                        km,
-	                                        piket,
-	                                        M,
-	                                        vpz,
-	                                        zazor_r,
-	                                        zazor_l,
-                                            temp,
-	                                        zabeg,
-	                                        vdop,
-	                                        otst_r,
-	                                        file_id,
-	                                        fnum,
-	                                        ms,
-	                                        r_file_id,
-	                                        r_fnum,
-	                                        r_ms,
-	                                        template_id ,x ,y ,h ,
-                                                         x_r ,y_r ,h_r
-                                        )
-                                        VALUES
-	                                       (
-                                            '{trip_id}', 
-                                            '{gap.Pdb_section}', 
-                                            '{gap.Fragment}',
-                                            '{gap.Km}',
-                                            '{(gap.Meter / 100 + 1)}',
-                                            '{gap.Meter}',
-                                            '{gap.FullSpeed}',
-                                            '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
-                                            '{gap.Zazor}',
-                                            '{gap.temp}',
-                                            '{zabeg}',
-                                            '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
-                                            '{ Dig_r }',                                    
-                                            '{gap.Fileid}',
-                                            '{gap.Fnum}',
-                                            '{gap.Ms}',
-                                            '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
-                                            '{template_id}',
-                                            '{gap.X}',
-                                            '{gap.Y}',
-                                            '{gap.H}',
-                                            '{(r.Any() ? r.First().X.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().Y.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().H.ToString() : "-999")}');";
-
-                            try
-                            {
-                                db.Execute(txt2);
-                            }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
-                            }
-
-                        }
-                        else
-                        {
-
-                            var txt = $@"INSERT INTO report_gaps (
-	                                        trip_id,
-	                                        pdb_section,
-	                                        fragment,
-	                                        km,
-	                                        piket,
-	                                        M,
-	                                        vpz,
-	                                        zazor_r,
-	                                        zazor_l,
-                                            temp,
-	                                        zabeg,
-	                                        vdop,
-	                                        otst_r,
-                                            otst_l,
-	                                        file_id,
-	                                        fnum,
-	                                        ms,
-	                                        r_file_id,
-	                                        r_fnum,
-	                                        r_ms,
-	                                        template_id ,x ,y ,h ,
-                                                         x_r ,y_r ,h_r
-                                        
-                                        )
-                                        VALUES
-	                                       (
-                                            '{trip_id}', 
-                                            '{gap.Pdb_section}', 
-                                            '{gap.Fragment}',
-                                            '{gap.Km}',
-                                            '{(gap.Meter / 100 + 1)}',
-                                            '{gap.Meter}',
-                                            '{gap.FullSpeed}',
-                                            '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
-                                            '{gap.Zazor}',
-                                            '{gap.temp}',
-                                            '{zabeg}',
-                                            '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
-                                            '{ Dig_r }',
-                                            '{ Dig_l }',                                         
-                                            '{gap.Fileid}',
-                                            '{gap.Fnum}',
-                                            '{gap.Ms}',
-                                            '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
-                                            '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
-                                            '{template_id}',
-                                            '{gap.X}',
-                                            '{gap.Y}',
-                                            '{gap.H}',
-                                            '{(r.Any() ? r.First().X.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().Y.ToString() : "-999")}',
-                                            '{(r.Any() ? r.First().H.ToString() : "-999")}');";
-
-                            try
-                            {
-                                db.Execute(txt);
-                            }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
-                            }
-                        }
                     }
-                    return "Удачно записано!";
+
+                    // обработка одиночных правых, не покрытых ранее
+                    foreach (var gap in gap_r)
+                    {
+                        string key = $"{gap.Km}_{gap.Meter}";
+                        if (processed.Contains(key))
+                            continue;
+
+                        InsertGapRow(db, null, gap, trip_id, template_id, "RIGHT_ONLY", "-999", gap.AllowSpeed, "", gap.DigName.Name);
+                        inserted++;
+                        i++;
+                    }
+
+                    Console.WriteLine($"✅ Успешно вставлено записей: {inserted}");
+                    return $"Успешно: {inserted} записей";
                 }
                 catch (Exception e)
                 {
-                    gaps.First().Meter.ToString().First();
-                    Console.WriteLine("Ошибка записи в БД " + e.Message);
-                    return $"Ошибка на {i} записи";
+                    Console.WriteLine($"❌ Ошибка на {i}-й записи: {e.Message}");
+                    return $"Ошибка на {i}-й записи: {e.Message}";
                 }
-
             }
         }
+
+        //public string Insert_gap(long trip_id, int template_id, List<Digression> gaps)
+        //{
+        //    using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+        //    {
+        //        if (db.State == ConnectionState.Closed)
+        //            db.Open();
+
+        //        int i = 1;
+        //        try
+        //        {
+        //            var gap_l = gaps.Where(o => o.Threat == Threat.Left).ToList();
+        //            var gap_r = gaps.Where(o => o.Threat == Threat.Right).ToList();
+
+        //            var Dig_r = "";
+        //            var Dig_l = "";
+        //            foreach (var gap in gap_l)
+        //            {
+        //                var zabeg = "-999";
+        //                var Vdop = "";
+        //                var Ots = "";
+
+        //                var r = gap_r.Where(o => o.Km == gap.Km && (o.Meter >= gap.Meter - 1 && o.Meter <= gap.Meter + 1)).ToList();
+        //                if (r.Any())
+        //                {
+
+        //                    if (gap.Zazor == -1)
+        //                    {
+        //                        double k = (double)gap.H / (double)r.First().H;
+        //                        gap.Zazor = (int)(r.First().Zazor * k);
+        //                        gap.GetDigressions436();
+        //                    }
+        //                    if (r.First().Zazor == -1)
+        //                    {
+        //                        double k = (double)r.First().H / (double)gap.H;
+        //                        r.First().Zazor = (int)(gap.Zazor * k);
+        //                        r.First().GetDigressions436();
+        //                    }
+
+        //                    zabeg = (gap.Koord - r.First().Koord).ToString();
+        //                    Vdop = gap.Zazor < r.First().Zazor ? r.First().AllowSpeed : gap.AllowSpeed;
+        //                    Ots = gap.DigName.Name == "неизвестный" ? r.First().DigName.Name : gap.DigName.Name;
+        //                }
+        //                if (gap.Zazor == -1)
+        //                {
+        //                    double k = (double)gap.H / (double)r.First().H;
+        //                    gap.Zazor = (int)(r.First().Zazor * k);
+        //                    gap.GetDigressions436();
+        //                }
+
+        //                Dig_l = gap.DigName.Name == "неизвестный" ? "" : gap.DigName.Name;
+        //                if (r.Count > 0)
+        //                {
+        //                    Dig_r = r.First().DigName.Name == "неизвестный" ? "" : r.First().DigName.Name;
+        //                }
+
+        //                i++;
+        //                if (Dig_r != "" && Dig_l != "")
+        //                {
+        //                    var txt1 = $@"INSERT INTO report_gaps (
+        //                                 trip_id,
+        //                                 pdb_section,
+        //                                 fragment,
+        //                                 km,
+        //                                 piket,
+        //                                 M,
+        //                                 vpz,
+        //                                 zazor_r,
+        //                                 zazor_l,
+        //                                    temp,
+        //                                 zabeg,
+        //                                 vdop,
+        //                                    otst_l,
+        //                                 file_id,
+        //                                 fnum,
+        //                                 ms,
+        //                                 r_file_id,
+        //                                 r_fnum,
+        //                                 r_ms,
+        //                                 template_id ,x ,y ,h ,
+        //                                                 x_r ,y_r ,h_r
+        //                                )
+        //                                VALUES
+        //                                (
+        //                                    '{trip_id}', 
+        //                                    '{gap.Pdb_section}', 
+        //                                    '{gap.Fragment}',
+        //                                    '{gap.Km}',
+        //                                    '{(gap.Meter / 100 + 1)}',
+        //                                    '{gap.Meter}',
+        //                                    '{gap.FullSpeed}',
+        //                                    '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
+        //                                    '{gap.Zazor}',
+        //                                    '{gap.temp}',
+        //                                    '{zabeg}',
+        //                                    '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
+
+        //                                    '{ Dig_l }',                                         
+        //                                    '{gap.Fileid}',
+        //                                    '{gap.Fnum}',
+        //                                    '{gap.Ms}',
+        //                                    '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
+        //                                    '{template_id}',
+        //                                    '{gap.X}',
+        //                                    '{gap.Y}',
+        //                                    '{gap.H}',
+        //                                    '{(r.Any() ? r.First().X.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().Y.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().H.ToString() : "-999")}');";
+
+        //                    try
+        //                    {
+        //                        db.Execute(txt1);
+        //                    }
+        //                    catch (Exception e)
+        //                    {
+        //                        Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+        //                    }
+        //                    var txt2 = $@"INSERT INTO report_gaps (
+        //                                 trip_id,
+        //                                 pdb_section,
+        //                                 fragment,
+        //                                 km,
+        //                                 piket,
+        //                                 M,
+        //                                 vpz,
+        //                                 zazor_r,
+        //                                 zazor_l,
+        //                                    temp,
+        //                                 zabeg,
+        //                                 vdop,
+        //                                 otst_r,
+        //                                 file_id,
+        //                                 fnum,
+        //                                 ms,
+        //                                 r_file_id,
+        //                                 r_fnum,
+        //                                 r_ms,
+        //                                 template_id ,x ,y ,h ,
+        //                                                 x_r ,y_r ,h_r
+        //                                )
+        //                                VALUES
+        //                                (
+        //                                    '{trip_id}', 
+        //                                    '{gap.Pdb_section}', 
+        //                                    '{gap.Fragment}',
+        //                                    '{gap.Km}',
+        //                                    '{(gap.Meter / 100 + 1)}',
+        //                                    '{gap.Meter}',
+        //                                    '{gap.FullSpeed}',
+        //                                    '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
+        //                                    '{gap.Zazor}',
+        //                                    '{gap.temp}',
+        //                                    '{zabeg}',
+        //                                    '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
+        //                                    '{ Dig_r }',                                    
+        //                                    '{gap.Fileid}',
+        //                                    '{gap.Fnum}',
+        //                                    '{gap.Ms}',
+        //                                    '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
+        //                                    '{template_id}',
+        //                                    '{gap.X}',
+        //                                    '{gap.Y}',
+        //                                    '{gap.H}',
+        //                                    '{(r.Any() ? r.First().X.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().Y.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().H.ToString() : "-999")}');";
+
+        //                    try
+        //                    {
+        //                        db.Execute(txt2);
+        //                    }
+        //                    catch (Exception e)
+        //                    {
+        //                        Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+        //                    }
+
+        //                }
+        //                else
+        //                {
+
+        //                    var txt = $@"INSERT INTO report_gaps (
+        //                                 trip_id,
+        //                                 pdb_section,
+        //                                 fragment,
+        //                                 km,
+        //                                 piket,
+        //                                 M,
+        //                                 vpz,
+        //                                 zazor_r,
+        //                                 zazor_l,
+        //                                    temp,
+        //                                 zabeg,
+        //                                 vdop,
+        //                                 otst_r,
+        //                                    otst_l,
+        //                                 file_id,
+        //                                 fnum,
+        //                                 ms,
+        //                                 r_file_id,
+        //                                 r_fnum,
+        //                                 r_ms,
+        //                                 template_id ,x ,y ,h ,
+        //                                                 x_r ,y_r ,h_r
+
+        //                                )
+        //                                VALUES
+        //                                (
+        //                                    '{trip_id}', 
+        //                                    '{gap.Pdb_section}', 
+        //                                    '{gap.Fragment}',
+        //                                    '{gap.Km}',
+        //                                    '{(gap.Meter / 100 + 1)}',
+        //                                    '{gap.Meter}',
+        //                                    '{gap.FullSpeed}',
+        //                                    '{ (r.Any() ? r.First().Zazor.ToString() : "-999") }',
+        //                                    '{gap.Zazor}',
+        //                                    '{gap.temp}',
+        //                                    '{zabeg}',
+        //                                    '{ (!r.Any() ? gap.AllowSpeed : Vdop)}',
+        //                                    '{ Dig_r }',
+        //                                    '{ Dig_l }',                                         
+        //                                    '{gap.Fileid}',
+        //                                    '{gap.Fnum}',
+        //                                    '{gap.Ms}',
+        //                                    '{ (r.Any() ? r.First().Fileid.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Fnum.ToString() : "-999") }',
+        //                                    '{ (r.Any() ? r.First().Ms.ToString() : "-999") }',
+        //                                    '{template_id}',
+        //                                    '{gap.X}',
+        //                                    '{gap.Y}',
+        //                                    '{gap.H}',
+        //                                    '{(r.Any() ? r.First().X.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().Y.ToString() : "-999")}',
+        //                                    '{(r.Any() ? r.First().H.ToString() : "-999")}');";
+
+        //                    try
+        //                    {
+        //                        db.Execute(txt);
+        //                    }
+        //                    catch (Exception e)
+        //                    {
+        //                        Console.WriteLine("Ошибка записи в БД " + e.Message + "Ошибка на {i} записи");
+        //                    }
+        //                }
+        //            }
+        //            return "Удачно записано!";
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            gaps.First().Meter.ToString().First();
+        //            Console.WriteLine("Ошибка записи в БД " + e.Message);
+        //            return $"Ошибка на {i} записи";
+        //        }
+
+        //    }
+        //}
         public List<Gap> GetdefISGap(long id)
         {
             using (IDbConnection db = new NpgsqlConnection(Helper.ConnectionString()))
@@ -2541,49 +2688,102 @@ max(final-start) as zazor, max(final-start) as Length, max(start) as start,
                 }
             }
         }
-        private List<Dictionary<String,object>> getFilesPathById(long fileId)
+        //private List<Dictionary<String,object>> getFilesPathById(long fileId)
+        //{
+        //    var result = new List<Dictionary<String, object>>();
+        //    using (NpgsqlConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+        //    {
+        //        if (db.State == ConnectionState.Closed)
+        //            db.Open();
+        //        try
+        //        {
+        //            string sqlText =
+        //            @"select 
+        //                    file_name as fileName, trip_files.id as fId,
+        //                    case when description = 'StykiKupeVneshn' then 0
+        //                        when description = 'StykiKupeVnutr' then 1
+        //                        when description = 'SredCHastSHpaly' then 2
+        //                        when description = 'StykiKoridorVnutr' then 3
+        //                        when description = 'StykiKoridorVneshn' then 4 else 5 end as descId
+
+
+        //                from 
+        //                 trip_files 
+        //                  where trip_id = (select trip_id from trip_files where id = " + fileId + @") 
+        //                   and right(file_name,4) = (select right(file_name,4) from trip_files where id ="+fileId+@"  ) and description in (
+        //                    'StykiKupeVneshn','StykiKupeVnutr','SredCHastSHpaly','StykiKoridorVnutr','StykiKoridorVneshn'
+        //                   ) order by descId
+        //                ";
+        //            NpgsqlCommand cmd = new NpgsqlCommand(sqlText, db);
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+
+        //                while (reader.Read())
+        //                {
+        //                    var fileName = reader.GetString(reader.GetOrdinal("fileName"));
+        //                    var fId = reader.GetInt64(reader.GetOrdinal("fId"));
+        //                    result.Add(new Dictionary<string, object>() { { "fileName", fileName }, { "fileId", fId} });
+        //                }
+
+        //            }
+        //            return result;
+        //        }
+        //        catch (Exception e){
+        //            Console.Error.WriteLine("getFilesPathById error: " + e.Message);
+        //            return null;
+        //        }
+        //    }
+        //}
+        private List<Dictionary<string, object>> getFilesPathById(long fileId)
         {
-            var result = new List<Dictionary<String, object>>();
-            using (NpgsqlConnection db = new NpgsqlConnection(Helper.ConnectionString()))
+            using (var db = new NpgsqlConnection(Helper.ConnectionString()))
             {
                 if (db.State == ConnectionState.Closed)
                     db.Open();
+
                 try
                 {
-                    string sqlText =
-                    @"select 
-                            file_name as fileName, trip_files.id as fId,
-                            case when description = 'StykiKupeVneshn' then 0
-                                when description = 'StykiKupeVnutr' then 1
-                                when description = 'SredCHastSHpaly' then 2
-                                when description = 'StykiKoridorVnutr' then 3
-                                when description = 'StykiKoridorVneshn' then 4 else 5 end as descId
+                    // один подзапрос вместо двух
+                    string sql = @"
+                WITH base AS (
+                    SELECT trip_id, RIGHT(file_name,4) AS ext
+                    FROM trip_files WHERE id = @fileId
+                )
+                SELECT 
+                    file_name AS fileName,
+                    trip_files.id AS fId,
+                    CASE description
+                        WHEN 'StykiKupeVneshn'  THEN 0
+                        WHEN 'StykiKupeVnutr'  THEN 1
+                        WHEN 'SredCHastSHpaly' THEN 2
+                        WHEN 'StykiKoridorVnutr' THEN 3
+                        WHEN 'StykiKoridorVneshn' THEN 4
+                        ELSE 5 END AS descId
+                FROM trip_files, base
+                WHERE trip_files.trip_id = base.trip_id
+                  AND RIGHT(trip_files.file_name,4) = base.ext
+                  AND description IN (
+                      'StykiKupeVneshn',
+                      'StykiKupeVnutr',
+                      'SredCHastSHpaly',
+                      'StykiKoridorVnutr',
+                      'StykiKoridorVneshn'
+                  )
+                ORDER BY descId;";
 
-                                  
-                        from 
-	                        trip_files 
-		                        where trip_id = (select trip_id from trip_files where id = " + fileId + @") 
-			                        and right(file_name,4) = (select right(file_name,4) from trip_files where id ="+fileId+@"  ) and description in (
-				                        'StykiKupeVneshn','StykiKupeVnutr','SredCHastSHpaly','StykiKoridorVnutr','StykiKoridorVneshn'
-			                        ) order by descId
-                        ";
-                    NpgsqlCommand cmd = new NpgsqlCommand(sqlText, db);
-                    using (var reader = cmd.ExecuteReader())
+                    var rows = db.Query(sql, new { fileId }).ToList();
+
+                    // сразу собираем список словарей
+                    return rows.Select(r => new Dictionary<string, object>
                     {
-
-                        while (reader.Read())
-                        {
-                            var fileName = reader.GetString(reader.GetOrdinal("fileName"));
-                            var fId = reader.GetInt64(reader.GetOrdinal("fId"));
-                            result.Add(new Dictionary<string, object>() { { "fileName", fileName }, { "fileId", fId} });
-                        }
-                        
-                    }
-                    return result;
+                        ["fileName"] = (string)r.filename,
+                        ["fileId"] = (long)r.fid
+                    }).ToList();
                 }
-                catch (Exception e){
+                catch (Exception e)
+                {
                     Console.Error.WriteLine("getFilesPathById error: " + e.Message);
-                    return null;
+                    return new List<Dictionary<string, object>>();
                 }
             }
         }
@@ -2722,173 +2922,389 @@ max(final-start) as zazor, max(final-start) as Length, max(start) as start,
             return Color.FromArgb(color.A, (int)red, (int)green, (int)blue);
         }
 
-        public Dictionary<string,Object> getBitMaps(long fileId, long ms, int fnum, RepType RepType){
-            List<Bitmap> bitMaps = new List<Bitmap>();
+        //public Dictionary<string,Object> getBitMaps(long fileId, long ms, int fnum, RepType RepType){
+        //    List<Bitmap> bitMaps = new List<Bitmap>();
+        //    var filePaths = getFilesPathById(fileId);
+        //    List<Dictionary<String, Object>> shapes = new List<Dictionary<string, object>>();
+        //    try
+        //    {
+        //        filePaths.ForEach(filePath =>
+        //        {
+        //            using (BinaryReader reader = new BinaryReader(File.Open(filePath["fileName"] as string, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+        //            {
+        //                try
+        //                {
+        //                    int width = reader.ReadInt32();
+        //                    int height = reader.ReadInt32();
+        //                    int frameSize = width * height;
+        //                    long position = (long)fnum * (long)frameSize + 8;
+        //                    reader.BaseStream.Seek(position, SeekOrigin.Begin);
+        //                    byte[] by = reader.ReadBytes(frameSize);
+        //                    var encoderCounter_1 = BitConverter.ToInt32(by.Skip(8).Take(4).ToArray(), 0);
+        //                    var km = BitConverter.ToInt32(by.Skip(40).Take(4).ToArray(), 0);
+
+        //                    //position = (long)(Math.Abs(ms - encoderCounter_1) / 200) * (long)frameSize + 8;
+        //                    //position = (long)(fnum) * (long)frameSize + 8;
+
+        //                    //reader.BaseStream.Seek(position, SeekOrigin.Begin);
+        //                    //by = reader.ReadBytes(frameSize);
+
+        //                    encoderCounter_1 = BitConverter.ToInt32(by.Skip(8).Take(4).ToArray(), 0);
+        //                    if (encoderCounter_1 == ms)
+        //                    {
+        //                        Bitmap bitMap = Convert2Bitmap(by, width, height);
+        //                        //if (Filter == null)
+        //                        //{
+        //                        //    byte[] first = new byte[width];
+        //                        //    Array.Copy(by, 0, first, 0, width);
+        //                        //    int sum = 0;
+        //                        //    for (int i = 0; i < width; i++)
+        //                        //    {
+        //                        //        sum += first[i];
+        //                        //    }
+        //                        //    int firstavg = sum / width;
+        //                        //    byte[] last = new byte[width];
+        //                        //    Array.Copy(by, by.Length - width, last, 0, width);
+        //                        //    sum = 0;
+        //                        //    for (int i = 0; i < width; i++)
+        //                        //    {
+        //                        //        sum += last[i];
+        //                        //    }
+        //                        //    int lastavg = sum / width;
+        //                        //    int[,] matrix = new int[height, width];
+        //                        //    for (int i = 0; i < height; i++)
+        //                        //    {
+        //                        //        for (int j = 0; j < width; j++)
+        //                        //        {
+        //                        //            matrix[i, j] = (firstavg + lastavg) / 2 + (lastavg - firstavg) / height * i;
+        //                        //        }
+        //                        //    }
+        //                        //    Filter = matrix;
+        //                        //}
+        //                        for (int row = 0; row < bitMap.Width; row++)
+        //                        {
+        //                            for (int col = 0; col < bitMap.Height; col++)
+        //                            {
+        //                                Color pixel = bitMap.GetPixel(row, col);
+        //                                if (pixel.GetBrightness() > 120)
+        //                                {
+        //                                    pixel = ChangeColorBrightness(pixel, 0.80f);
+        //                                    bitMap.SetPixel(row, col, pixel);
+        //                                }
+        //                                else
+        //                                {
+        //                                    pixel = ChangeColorBrightness(pixel, 1.2f);
+        //                                    bitMap.SetPixel(row, col, pixel);
+        //                                }
+        //                            }
+        //                        }
+
+
+
+
+        //                        Graphics gr = Graphics.FromImage(bitMap);
+        //                        using (Pen selPen = new Pen(Color.White))
+        //                        {
+        //                            var objects = GetObjectsByFrameNumber((long)filePath["fileId"], ms, fnum, RepType);
+        //                            //var objects = GetObjectsByFrameNumber((long)filePath["fileId"], ms, -1);
+        //                            var sts = false;
+        //                            foreach (var vo in objects)
+        //                            {
+        //                                selPen.Color = RepType == RepType.Fastener ? Color.Red : (vo.Oid == (int)VideoObjectType.no_bolt ?
+        //                                                                    Color.Red : vo.Oid == (int)VideoObjectType.bolt_M22 || vo.Oid == (int)VideoObjectType.bolt_M24 ?
+        //                                                                    Color.Blue : Color.White);
+
+        //                                gr.DrawRectangle(selPen, vo.X - 25, vo.Y - 45, vo.W, vo.H);
+        //                            }
+        //                        }
+
+        //                        bitMaps.Add(bitMap);
+        //                    }
+        //                    else
+        //                    {
+        //                        position = (long)fnum * (long)frameSize + 8;
+        //                        reader.BaseStream.Seek(position, SeekOrigin.Begin);
+        //                        by = reader.ReadBytes(frameSize);
+        //                        Bitmap bitMapL = Convert2Bitmap(by, width, height);
+        //                        for (int row = 0; row < bitMapL.Width; row++)
+        //                        {
+        //                            for (int col = 0; col < bitMapL.Height; col++)
+        //                            {
+        //                                Color pixel = bitMapL.GetPixel(row, col);
+        //                                if (pixel.GetBrightness() > 120)
+        //                                {
+        //                                    pixel = ChangeColorBrightness(pixel, 0.80f);
+        //                                    bitMapL.SetPixel(row, col, pixel);
+        //                                }
+        //                                else
+        //                                {
+        //                                    pixel = ChangeColorBrightness(pixel, 1.2f);
+        //                                    bitMapL.SetPixel(row, col, pixel);
+        //                                }
+        //                            }
+        //                        }
+        //                        Graphics grl = Graphics.FromImage(bitMapL);
+        //                        using (Pen selPen = new Pen(Color.White))
+        //                        {
+        //                            var objects = GetObjectsByFrameNumber((long)filePath["fileId"], -1, fnum, RepType);
+        //                            foreach (var vo in objects)
+        //                            {
+        //                                selPen.Color = RepType == RepType.Fastener ? Color.Red : (vo.Oid == 2 ? Color.Red : vo.Oid == 0 || vo.Oid == 1 ? Color.Blue : Color.White);
+
+        //                                grl.DrawRectangle(selPen, vo.X - 25, vo.Y - 45, vo.W, vo.H);
+        //                            }
+        //                        }
+        //                        bitMaps.Add(bitMapL);
+        //                    }
+        //                }
+        //                catch (Exception e)
+        //                {
+        //                    System.Console.WriteLine("getBitmaps error: " + e.StackTrace);
+        //                }
+        //            }
+        //        });
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Console.WriteLine("====>getBitMaps  Ошибка загрузки файла " + e.Message);
+        //    }
+
+        //    if (RepType == RepType.Gaps)
+        //    {
+        //        var d = new Dictionary<String, Object>
+        //        {
+        //            { "name", "gap" },
+        //            { "thread", 1 },
+        //            { "x7", 10 },
+        //            { "y7", 10 },
+        //            { "w7", 10 },
+        //            { "h7", 20 }
+        //        };
+        //        shapes.Add(d);
+        //    }
+
+        //    var result = new Dictionary<String, Object>
+        //    {
+        //        { "drawShapes", shapes },
+        //        { "bitMaps", bitMaps },
+        //        { "filePaths",filePaths }
+        //    };
+        //    return result;
+        //}
+        // <= ДОБАВИТЬ В КЛАСС AdditionalParametersRepository
+        private static Bitmap MakePlaceholder(int w, int h)
+        {
+            var bmp = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.Black);
+            }
+            return bmp;
+        }
+       
+        public Dictionary<string, object> getBitMaps(long fileId, long ms, int fnum, RepType RepType)
+        {
+            Console.WriteLine($"ENV: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription} | {System.Runtime.InteropServices.RuntimeInformation.OSDescription}");
+            //Console.WriteLine($"IsBrowser: {OperatingSystem.IsBrowser()}");
+
+
+            Console.WriteLine($"OS: {RuntimeInformation.OSDescription}");
+            Console.WriteLine($"Framework: {RuntimeInformation.FrameworkDescription}");
+            Console.WriteLine($"ProcessArch: {RuntimeInformation.ProcessArchitecture}");
+            Console.WriteLine($"IsWindows: {RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}");
+            var bitMaps = new List<Bitmap>();
             var filePaths = getFilesPathById(fileId);
-            List<Dictionary<String, Object>> shapes = new List<Dictionary<string, object>>();
+            var shapes = new List<Dictionary<string, object>>();
+            var timestamps = new List<long>(); // абсолютные наносекунды если будут
+            var framesInfo = new List<Dictionary<string, object>>(); // метаданные по каждому кадру (без рисования)
+
+            // локальный helper: чёрная заглушка БЕЗ текста
+            Bitmap MakeBlank(int w = 640, int h = 240)
+            {
+                var bmp = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                using (var g = Graphics.FromImage(bmp))
+                using (var bg = new SolidBrush(Color.Black))
+                {
+                    g.FillRectangle(bg, 0, 0, w, h);
+                }
+                return bmp;
+            }
+
             try
             {
+                int camIdx = 0;
+
                 filePaths.ForEach(filePath =>
                 {
-                    using (BinaryReader reader = new BinaryReader(File.Open(filePath["fileName"] as string, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                    camIdx++;
+                    string fileName = filePath["fileName"] as string ?? "";
+
+                    try
                     {
-                        try
+                        using (var fs = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var reader = new BinaryReader(fs))
                         {
+                            // «как раньше»: в заголовке 2 * Int32 = width/height
                             int width = reader.ReadInt32();
                             int height = reader.ReadInt32();
-                            int frameSize = width * height;
-                            long position = (long)0 * (long)frameSize + 8;
-                            reader.BaseStream.Seek(position, SeekOrigin.Begin);
+
+                            if (width <= 0 || height <= 0)
+                                throw new InvalidDataException("width/height <= 0");
+
+                            int frameSize = checked(width * height);
+
+                            // позиция нужного кадра
+                            long pos = 8L + (long)fnum * (long)frameSize;
+                            reader.BaseStream.Seek(pos, SeekOrigin.Begin);
+
                             byte[] by = reader.ReadBytes(frameSize);
-                            var arr = by.Skip(8).Take(4).ToArray();
-                            var km = BitConverter.ToInt32(by.Skip(40).Take(4).ToArray(), 0);
-                            var encoderCounter_1 = BitConverter.ToInt32(arr, 0);
-                            position = (long)(Math.Abs(ms - encoderCounter_1) / 200) * (long)frameSize + 8;
-                            reader.BaseStream.Seek(position, SeekOrigin.Begin);
-                            by = reader.ReadBytes(frameSize);
+                            if (by == null || by.Length < frameSize)
+                                throw new EndOfStreamException("frame truncated");
 
-                            encoderCounter_1 = BitConverter.ToInt32(by.Skip(8).Take(4).ToArray(), 0);
-                            if (encoderCounter_1 == ms)
-                            {
-                                Bitmap bitMap = Convert2Bitmap(by, width, height);
-                                //if (Filter == null)
-                                //{
-                                //    byte[] first = new byte[width];
-                                //    Array.Copy(by, 0, first, 0, width);
-                                //    int sum = 0;
-                                //    for (int i = 0; i < width; i++)
-                                //    {
-                                //        sum += first[i];
-                                //    }
-                                //    int firstavg = sum / width;
-                                //    byte[] last = new byte[width];
-                                //    Array.Copy(by, by.Length - width, last, 0, width);
-                                //    sum = 0;
-                                //    for (int i = 0; i < width; i++)
-                                //    {
-                                //        sum += last[i];
-                                //    }
-                                //    int lastavg = sum / width;
-                                //    int[,] matrix = new int[height, width];
-                                //    for (int i = 0; i < height; i++)
-                                //    {
-                                //        for (int j = 0; j < width; j++)
-                                //        {
-                                //            matrix[i, j] = (firstavg + lastavg) / 2 + (lastavg - firstavg) / height * i;
-                                //        }
-                                //    }
-                                //    Filter = matrix;
-                                //}
-                                for (int row = 0; row < bitMap.Width; row++)
-                                {
-                                    for (int col = 0; col < bitMap.Height; col++)
-                                    {
-                                        Color pixel = bitMap.GetPixel(row, col);
-                                        if (pixel.GetBrightness() > 120)
-                                        {
-                                            pixel = ChangeColorBrightness(pixel, 0.80f);
-                                            bitMap.SetPixel(row, col, pixel);
-                                        }
-                                        else
-                                        {
-                                            pixel = ChangeColorBrightness(pixel, 1.2f);
-                                            bitMap.SetPixel(row, col, pixel);
-                                        }
-                                    }
-                                }
+                            // Внутрикадровые служебные поля — как у тебя было раньше
+                            int encoderCounter_1 = (by.Length >= 12) ? BitConverter.ToInt32(by, 8) : 0;
+                            int? km = (by.Length >= 44) ? (int?)BitConverter.ToInt32(by, 40) : null;
 
+                            // лог (не рисуем на кадре!)
+                            //Console.WriteLine($"[getBitMaps] cam={camIdx} file='{Path.GetFileName(fileName)}' fnum={fnum} width={width} height={height} TS={encoderCounter_1} KM={(km.HasValue ? km.Value.ToString() : "N/A")}");
 
+                            // собираем мета-инфо по кадру, чтобы наверху вывести поверх UI
+                            framesInfo.Add(new Dictionary<string, object>
+                    {
+                        { "cameraIndex", camIdx },
+                        { "fileName", Path.GetFileName(fileName) },
+                        { "width", width },
+                        { "height", height },
+                        { "frame", fnum },
+                        { "encoderCounter", encoderCounter_1 },
+                        { "km", km },
+                    });
 
+                            // если нужно абсолютное время — складывать тут не из чего (старый формат).
+                            // просто повторим encoderCounter в наносекундах для совместимости.
+                            timestamps.Add((long)encoderCounter_1 * 1_000_000L);
 
-                                Graphics gr = Graphics.FromImage(bitMap);
-                                using (Pen selPen = new Pen(Color.White))
-                                {
-                                    var objects = GetObjectsByFrameNumber((long)filePath["fileId"], ms, fnum, RepType);
-                                    //var objects = GetObjectsByFrameNumber((long)filePath["fileId"], ms, -1);
-                                    var sts = false;
-                                    foreach (var vo in objects)
-                                    {
-                                        selPen.Color = RepType == RepType.Fastener ? Color.Red : (vo.Oid == (int)VideoObjectType.no_bolt ?
-                                                                            Color.Red : vo.Oid == (int)VideoObjectType.bolt_M22 || vo.Oid == (int)VideoObjectType.bolt_M24 ?
-                                                                            Color.Blue : Color.White);
+                            // сам кадр (8-бит серый, как раньше)
+                            Bitmap bitmap = Convert2Bitmap(by, width, height);
 
-                                        gr.DrawRectangle(selPen, vo.X - 25, vo.Y - 45, vo.W, vo.H);
-                                    }
-                                }
-
-                                bitMaps.Add(bitMap);
-                            }
-                            else
-                            {
-                                position = (long)fnum * (long)frameSize + 8;
-                                reader.BaseStream.Seek(position, SeekOrigin.Begin);
-                                by = reader.ReadBytes(frameSize);
-                                Bitmap bitMapL = Convert2Bitmap(by, width, height);
-                                for (int row = 0; row < bitMapL.Width; row++)
-                                {
-                                    for (int col = 0; col < bitMapL.Height; col++)
-                                    {
-                                        Color pixel = bitMapL.GetPixel(row, col);
-                                        if (pixel.GetBrightness() > 120)
-                                        {
-                                            pixel = ChangeColorBrightness(pixel, 0.80f);
-                                            bitMapL.SetPixel(row, col, pixel);
-                                        }
-                                        else
-                                        {
-                                            pixel = ChangeColorBrightness(pixel, 1.2f);
-                                            bitMapL.SetPixel(row, col, pixel);
-                                        }
-                                    }
-                                }
-                                Graphics grl = Graphics.FromImage(bitMapL);
-                                using (Pen selPen = new Pen(Color.White))
-                                {
-                                    var objects = GetObjectsByFrameNumber((long)filePath["fileId"], -1, fnum, RepType);
-                                    foreach (var vo in objects)
-                                    {
-                                        selPen.Color = RepType == RepType.Fastener ? Color.Red : (vo.Oid == 2 ? Color.Red : vo.Oid == 0 || vo.Oid == 1 ? Color.Blue : Color.White);
-
-                                        grl.DrawRectangle(selPen, vo.X - 25, vo.Y - 45, vo.W, vo.H);
-                                    }
-                                }
-                                bitMaps.Add(bitMapL);
-                            }
+                            // НИЧЕГО НЕ ТРОГАЕМ: ни яркость, ни подписи, ни рамки
+                            bitMaps.Add(bitmap);
                         }
-                        catch (Exception e)
-                        {
-                            System.Console.WriteLine("getBitmaps error: " + e.StackTrace);
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[getBitMaps] camera read error (cam={camIdx}, file='{Path.GetFileName(fileName)}'): {ex.Message}");
+                        // добавим пустую заглушку, чтобы сетка кадров не рушилась
+                        bitMaps.Add(MakeBlank());
+                        framesInfo.Add(new Dictionary<string, object>
+                {
+                    { "cameraIndex", camIdx },
+                    { "fileName", Path.GetFileName(fileName) },
+                    { "error", ex.Message }
+                });
+                        // чтобы размер списков совпадал
+                        timestamps.Add(0L);
                     }
                 });
             }
             catch (Exception e)
             {
-                Console.WriteLine("====>getBitMaps  Ошибка загрузки файла " + e.Message);
+                Console.WriteLine("====> getBitMaps: Ошибка загрузки: " + e.Message);
             }
 
+            // тестовый shape — как раньше
             if (RepType == RepType.Gaps)
             {
-                var d = new Dictionary<String, Object>
-                {
-                    { "name", "gap" },
-                    { "thread", 1 },
-                    { "x7", 10 },
-                    { "y7", 10 },
-                    { "w7", 10 },
-                    { "h7", 20 }
-                };
-                shapes.Add(d);
+                shapes.Add(new Dictionary<string, object>
+        {
+            { "name", "gap" }, { "thread", 1 },
+            { "x7", 10 }, { "y7", 10 }, { "w7", 10 }, { "h7", 20 }
+        });
             }
 
-            var result = new Dictionary<String, Object>
-            {
-                { "drawShapes", shapes },
-                { "bitMaps", bitMaps },
-                { "filePaths",filePaths }
-            };
-            return result;
+            // возвращаем вместе с метаданными для вывода в UI (поверх картинки)
+            return new Dictionary<string, object>
+    {
+        { "drawShapes",  shapes },
+        { "bitMaps",     bitMaps },
+        { "filePaths",   filePaths },
+        { "timestampsNs", timestamps },
+        { "framesInfo",  framesInfo }
+    };
         }
+
+
+
+
+        /// <summary>
+        /// Копия 8bpp -> 24bppRgb (без изменения размерности). На такой bitmap можно рисовать Graphics.
+        /// </summary>
+        private static Bitmap CopyToRgb24(Bitmap src8)
+        {
+            if (src8 == null) throw new ArgumentNullException(nameof(src8));
+            int w = src8.Width;
+            int h = src8.Height;
+
+            // если вдруг не 8bpp – просто вернём копию в 24bpp через GDI+
+            if (src8.PixelFormat != PixelFormat.Format8bppIndexed)
+            {
+                var safeCopy = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+                using (var g = Graphics.FromImage(safeCopy))
+                    g.DrawImage(src8, 0, 0, w, h);
+                return safeCopy;
+            }
+
+            var dst24 = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+            var rect = new Rectangle(0, 0, w, h);
+
+            BitmapData srcData = null;
+            BitmapData dstData = null;
+
+            try
+            {
+                srcData = src8.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
+                dstData = dst24.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+
+                int srcStride = srcData.Stride;
+                int dstStride = dstData.Stride;
+
+                // построчная обработка без указателей
+                var srcRow = new byte[srcStride];
+                var dstRow = new byte[dstStride];
+
+                for (int y = 0; y < h; y++)
+                {
+                    // читаем строку 8bpp
+                    IntPtr srcPtr = IntPtr.Add(srcData.Scan0, y * srcStride);
+                    Marshal.Copy(srcPtr, srcRow, 0, srcStride);
+
+                    // растягиваем каждый серый пиксель в три канала
+                    for (int x = 0; x < w; x++)
+                    {
+                        byte v = srcRow[x];
+                        int di = x * 3;
+                        dstRow[di] = v; // B
+                        dstRow[di + 1] = v; // G
+                        dstRow[di + 2] = v; // R
+                    }
+
+                    // записываем строку 24bpp
+                    IntPtr dstPtr = IntPtr.Add(dstData.Scan0, y * dstStride);
+                    Marshal.Copy(dstRow, 0, dstPtr, dstStride);
+                }
+            }
+            finally
+            {
+                if (srcData != null) src8.UnlockBits(srcData);
+                if (dstData != null) dst24.UnlockBits(dstData);
+            }
+
+            return dst24;
+        }
+
+
+
+
 
 
         public Bitmap Convert2Bitmap(byte[] DATA, int width, int height)
@@ -3243,90 +3659,239 @@ max(final-start) as zazor, max(final-start) as Length, max(start) as start,
 
             }
         }
-
         private void GapProcessing(List<Digression> gaps, long km, long trip_id)
         {
             try
             {
                 foreach (var gap in gaps)
                 {
-                    var reader = new BinaryReader(File.Open(gap.File_name, FileMode.Open));
-
-
                     try
                     {
-
-
-                        int widthF = reader.ReadInt32();
-                        int heightF = reader.ReadInt32();
-                        int frameSize = widthF * heightF;
-                        long position = gap.Fnum * (long)frameSize + 8;
-                        reader.BaseStream.Seek(position, SeekOrigin.Begin);
-                        byte[] by = reader.ReadBytes(frameSize);
-
-                        var mtx1 = ConvertMatrix(Array.ConvertAll(by, Convert.ToInt32), heightF, widthF);
-                        var frame = mtx1.ToRedBitmap();
-                        frame = frame.Clone(new Rectangle(gap.X + (int)(gap.W * 0.4), gap.Y - 2, gap.W - (int)(gap.W * 0.9), gap.H + 4), frame.PixelFormat);
-                        var mtx = frame.ToRedMatrix();
-
-                        var width = frame.Width;
-                        var height = frame.Height;
-
-                        var param1 = 0;
-                        var param2 = 0;
-
-                        double[] graphic = new double[height - (param1 + param2)];
-                        double[] graphic_new = new double[height - (param1 + param2)];
-
-                        for (int y = 0; y < height; y++) //heigth
+                        using (var reader = new BinaryReader(File.Open(gap.File_name, FileMode.Open)))
                         {
-                            var s1 = 0.0;
-                            for (int x = param1; x < width - param2; x++)
+                            int widthF = 0, heightF = 0;
+                            try
                             {
-                                s1 += mtx[y, x];
+                                widthF = reader.ReadInt32();
+                                heightF = reader.ReadInt32();
                             }
-                            graphic_new[y] = s1;
-                        }
-                        for (int i = 0; i < height; i++)
-                        {
-                            graphic[i] = Math.Exp(3 * graphic_new[i] / graphic_new.Average());
-                        }
-
-                        var Gap_len = VectorToPoints(graphic, gap);
-
-                        if (Gap_len > gap.H)
-                        {
-                            if (gap.H - 4 > 0)
+                            catch (Exception ex)
                             {
-                                gap.Zazor = gap.H - 4;
+                                Console.WriteLine($"GapProcessing: Ошибка чтения width/height — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
                             }
-                            else
+
+                            int frameSize = widthF * heightF;
+                            long position = gap.Fnum * (long)frameSize + 8;
+                            reader.BaseStream.Seek(position, SeekOrigin.Begin);
+
+                            byte[] by;
+                            try
                             {
-                                gap.Zazor = gap.H;
+                                by = reader.ReadBytes(frameSize);
                             }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка чтения кадра — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            int[,] mtx1;
+                            try
+                            {
+                                mtx1 = ConvertMatrix(Array.ConvertAll(by, Convert.ToInt32), heightF, widthF);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка ConvertMatrix — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            Bitmap frame;
+                            try
+                            {
+                                frame = mtx1.ToRedBitmap();
+
+                                int cropWidth = Math.Max(1, gap.W - (int)(gap.W * 0.9));
+                                int cropX = Math.Max(0, gap.X + (int)(gap.W * 0.4));
+                                int cropY = Math.Max(0, gap.Y - 2);
+                                int cropHeight = gap.H + 4;
+
+                                frame = frame.Clone(new Rectangle(cropX, cropY, cropWidth, cropHeight), frame.PixelFormat);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка подготовки/обрезки изображения — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            int[,] mtx;
+                            try
+                            {
+                                mtx = frame.ToRedMatrix();
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка ToRedMatrix — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            int width = frame.Width;
+                            int height = frame.Height;
+
+                            double[] graphic = new double[height];
+                            double[] graphic_new = new double[height];
+
+                            try
+                            {
+                                for (int y = 0; y < height; y++)
+                                {
+                                    double s1 = 0.0;
+                                    for (int x = 0; x < width; x++)
+                                        s1 += mtx[y, x];
+                                    graphic_new[y] = s1;
+                                }
+
+                                double avg = graphic_new.Average();
+                                for (int i = 0; i < height; i++)
+                                {
+                                    graphic[i] = Math.Exp(3 * graphic_new[i] / avg);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка расчёта графика — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            try
+                            {
+                                var Gap_len = VectorToPoints(graphic, gap);
+
+                                if (Gap_len > gap.H)
+                                {
+                                    gap.Zazor = Math.Max(0, gap.H - 4);
+                                }
+                                else
+                                {
+                                    gap.Zazor = (Gap_len < gap.H - 10) ? gap.H - 10 : Gap_len;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"GapProcessing: Ошибка VectorToPoints — {ex.Message}");
+                                gap.Zazor = -1;
+                                return;
+                            }
+
+                            // Очистка ресурсов
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
                         }
-                        else
-                        {
-                            if(Gap_len < gap.H - 10)
-                                gap.Zazor = gap.H - 10;
-                            else
-                                gap.Zazor = Gap_len;
-                        }
-                        reader.Close();
                     }
                     catch (Exception e)
                     {
                         gap.Zazor = -1;
-                        Console.WriteLine("GapProcessing: " + e.Message);
-                        reader.Close();
+                        Console.WriteLine("GapProcessing: Общая ошибка для одного gap — " + e.Message);
                     }
                 }
-            }            
+            }
             catch (Exception e)
             {
-                Console.WriteLine("GapProcessing: " + e.Message);
+                Console.WriteLine("GapProcessing: Общая ошибка метода — " + e.Message);
             }
         }
+
+
+        //private void GapProcessing(List<Digression> gaps, long km, long trip_id)
+        //{
+        //    try
+        //    {
+        //        foreach (var gap in gaps)
+        //        {
+        //            var reader = new BinaryReader(File.Open(gap.File_name, FileMode.Open));
+
+
+        //            try
+        //            {
+
+
+        //                int widthF = reader.ReadInt32();
+        //                int heightF = reader.ReadInt32();
+        //                int frameSize = widthF * heightF;
+        //                long position = gap.Fnum * (long)frameSize + 8;
+        //                reader.BaseStream.Seek(position, SeekOrigin.Begin);
+        //                byte[] by = reader.ReadBytes(frameSize);
+
+        //                var mtx1 = ConvertMatrix(Array.ConvertAll(by, Convert.ToInt32), heightF, widthF);
+        //                var frame = mtx1.ToRedBitmap();
+        //                frame = frame.Clone(new Rectangle(gap.X + (int)(gap.W * 0.4), gap.Y - 2, gap.W - (int)(gap.W * 0.9), gap.H + 4), frame.PixelFormat);
+        //                var mtx = frame.ToRedMatrix();
+
+        //                var width = frame.Width;
+        //                var height = frame.Height;
+
+        //                var param1 = 0;
+        //                var param2 = 0;
+
+        //                double[] graphic = new double[height - (param1 + param2)];
+        //                double[] graphic_new = new double[height - (param1 + param2)];
+
+        //                for (int y = 0; y < height; y++) //heigth
+        //                {
+        //                    var s1 = 0.0;
+        //                    for (int x = param1; x < width - param2; x++)
+        //                    {
+        //                        s1 += mtx[y, x];
+        //                    }
+        //                    graphic_new[y] = s1;
+        //                }
+        //                for (int i = 0; i < height; i++)
+        //                {
+        //                    graphic[i] = Math.Exp(3 * graphic_new[i] / graphic_new.Average());
+        //                }
+
+        //                var Gap_len = VectorToPoints(graphic, gap);
+
+        //                if (Gap_len > gap.H)
+        //                {
+        //                    if (gap.H - 4 > 0)
+        //                    {
+        //                        gap.Zazor = gap.H - 4;
+        //                    }
+        //                    else
+        //                    {
+        //                        gap.Zazor = gap.H;
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    if(Gap_len < gap.H - 10)
+        //                        gap.Zazor = gap.H - 10;
+        //                    else
+        //                        gap.Zazor = Gap_len;
+        //                }
+        //                reader.Close();
+        //            }
+        //            catch (Exception e)
+        //            {
+        //                gap.Zazor = -1;
+        //                Console.WriteLine("GapProcessing: " + e.Message);
+        //                reader.Close();
+        //            }
+        //        }
+        //    }            
+        //    catch (Exception e)
+        //    {
+        //        Console.WriteLine("GapProcessing: " + e.Message);
+        //    }
+        //}
 
         private int VectorToPoints(double[] vector, Digression gap)
         {
@@ -3469,7 +4034,7 @@ max(final-start) as zazor, max(final-start) as Length, max(start) as start,
                 {
 
                     var txt = $@"SELECT
-	                                * , m meter
+	                                * ,  meter
                                 FROM
 	                                s3_additional 
                                 WHERE

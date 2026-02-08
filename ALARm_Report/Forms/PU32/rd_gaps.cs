@@ -55,7 +55,7 @@ namespace ALARm_Report.Forms
                 }
                 progressBar.Maximum = videoProcesses.Count;
                 int iter = 1;
-               
+
                 foreach (var tripProcess in videoProcesses)
                 {
                     progressBar.Value = videoProcesses.IndexOf(tripProcess) + 1;
@@ -64,6 +64,8 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kms = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiodstring( trip, int.Parse(distance.Code), trackName.ToString());
+                        //var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (!kms.Any())
                         {
                             {
@@ -72,28 +74,28 @@ namespace ALARm_Report.Forms
                             }
                             continue;
                         }
-                        
+
                         kms = kms.Where(o => o.Track_id == track_id).ToList();
 
                         trip.Track_Id = track_id;
-                        var lkm = kms.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
-                      
+
                         List<Gap> check_gap_state = AdditionalParametersService.Check_gap_state(tripProcess.Trip_id, template.ID);
 
                         var ttt = tripProcess.Date_Vrem.ToString("dd.MM.yyyy_hh:mm");
 
-                         tripElem = new XElement("trip",
-                            new XAttribute("date_statement", ttt),
-                            new XAttribute("check", tripProcess.GetProcessTypeName), //ToDo
-                            new XAttribute("road", road),
-                            new XAttribute("distance", distance.Name),
-                            new XAttribute("periodDate", period.Period + " "),
-                            new XAttribute("chief", tripProcess.Chief),
-                            new XAttribute("ps", tripProcess.Car),
-                            new XAttribute("trip_date", tripProcess.Trip_date)
-                        );
+                        tripElem = new XElement("trip",
+                           new XAttribute("date_statement", ttt),
+                           new XAttribute("check", tripProcess.GetProcessTypeName), //ToDo
+                           new XAttribute("road", road),
+                           new XAttribute("distance", distance.Name),
+                           new XAttribute("periodDate", period.Period + " "),
+                           new XAttribute("chief", tripProcess.Chief),
+                           new XAttribute("ps", tripProcess.Car),
+                           new XAttribute("trip_date", tripProcess.Trip_date)
+                       );
 
                         XElement Direct = new XElement("direction",
                             new XAttribute("name", tripProcess.DirectionName + " (" + tripProcess.DirectionCode + ")" + " / Путь: " + trackName + " / ПЧ: " + distance.Code)
@@ -127,7 +129,7 @@ namespace ALARm_Report.Forms
                                     new XAttribute("nit", gap.R_zazor > gap.Zazor ? "правая" : "левая"),
                                     new XAttribute("T", gap.Temp),
                                     new XAttribute("Vdop", gap.Vdop),
-                                    new XAttribute("Primech","" )//ToDo
+                                    new XAttribute("Primech", "")//ToDo
                                 );
                                 iter++;
                                 Direct.Add(Notes);
@@ -150,7 +152,7 @@ namespace ALARm_Report.Forms
                                     new XAttribute("T", gap.Temp),//ToDo
                                     new XAttribute("Zabeg", gap.Zabeg == -1 ? "" : gap.Zabeg.ToString()),
                                     new XAttribute("Vdop", gap.Vdop),
-                                    new XAttribute("Otst", gap.Otst_l.Count()>0 ? gap.Otst_l: gap.Otst_r),
+                                    new XAttribute("Otst", gap.Otst_l.Count() > 0 ? gap.Otst_l : gap.Otst_r),
                                     new XAttribute("Primech", ""),//ToDo
 
 

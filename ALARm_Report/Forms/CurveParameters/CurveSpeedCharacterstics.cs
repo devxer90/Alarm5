@@ -34,6 +34,7 @@ namespace ALARm_Report.Forms
                         return;
                     admTracksId = choiceForm.admTracksIDs;
                 }
+                var distance = AdmStructureService.GetUnit(AdmStructureConst.AdmDistance, parentId) as AdmUnit;
                 // var road = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                 var roadName = AdmStructureService.GetRoadName(parentId, AdmStructureConst.AdmDistance, true);
                 var trips = RdStructureService.GetMainParametersProcesses(current, parentId, true);
@@ -75,12 +76,13 @@ namespace ALARm_Report.Forms
                         var trackName = AdmStructureService.GetTrackName(track_id);
                         var trip = RdStructureService.GetTrip(tripProcess.Id);
                         var kilometers = RdStructureService.GetKilometersByTrip(trip);
+                        var kilometerssort = RdStructureService.GetKilometersByTripdistanceperiod(trip, int.Parse(distance.Code), int.Parse(trackName.ToString()));
                         if (!kilometers.Any()) continue;
 
                         kilometers = kilometers.Where(o => o.Track_id == track_id).ToList();
                         if (kilometers.Count == 0) continue;
                         trip.Track_Id = track_id;
-                        var lkm = kilometers.Select(o => o.Number).ToList();
+                        var lkm = kilometerssort.Select(o => o.Number).ToList();
 
                         if (lkm.Count() == 0) continue;
 
@@ -352,7 +354,7 @@ namespace ALARm_Report.Forms
                                 continue;
                             transitionLength1 = curve.Straightenings.First().Transition_1;
                             transitionLength2 = curve.Straightenings.Last().Transition_2;
-                            radiusH = Convert.ToInt32(17860 / curve.Straightenings.Min(s => s.Radius));
+                            radiusH = Convert.ToInt32(17860 /(curve.Straightenings.Min(s => s.Radius)+0.001) );
                             levelH = curve.Elevations.Any() ? Convert.ToInt32(curve.Elevations.Max(e => Math.Abs(e.Lvl))) : 0;
                             string radiusAverage = "";
                             string levelAverage = "";
